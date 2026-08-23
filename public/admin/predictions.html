@@ -19,15 +19,31 @@
     <button class="btn btn-primary" id="add-pred-btn">+ Add Prediction</button>
   </div>
 
+  <!-- View tabs -->
+  <div class="tab-row mb-3" id="admin-view-tabs" style="gap:6px;border-bottom:1px solid var(--border);padding-bottom:12px">
+    <button class="category-tab active" data-view="upcoming" onclick="setAdminView(this,'upcoming')">
+      <span class="material-icons-round" style="font-size:14px;vertical-align:middle;margin-right:4px">schedule</span>Upcoming
+    </button>
+    <button class="category-tab" data-view="live" onclick="setAdminView(this,'live')" style="display:inline-flex;align-items:center;gap:5px">
+      <span id="live-dot" style="width:8px;height:8px;border-radius:50%;background:#ef4444;display:inline-block"></span>Live
+    </button>
+    <button class="category-tab" data-view="finished" onclick="setAdminView(this,'finished')">
+      <span class="material-icons-round" style="font-size:14px;vertical-align:middle;margin-right:4px">sports_score</span>Finished
+      <span id="needs-result-badge" class="badge" style="background:rgba(239,68,68,0.18);color:#ef4444;font-size:10px;margin-left:4px;display:none"></span>
+    </button>
+  </div>
+  <style>
+    #admin-view-tabs .category-tab[data-view="live"].active  { background:rgba(239,68,68,0.12); color:#ef4444; border-color:rgba(239,68,68,0.35); }
+    #admin-view-tabs .category-tab[data-view="finished"].active { background:rgba(160,208,0,0.1); color:var(--primary); border-color:rgba(160,208,0,0.35); }
+    .needs-result { background: rgba(239,68,68,0.07) !important; }
+    .needs-result td:first-child { border-left: 3px solid #ef4444; }
+  </style>
+
   <div class="search-bar admin-card" style="margin-bottom:16px;padding:14px;flex-wrap:wrap">
     <input type="text" class="form-control" style="max-width:200px" placeholder="Search teams…" id="f-search">
     <select class="form-control" style="max-width:140px" id="f-cat">
       <option value="">All Categories</option>
       <option>Free</option><option>VIP</option><option>Banker</option>
-    </select>
-    <select class="form-control" style="max-width:140px" id="f-result">
-      <option value="">All Results</option>
-      <option>pending</option><option>won</option><option>lost</option><option>void</option>
     </select>
     <select class="form-control" style="max-width:130px" id="f-pub">
       <option value="">All</option><option value="1">Published</option><option value="0">Draft</option>
@@ -135,7 +151,14 @@
 <script src="admin.js"></script>
 <script>
 injectAdminShell('predictions.html');
-let currentPage = 1, totalPreds = 0, debTimer;
+let currentPage = 1, totalPreds = 0, debTimer, currentView = 'upcoming';
+
+function setAdminView(btn, view) {
+  document.querySelectorAll('#admin-view-tabs .category-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentView = view;
+  loadPreds(1);
+}
 
 // Tip options per market
 const MARKET_TIPS = {
@@ -174,7 +197,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('f-search').addEventListener('input', () => { clearTimeout(debTimer); debTimer = setTimeout(() => loadPreds(1), 400); });
   document.getElementById('f-cat').addEventListener('change', () => loadPreds(1));
-  document.getElementById('f-result').addEventListener('change', () => loadPreds(1));
   document.getElementById('f-pub').addEventListener('change', () => loadPreds(1));
   document.getElementById('f-date').addEventListener('change', () => loadPreds(1));
 });
@@ -202,32 +224,39 @@ async function loadPreds(page = 1) {
   currentPage = page;
   const search = document.getElementById('f-search').value;
   const cat = document.getElementById('f-cat').value;
-  const result = document.getElementById('f-result').value;
   const pub = document.getElementById('f-pub').value;
   const date = document.getElementById('f-date').value;
-  // Default: only show today + future unless a past date or result filter is set
+
   const params = new URLSearchParams({
     page, limit: 30, admin_view: 1,
+    view: currentView,
     ...(search && { search }),
     ...(cat && { category: cat }),
-    ...(result && { result }),
     ...(pub !== '' && { is_published: pub }),
     ...(date && { date }),
   });
   const d = await api(`/predictions?${params}`);
   const preds = d.data?.predictions || [];
   totalPreds = d.data?.pagination?.total || 0;
+
+  // Show badge for finished predictions missing results
+  if (currentView === 'finished') {
+    const needsCount = preds.filter(p => !p.result || p.result === 'pending').length;
+    const badge = document.getElementById('needs-result-badge');
+    if (badge) { badge.textContent = needsCount + ' need result'; badge.style.display = needsCount ? '' : 'none'; }
+  }
+
   const tbody = document.getElementById('preds-body');
 
   tbody.innerHTML = preds.length ? preds.map(p => {
-    const past = isPast(p.match_date);
-    const rowStyle = past ? 'opacity:0.55' : '';
-    const pastTag = past ? '<span style="font-size:10px;color:#ff4757;font-weight:700;margin-left:4px">PAST</span>' : '';
+    const needsResult = currentView === 'finished' && (!p.result || p.result === 'pending') && p.home_score == null;
+    const rowClass = needsResult ? 'needs-result' : '';
+    const needsTag = needsResult ? '<span style="font-size:10px;color:#ef4444;font-weight:700;margin-left:4px">⚠ NEEDS RESULT</span>' : '';
     return `
-    <tr style="${rowStyle}">
+    <tr class="${rowClass}">
       <td><input type="checkbox" class="row-chk" value="${p.id}"></td>
       <td>
-        <strong>${escHtml(p.home_team)}</strong> vs <strong>${escHtml(p.away_team)}</strong>${pastTag}
+        <strong>${escHtml(p.home_team)}</strong> vs <strong>${escHtml(p.away_team)}</strong>${needsTag}
         <br><span class="text-muted" style="font-size:11px">${escHtml(p.league_name||'')}</span>
       </td>
       <td style="font-weight:600;color:var(--primary)">${escHtml(p.tip||'TBD')}</td>

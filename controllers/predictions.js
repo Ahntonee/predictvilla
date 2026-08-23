@@ -43,7 +43,31 @@ exports.list = asyncHandler(async (req, res) => {
   }
   if (market) { where.push('market = ?'); params.push(market); }
   if (vip === '1') { where.push('is_vip = 1'); }
-  if (result) { where.push('result = ?'); params.push(result); }
+
+  // Admin view tabs
+  const view = req.query.view;
+  const LIVE_STATUSES = ['1H','2H','HT','ET','BT','P','LIVE','1H_HT','2H_ET'];
+  if (view === 'upcoming') {
+    where.push(`(result = 'pending' OR result IS NULL)`);
+    where.push(`fixture_status NOT IN (${LIVE_STATUSES.map(()=>'?').join(',')})`);
+    params.push(...LIVE_STATUSES);
+    where.push('match_date >= NOW() - INTERVAL 3 HOUR');
+  } else if (view === 'live') {
+    where.push(`fixture_status IN (${LIVE_STATUSES.map(()=>'?').join(',')})`);
+    params.push(...LIVE_STATUSES);
+  } else if (view === 'finished') {
+    where.push(`(match_date < NOW() - INTERVAL 2 HOUR OR result IN ('won','lost','void'))`);
+    where.push(`fixture_status NOT IN (${LIVE_STATUSES.map(()=>'?').join(',')})`);
+    params.push(...LIVE_STATUSES);
+  } else if (result === 'live') {
+    where.push(`fixture_status IN (${LIVE_STATUSES.map(()=>'?').join(',')})`);
+    params.push(...LIVE_STATUSES);
+  } else if (result === 'finished') {
+    where.push(`result IN ('won','lost')`);
+  } else if (result) {
+    where.push('result = ?'); params.push(result);
+  }
+
   if (search) { where.push('(home_team LIKE ? OR away_team LIKE ?)'); params.push(`%${search}%`, `%${search}%`); }
 
   const whereStr = where.length ? 'WHERE ' + where.join(' AND ') : '';

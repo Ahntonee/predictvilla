@@ -50,7 +50,25 @@
           <!-- Banker Section -->
           <div id="banker-section" class="mb-3"></div>
 
-          <!-- Category Tabs -->
+          <!-- View Mode Tabs -->
+          <div class="tab-row mb-2" id="view-tabs" style="gap:6px">
+            <button class="category-tab active" data-view="upcoming" onclick="setView(this,'upcoming')">
+              <span class="material-icons-round" style="font-size:14px;vertical-align:middle;margin-right:4px">schedule</span>Upcoming
+            </button>
+            <button class="category-tab" data-view="live" onclick="setView(this,'live')" style="display:flex;align-items:center;gap:5px">
+              <span style="width:8px;height:8px;border-radius:50%;background:#ef4444;display:inline-block;animation:pulse-dot 1.2s infinite"></span>Live
+            </button>
+            <button class="category-tab" data-view="finished" onclick="setView(this,'finished')">
+              <span class="material-icons-round" style="font-size:14px;vertical-align:middle;margin-right:4px">check_circle</span>Finished
+            </button>
+          </div>
+          <style>
+            @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.3} }
+            #view-tabs .category-tab[data-view="live"].active { background:rgba(239,68,68,0.15); color:#ef4444; border-color:rgba(239,68,68,0.4); }
+            #view-tabs .category-tab[data-view="finished"].active { background:rgba(160,208,0,0.12); color:var(--primary); border-color:rgba(160,208,0,0.4); }
+          </style>
+
+          <!-- Category Tabs (hidden in Live/Finished view) -->
           <div class="tab-row mb-2" id="category-tabs">
             <button class="category-tab active" data-cat="">All</button>
             <button class="category-tab" data-cat="free">Free</button>
@@ -122,7 +140,7 @@
 <div id="footer-placeholder"></div>
 <script src="/js/app.js"></script>
 <script>
-let currentPage = 1, currentDate = 'today', currentCat = '', currentLeague = '', currentMarket = '', currentResult = '', searchTerm = '';
+let currentPage = 1, currentDate = 'today', currentCat = '', currentLeague = '', currentMarket = '', currentResult = '', searchTerm = '', currentView = 'upcoming';
 let searchTimer;
 
 function buildDateStrip() {
@@ -175,6 +193,25 @@ async function updateLiveCount() {
     const el = document.getElementById('live-count');
     if (el) el.textContent = cnt;
   } catch {}
+}
+
+function setView(btn, view) {
+  document.querySelectorAll('#view-tabs .category-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentView = view;
+  currentPage = 1;
+  // Live/Finished: hide category tabs and date strip; Upcoming: show them
+  const hideable = document.getElementById('category-tabs');
+  const dateStripEl = document.getElementById('date-strip');
+  if (view === 'upcoming') {
+    hideable.style.display = '';
+    dateStripEl.style.display = '';
+  } else {
+    hideable.style.display = 'none';
+    dateStripEl.style.display = 'none';
+    currentCat = '';
+  }
+  applyFilters();
 }
 
 function setDateStrip(btn, date) {
@@ -301,12 +338,21 @@ function debounceSearch() {
 function applyFilters() {
   currentLeague = document.getElementById('league-filter')?.value || '';
   currentMarket = document.getElementById('market-filter')?.value || '';
-  currentResult = document.getElementById('result-filter')?.value || '';
-  const params = { date: currentDate, page: currentPage, limit: 18 };
-  if (currentCat) params.category = currentCat;
-  if (currentLeague) params.league_id = currentLeague;
-  if (currentMarket) params.market = currentMarket;
-  if (currentResult) params.result = currentResult;
+  if (currentView === 'upcoming') {
+    currentResult = document.getElementById('result-filter')?.value || '';
+  }
+  const params = { page: currentPage, limit: 18 };
+
+  if (currentView === 'live' || currentView === 'finished') {
+    params.view = currentView;
+  } else {
+    // upcoming: normal date + filters
+    params.date = currentDate;
+    if (currentCat) params.category = currentCat;
+    if (currentLeague) params.league_id = currentLeague;
+    if (currentMarket) params.market = currentMarket;
+    if (currentResult) params.result = currentResult;
+  }
   if (searchTerm) params.search = searchTerm;
 
   loadPredictions(params, document.getElementById('predictions-grid')).then(pg => renderPagination(pg));
