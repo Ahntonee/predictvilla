@@ -15,10 +15,15 @@ router.get('/revenue/plans', ctrl.revenuePlans);
 router.get('/revenue/churn', ctrl.revenueChurn);
 
 // Prediction intelligence analytics
-router.get('/intel/league-stats',    ctrl.leagueStats);
-router.get('/intel/market-stats',    ctrl.marketStats);
-router.get('/intel/best-picks',      ctrl.bestPicks);
-router.get('/intel/team-stats',      ctrl.teamStats);
-router.get('/intel/league-profiles', ctrl.leagueGoalProfiles);
+router.get('/intel/league-stats',       ctrl.leagueStats);
+router.get('/intel/market-stats',       ctrl.marketStats);
+router.get('/intel/best-picks',         ctrl.bestPicks);
+router.get('/intel/team-stats',         ctrl.teamStats);
+router.get('/intel/league-profiles',    ctrl.leagueGoalProfiles);
+router.get('/intel/accuracy-tracker',   ctrl.accuracyTracker);
+router.get('/intel/league-submarket',   ctrl.leagueSubmarket);
+router.get('/intel/team-consistency',   ctrl.teamConsistency);
+router.get('/intel/calibration',        ctrl.calibration);
+router.get('/intel/prediction-frequency', ctrl.predictionFrequency);
 
 module.exports = router;

@@ -100,6 +100,111 @@ exports.revenueChurn = asyncHandler(async (req, res) => {
 // PREDICTION INTELLIGENCE ANALYTICS
 // ─────────────────────────────────────────────────────────────────────────────
 
+exports.accuracyTracker = asyncHandler(async (req, res) => {
+  const [[overall]] = await pool.query(`
+    SELECT COUNT(*) as total, SUM(is_correct) as won, COUNT(*)-SUM(is_correct) as lost,
+    ROUND(SUM(is_correct)/NULLIF(COUNT(*),0)*100,2) as accuracy
+    FROM prediction_accuracy_log`);
+  const [byMarket] = await pool.query(`
+    SELECT market, COUNT(*) as total, SUM(is_correct) as won,
+    ROUND(SUM(is_correct)/NULLIF(COUNT(*),0)*100,1) as accuracy
+    FROM prediction_accuracy_log GROUP BY market ORDER BY total DESC`);
+  const [byBand] = await pool.query(`
+    SELECT CONCAT(FLOOR(confidence_score/5)*5,'–',FLOOR(confidence_score/5)*5+4,'%') as band,
+    FLOOR(confidence_score/5)*5 as band_start,
+    COUNT(*) as total, SUM(is_correct) as won,
+    ROUND(SUM(is_correct)/NULLIF(COUNT(*),0)*100,1) as accuracy
+    FROM prediction_accuracy_log WHERE confidence_score IS NOT NULL
+    GROUP BY band_start, band ORDER BY band_start DESC`);
+  const [byTip] = await pool.query(`
+    SELECT market, tip, COUNT(*) as total, SUM(is_correct) as won,
+    ROUND(SUM(is_correct)/NULLIF(COUNT(*),0)*100,1) as accuracy
+    FROM prediction_accuracy_log
+    GROUP BY market, tip ORDER BY market, accuracy DESC`);
+  return successResponse(res, { overall, byMarket, byBand, byTip });
+});
+
+exports.leagueSubmarket = asyncHandler(async (req, res) => {
+  const market = req.query.market || '';
+  let where = ['pal.is_correct IS NOT NULL'];
+  const params = [];
+  if (market) { where.push('pal.market = ?'); params.push(market); }
+  const [rows] = await pool.query(`
+    SELECT l.name as league_name, l.country, pal.market, pal.tip,
+    COUNT(*) as total, SUM(pal.is_correct) as won,
+    ROUND(SUM(pal.is_correct)/NULLIF(COUNT(*),0)*100,1) as accuracy
+    FROM prediction_accuracy_log pal
+    JOIN predictions p ON p.id = pal.prediction_id
+    JOIN leagues l ON l.id = p.league_id
+    WHERE ${where.join(' AND ')}
+    GROUP BY l.name, l.country, pal.market, pal.tip
+    HAVING total >= 3
+    ORDER BY pal.market, accuracy DESC`, params);
+  return successResponse(res, { rows });
+});
+
+exports.teamConsistency = asyncHandler(async (req, res) => {
+  const market = req.query.market || '';
+  const tip = req.query.tip || '';
+  const where = ['pal.is_correct IS NOT NULL'];
+  const params = [];
+  if (market) { where.push('pal.market = ?'); params.push(market); }
+  if (tip)    { where.push('pal.tip = ?');    params.push(tip); }
+  const w = where.join(' AND ');
+  const [homeRows] = await pool.query(`
+    SELECT p.home_team as team, l.name as league_name, l.country, pal.market, pal.tip, 'home' as side,
+    COUNT(*) as total, SUM(pal.is_correct) as won,
+    ROUND(SUM(pal.is_correct)/NULLIF(COUNT(*),0)*100,1) as accuracy
+    FROM prediction_accuracy_log pal
+    JOIN predictions p ON p.id = pal.prediction_id
+    JOIN leagues l ON l.id = p.league_id
+    WHERE ${w} GROUP BY p.home_team, l.name, l.country, pal.market, pal.tip HAVING total >= 3`, params);
+  const [awayRows] = await pool.query(`
+    SELECT p.away_team as team, l.name as league_name, l.country, pal.market, pal.tip, 'away' as side,
+    COUNT(*) as total, SUM(pal.is_correct) as won,
+    ROUND(SUM(pal.is_correct)/NULLIF(COUNT(*),0)*100,1) as accuracy
+    FROM prediction_accuracy_log pal
+    JOIN predictions p ON p.id = pal.prediction_id
+    JOIN leagues l ON l.id = p.league_id
+    WHERE ${w} GROUP BY p.away_team, l.name, l.country, pal.market, pal.tip HAVING total >= 3`, params);
+  const teams = [...homeRows, ...awayRows].sort((a, b) => b.accuracy - a.accuracy);
+  return successResponse(res, { teams });
+});
+
+exports.calibration = asyncHandler(async (req, res) => {
+  const [rows] = await pool.query(`
+    SELECT market, tip,
+    CONCAT(FLOOR(confidence_score/5)*5,'–',FLOOR(confidence_score/5)*5+4,'%') as band,
+    FLOOR(confidence_score/5)*5 as band_start,
+    COUNT(*) as total, SUM(is_correct) as won,
+    ROUND(SUM(is_correct)/NULLIF(COUNT(*),0)*100,1) as accuracy,
+    MAX(logged_at) as last_updated
+    FROM prediction_accuracy_log WHERE confidence_score IS NOT NULL
+    GROUP BY market, tip, band_start, band HAVING total >= 5
+    ORDER BY market, tip, band_start DESC`);
+  return successResponse(res, { rows });
+});
+
+exports.predictionFrequency = asyncHandler(async (req, res) => {
+  const leagueId = req.query.league_id || '';
+  let where = [];
+  const params = [];
+  if (leagueId) { where.push('p.league_id = ?'); params.push(leagueId); }
+  const wStr = where.length ? 'WHERE ' + where.join(' AND ') : '';
+  const [rows] = await pool.query(`
+    SELECT l.name as league_name, l.country, p.market, p.tip,
+    COUNT(*) as total_predictions,
+    SUM(CASE WHEN p.result IN ('won','lost') THEN 1 ELSE 0 END) as resolved,
+    SUM(CASE WHEN p.result = 'won' THEN 1 ELSE 0 END) as won,
+    ROUND(SUM(CASE WHEN p.result='won' THEN 1 ELSE 0 END)/NULLIF(SUM(CASE WHEN p.result IN ('won','lost') THEN 1 ELSE 0 END),0)*100,1) as accuracy
+    FROM predictions p JOIN leagues l ON l.id = p.league_id
+    ${wStr}
+    GROUP BY p.league_id, p.market, p.tip
+    HAVING total_predictions >= 2
+    ORDER BY l.name, total_predictions DESC`, params);
+  return successResponse(res, { rows });
+});
+
 // League-level: goals/game, btts%, over2.5%, our prediction win rate
 exports.leagueStats = asyncHandler(async (req, res) => {
   const [rows] = await pool.query(`

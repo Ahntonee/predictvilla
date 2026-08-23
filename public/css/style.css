@@ -142,16 +142,17 @@
 [data-theme="light"] .data-table td { border-color: rgba(13,22,0,0.07); }
 [data-theme="light"] .data-table tr:hover td { background: rgba(160,208,0,0.06); }
 
-[data-theme="light"] .footer-main { background: #f0f6d8; }
-[data-theme="light"] .footer-bottom { background: #e4f0c4; }
+[data-theme="light"] .footer-main { background: #ffffff; }
+[data-theme="light"] .footer-bottom { background: #f4f8e0; }
 [data-theme="light"] .footer-col-title { color: #0d1600; }
 [data-theme="light"] .footer-links-col a,
 [data-theme="light"] .footer-contact-item,
 [data-theme="light"] .footer-contact-item a,
 [data-theme="light"] .footer-desc { color: rgba(13,22,0,0.65); }
 [data-theme="light"] .footer-links-col a:hover { color: #0d1600; }
-[data-theme="light"] .footer-bottom-bar { background: #e4f0c4; }
+[data-theme="light"] .footer-bottom-bar { background: #f4f8e0; }
 [data-theme="light"] .footer-bottom-bar p { color: rgba(13,22,0,0.5); }
+[data-theme="light"] .site-footer { background: #ffffff; border-top: 1px solid rgba(13,22,0,0.08); }
 
 [data-theme="light"] .skeleton {
   background: linear-gradient(90deg, rgba(13,22,0,0.05) 25%, rgba(13,22,0,0.10) 50%, rgba(13,22,0,0.05) 75%);
@@ -1849,6 +1850,28 @@ body.has-sidebar { padding-left: var(--sidebar-w); padding-top: var(--topbar-h);
 /* ═══════════════════════════════════════════════════
    PREDICTION ROWS
    ═══════════════════════════════════════════════════ */
+/* light-mode prediction list overrides */
+[data-theme="light"] .pred-list {
+  background: #f5f5f5;
+  border-color: rgba(13,22,0,0.08);
+}
+[data-theme="light"] .pred-list-header {
+  background: rgba(0,0,0,0.03);
+  color: #000;
+  border-bottom-color: rgba(0,0,0,0.1);
+}
+[data-theme="light"] .pred-row {
+  background: #f5f5f5;
+  border-bottom-color: rgba(0,0,0,0.07);
+  color: #000;
+}
+[data-theme="light"] .pred-row:hover { background: #ececec; }
+[data-theme="light"] .pred-time { color: #000; }
+[data-theme="light"] .pred-score-col { color: #333; }
+[data-theme="light"] .pred-teams { color: #000; }
+[data-theme="light"] .pred-home, [data-theme="light"] .pred-away { color: #000; }
+[data-theme="light"] .pred-row-skeleton { background: rgba(0,0,0,0.04); border-bottom-color: rgba(0,0,0,0.05); }
+
 .pred-list {
   border-radius: 10px;
   overflow: hidden;

@@ -51,7 +51,7 @@ exports.list = asyncHandler(async (req, res) => {
     where.push(`(result = 'pending' OR result IS NULL)`);
     where.push(`fixture_status NOT IN (${LIVE_STATUSES.map(()=>'?').join(',')})`);
     params.push(...LIVE_STATUSES);
-    where.push('match_date >= NOW() - INTERVAL 3 HOUR');
+    if (!adminView) where.push('match_date >= NOW() - INTERVAL 3 HOUR');
   } else if (view === 'live') {
     where.push(`fixture_status IN (${LIVE_STATUSES.map(()=>'?').join(',')})`);
     params.push(...LIVE_STATUSES);

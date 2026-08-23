@@ -31,12 +31,18 @@
       <span class="material-icons-round" style="font-size:14px;vertical-align:middle;margin-right:4px">sports_score</span>Finished
       <span id="needs-result-badge" class="badge" style="background:rgba(239,68,68,0.18);color:#ef4444;font-size:10px;margin-left:4px;display:none"></span>
     </button>
+    <button class="category-tab" data-view="queue" onclick="setAdminView(this,'queue')" style="display:inline-flex;align-items:center;gap:5px">
+      <span class="material-icons-round" style="font-size:14px;vertical-align:middle;margin-right:2px">pending_actions</span>Queue
+      <span id="queue-badge" class="badge" style="background:rgba(255,208,0,0.18);color:var(--gold,#ffd000);font-size:10px;margin-left:2px;display:none"></span>
+    </button>
   </div>
   <style>
-    #admin-view-tabs .category-tab[data-view="live"].active  { background:rgba(239,68,68,0.12); color:#ef4444; border-color:rgba(239,68,68,0.35); }
+    #admin-view-tabs .category-tab[data-view="live"].active    { background:rgba(239,68,68,0.12); color:#ef4444; border-color:rgba(239,68,68,0.35); }
     #admin-view-tabs .category-tab[data-view="finished"].active { background:rgba(160,208,0,0.1); color:var(--primary); border-color:rgba(160,208,0,0.35); }
+    #admin-view-tabs .category-tab[data-view="queue"].active   { background:rgba(255,208,0,0.1); color:#ffd000; border-color:rgba(255,208,0,0.35); }
     .needs-result { background: rgba(239,68,68,0.07) !important; }
     .needs-result td:first-child { border-left: 3px solid #ef4444; }
+    .queue-row td:first-child { border-left: 3px solid #ffd000; }
   </style>
 
   <div class="search-bar admin-card" style="margin-bottom:16px;padding:14px;flex-wrap:wrap">
@@ -227,12 +233,13 @@ async function loadPreds(page = 1) {
   const pub = document.getElementById('f-pub').value;
   const date = document.getElementById('f-date').value;
 
+  const isQueue = currentView === 'queue';
   const params = new URLSearchParams({
     page, limit: 30, admin_view: 1,
-    view: currentView,
+    ...(isQueue ? { is_published: '0' } : { view: currentView }),
     ...(search && { search }),
     ...(cat && { category: cat }),
-    ...(pub !== '' && { is_published: pub }),
+    ...(!isQueue && pub !== '' && { is_published: pub }),
     ...(date && { date }),
   });
   const d = await api(`/predictions?${params}`);
@@ -245,12 +252,18 @@ async function loadPreds(page = 1) {
     const badge = document.getElementById('needs-result-badge');
     if (badge) { badge.textContent = needsCount + ' need result'; badge.style.display = needsCount ? '' : 'none'; }
   }
+  // Queue badge
+  if (isQueue) {
+    const qb = document.getElementById('queue-badge');
+    if (qb) { qb.textContent = totalPreds; qb.style.display = totalPreds ? '' : 'none'; }
+  }
 
   const tbody = document.getElementById('preds-body');
 
   tbody.innerHTML = preds.length ? preds.map(p => {
     const needsResult = currentView === 'finished' && (!p.result || p.result === 'pending') && p.home_score == null;
-    const rowClass = needsResult ? 'needs-result' : '';
+    const isQueueRow = isQueue;
+    const rowClass = needsResult ? 'needs-result' : (isQueueRow ? 'queue-row' : '');
     const needsTag = needsResult ? '<span style="font-size:10px;color:#ef4444;font-weight:700;margin-left:4px">⚠ NEEDS RESULT</span>' : '';
     return `
     <tr class="${rowClass}">
