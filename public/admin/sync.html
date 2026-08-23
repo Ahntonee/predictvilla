@@ -1,204 +1,474 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Data Sync — OL Admin</title>
+<title>Data Sync — Predictvilla Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-<link rel="icon" href="/images/logo.svg" type="image/svg+xml"><link rel="icon" href="/images/logo.png" type="image/png">
-<link rel="apple-touch-icon" href="/images/logo.png">
+<link rel="icon" href="/images/logo.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/css/style.css"><link rel="stylesheet" href="admin.css">
+<style>
+/* ── Sync page layout ── */
+.sync-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.sync-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 22px 24px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.sync-card.full { grid-column: 1 / -1; }
+.sync-card-head {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 16px; font-weight: 700; color: var(--text);
+}
+.sync-icon {
+  width: 34px; height: 34px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.sync-icon.red   { background: rgba(239,68,68,0.15);  color: #ef4444; }
+.sync-icon.green { background: rgba(160,208,0,0.15);  color: #a0d000; }
+.sync-icon.gold  { background: rgba(255,208,0,0.15);  color: #ffd000; }
+.sync-icon.purple{ background: rgba(139,92,246,0.15); color: #8b5cf6; }
+.sync-icon.blue  { background: rgba(59,130,246,0.15); color: #3b82f6; }
+
+.sync-badge {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; padding: 3px 8px; border-radius: 20px;
+}
+.sync-badge.amber  { background: rgba(255,208,0,0.18); color: #ffd000; border: 1px solid rgba(255,208,0,0.3); }
+.sync-badge.pink   { background: rgba(244,63,94,0.15); color: #f43f5e; border: 1px solid rgba(244,63,94,0.3); }
+.sync-badge.purple { background: rgba(139,92,246,0.12); color: #8b5cf6; border: 1px solid rgba(139,92,246,0.35); }
+
+.sync-desc { font-size: 13px; color: var(--text-soft); line-height: 1.5; }
+.sync-desc strong { color: var(--text); }
+
+/* API Status table */
+.api-stat-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px;
+}
+.api-stat-row:last-of-type { border-bottom: none; }
+.api-stat-val { font-weight: 700; color: var(--text); }
+.api-stat-val.green { color: #a0d000; }
+.api-progress { width: 100%; height: 6px; background: var(--bg-2); border-radius: 3px; overflow: hidden; }
+.api-progress-bar { height: 100%; background: #a0d000; border-radius: 3px; transition: width 0.4s; }
+.api-progress-label { font-size: 11px; color: var(--text-soft); text-align: right; margin-top: 3px; }
+
+/* Buttons */
+.btn-green  { background: #1c6c00; color: #fff; border: none; }
+.btn-green:hover { background: #155200; }
+.btn-amber  { background: rgba(255,208,0,0.18); color: #ffd000; border: 1px solid rgba(255,208,0,0.35); }
+.btn-amber:hover { background: rgba(255,208,0,0.28); }
+.btn-purple { background: #5b21b6; color: #fff; border: none; }
+.btn-purple:hover { background: #4c1d95; }
+
+/* Controls row */
+.sync-controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.sync-controls .form-control { max-width: 170px; }
+.sync-controls .form-control[type="number"] { max-width: 90px; }
+
+/* League checkboxes */
+.league-checks {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  max-height: 140px; overflow-y: auto;
+  padding: 4px 0;
+}
+.league-check-item {
+  display: flex; align-items: center; gap: 6px; cursor: pointer;
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 10px; font-size: 13px;
+  transition: border-color 0.15s; user-select: none;
+}
+.league-check-item input[type="checkbox"] { accent-color: #a0d000; width: 14px; height: 14px; }
+.league-check-item.checked { border-color: rgba(160,208,0,0.5); background: rgba(160,208,0,0.07); }
+.league-flag { font-size: 15px; }
+
+/* Season checkboxes */
+.season-checks { display: flex; flex-wrap: wrap; gap: 8px; }
+.season-check-item {
+  display: flex; align-items: center; gap: 6px; cursor: pointer;
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 14px; font-size: 13px;
+  transition: border-color 0.15s; user-select: none;
+}
+.season-check-item input[type="checkbox"] { accent-color: #a0d000; }
+.season-check-item.checked { border-color: rgba(160,208,0,0.5); background: rgba(160,208,0,0.07); }
+
+/* Section label */
+.sync-label { font-size: 12px; font-weight: 600; color: var(--text-soft); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* API cost estimate */
+.api-cost { font-size: 13px; color: var(--text-soft); }
+.api-cost strong { color: #a0d000; }
+
+/* Shared log */
+.sync-log-wrap { grid-column: 1 / -1; }
+#sync-log {
+  font-size: 12px; font-family: monospace;
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 16px;
+  min-height: 100px; max-height: 260px; overflow-y: auto;
+  color: var(--text-soft); white-space: pre-wrap; line-height: 1.6;
+}
+#sync-log .log-ok  { color: #a0d000; }
+#sync-log .log-err { color: #ef4444; }
+#sync-log .log-info{ color: var(--text-soft); }
+
+@media (max-width: 768px) {
+  .sync-grid { grid-template-columns: 1fr; }
+  .sync-card.full { grid-column: 1; }
+}
+</style>
 </head>
 <body>
 <div id="admin-sidebar"></div>
 <div id="admin-topbar"></div>
 <main id="admin-main">
-  <h1 class="admin-section-title"><span class="material-icons-round">sync</span> Data Sync</h1>
-  <p class="text-soft mb-3" style="font-size:13px">Manual triggers for all scheduled sync jobs. Jobs run automatically via cron — use these for on-demand updates.</p>
+  <h1 class="admin-section-title"><span class="material-icons-round">sync</span> API-Football Data Sync</h1>
 
-  <div class="grid-2">
-    <div class="admin-card">
-      <h3 style="font-size:15px;margin-bottom:8px"><span class="material-icons-round">sports_soccer</span> Sync Fixtures</h3>
-      <p class="text-soft mb-3" style="font-size:13px">Fetches upcoming fixtures from API-Football for the next 3 days.</p>
-      <div class="form-group"><label class="form-label">Days ahead</label><input type="number" class="form-control" id="fix-days" value="3" min="1" max="14" style="max-width:100px"></div>
-      <button class="btn btn-primary btn-sm" data-sync="fixtures">▶ Sync Fixtures</button>
-      <div id="log-fixtures" class="sync-log mt-2"></div>
-    </div>
+  <div class="sync-grid">
 
-    <div class="admin-card">
-      <h3 style="font-size:15px;margin-bottom:8px"><span class="material-icons-round">flag</span> Sync Results</h3>
-      <p class="text-soft mb-3" style="font-size:13px">Fetches final scores for fixtures played in the last 24h and grades predictions.</p>
-      <button class="btn btn-primary btn-sm" data-sync="results">▶ Sync Results</button>
-      <div id="log-results" class="sync-log mt-2"></div>
-    </div>
-
-    <div class="admin-card">
-      <h3 style="font-size:15px;margin-bottom:8px"><span class="material-icons-round">psychology</span> Run Intelligence</h3>
-      <p class="text-soft mb-3" style="font-size:13px">Generates predictions for all unpredicted fixtures today using the Intelligence Engine.</p>
-      <button class="btn btn-primary btn-sm" data-sync="intelligence">▶ Run Intelligence</button>
-      <div id="log-intelligence" class="sync-log mt-2"></div>
-    </div>
-
-    <div class="admin-card">
-      <h3 style="font-size:15px;margin-bottom:8px"><span class="material-icons-round">gps_fixed</span> Recalculate Accuracy</h3>
-      <p class="text-soft mb-3" style="font-size:13px">Recomputes all accuracy stats from the prediction_accuracy_log table.</p>
-      <button class="btn btn-primary btn-sm" data-sync="accuracy">▶ Recalculate</button>
-      <div id="log-accuracy" class="sync-log mt-2"></div>
-    </div>
-
-    <div class="admin-card">
-      <h3 style="font-size:15px;margin-bottom:8px"><span class="material-icons-round">analytics</span> Refresh Statistics</h3>
-      <p class="text-soft mb-3" style="font-size:13px">Recomputes team_statistics, league_statistics and market stats tables.</p>
-      <button class="btn btn-primary btn-sm" data-sync="statistics">▶ Refresh Stats</button>
-      <div id="log-statistics" class="sync-log mt-2"></div>
-    </div>
-
-    <div class="admin-card">
-      <h3 style="font-size:15px;margin-bottom:8px"><span class="material-icons-round">payments</span> Sync Odds</h3>
-      <p class="text-soft mb-3" style="font-size:13px">Fetches live bookie odds for today's fixtures from The Odds API (limited to ~16 calls/day).</p>
-      <button class="btn btn-primary btn-sm" data-sync="odds">▶ Sync Odds</button>
-      <div id="log-odds" class="sync-log mt-2"></div>
-    </div>
-
-    <div class="admin-card">
-      <h3 style="font-size:15px;margin-bottom:8px"><span class="material-icons-round">smart_toy</span> Auto-Predict Fixtures</h3>
-      <p class="text-soft mb-3" style="font-size:13px">Automatically creates prediction records for all fixtures that don't have one yet today.</p>
-      <button class="btn btn-primary btn-sm" data-sync="auto-predict">▶ Auto-Predict</button>
-      <div id="log-auto-predict" class="sync-log mt-2"></div>
-    </div>
-
-    <div class="admin-card">
-      <h3 style="font-size:15px;margin-bottom:8px"><span class="material-icons-round">content_paste</span> Grade Pending Results</h3>
-      <p class="text-soft mb-3" style="font-size:13px">Grades any ungraded predictions where scores have been set.</p>
-      <button class="btn btn-primary btn-sm" data-sync="grade">▶ Grade Now</button>
-      <div id="log-grade" class="sync-log mt-2"></div>
-    </div>
-
-    <div class="admin-card" style="border-color:rgba(2,245,161,0.2)">
-      <h3 style="font-size:15px;margin-bottom:8px"><span class="material-icons-round">auto_awesome</span> Run Daily Specials</h3>
-      <p class="text-soft mb-3" style="font-size:13px">Selects Banker of the Day, 2-Odds picks, and Mega Accumulator from today's intelligence predictions. Runs automatically at 6:00 and 6:15 AM.</p>
-      <button class="btn btn-primary btn-sm" data-sync="daily-specials">▶ Run Daily Specials</button>
-      <div id="log-daily-specials" class="sync-log mt-2"></div>
-    </div>
-
-    <div class="admin-card" style="border-color:rgba(250,163,7,0.2)">
-      <h3 style="font-size:15px;margin-bottom:8px"><span class="material-icons-round">storage</span> Sync Team Stats</h3>
-      <p class="text-soft mb-3" style="font-size:13px">Fetches historical team statistics (home/away goal averages, form) from API-Football for all active leagues. Run once before the season and then weekly. <strong style="color:var(--warning)">Uses ~300–500 API calls.</strong></p>
-      <button class="btn btn-primary btn-sm" data-sync="team-stats">▶ Sync Team Stats</button>
-      <div id="log-team-stats" class="sync-log mt-2"></div>
-    </div>
-
-    <div class="admin-card" style="border-color:rgba(250,163,7,0.2)">
-      <h3 style="font-size:15px;margin-bottom:8px"><span class="material-icons-round">sports_soccer</span> Sync Corner Stats</h3>
-      <p class="text-soft mb-3" style="font-size:13px">Fetches corner kick averages for teams with upcoming fixtures. Enables the Corners market in the intelligence engine.</p>
-      <button class="btn btn-primary btn-sm" data-sync="corner-stats">▶ Sync Corners</button>
-      <div id="log-corner-stats" class="sync-log mt-2"></div>
-    </div>
-
-    <div class="admin-card" style="border-color:rgba(250,163,7,0.2)">
-      <h3 style="font-size:15px;margin-bottom:8px"><span class="material-icons-round">history</span> Sync H2H Data</h3>
-      <p class="text-soft mb-3" style="font-size:13px">Fetches head-to-head history for today's and tomorrow's fixtures. H2H summary is used by the confidence engine to boost prediction accuracy.</p>
-      <button class="btn btn-primary btn-sm" data-sync="h2h">▶ Sync H2H</button>
-      <div id="log-h2h" class="sync-log mt-2"></div>
-    </div>
-
-    <div class="admin-card" style="border-color:rgba(2,245,161,0.15)">
-      <h3 style="font-size:15px;margin-bottom:8px"><span class="material-icons-round">model_training</span> Adjust Market Weights</h3>
-      <p class="text-soft mb-3" style="font-size:13px">Reads historical win rates per market and auto-adjusts market coefficients in the intelligence engine. Runs automatically every Sunday at 02:00 — use this to trigger a manual adjustment.</p>
-      <button class="btn btn-primary btn-sm" data-sync="adjust-weights">▶ Adjust Now</button>
-      <div id="log-adjust-weights" class="sync-log mt-2"></div>
-    </div>
-
-    <div class="admin-card" style="border-color:rgba(255,80,80,0.25);grid-column:1/-1">
-      <h3 style="font-size:15px;margin-bottom:8px"><span class="material-icons-round">history_edu</span> Seed 2-Year Historical Data</h3>
-      <p class="text-soft mb-3" style="font-size:13px">
-        Fetches <strong>all finished fixtures</strong> for every active league for the past 2 seasons from API-Football.
-        Populates <code>team_statistics</code> with real home/away goal averages and <code>h2h_history</code> with every match result —
-        permanently replacing hardcoded defaults with data-driven predictions.
-        <strong style="color:var(--danger)">Runs in the background (~2–3 min, ~328 API calls). Only run once or at season rollover.</strong>
-      </p>
-      <div class="flex gap-2 mb-3" style="align-items:center;flex-wrap:wrap">
-        <div class="form-group" style="margin:0">
-          <label class="form-label" style="font-size:12px">Seasons (comma-separated)</label>
-          <input type="text" class="form-control" id="hist-seasons" value="2024,2025" style="max-width:140px">
-        </div>
-        <button class="btn btn-danger btn-sm" data-sync="seed-historical" style="background:rgba(255,80,80,0.15);border-color:rgba(255,80,80,0.4);color:#ff9090">
-          ▶ Seed Historical Data
+    <!-- API Status -->
+    <div class="sync-card">
+      <div class="sync-card-head">
+        <div class="sync-icon red"><span class="material-icons-round">monitor_heart</span></div>
+        API Status
+      </div>
+      <div id="api-status-body">
+        <div class="api-stat-row"><span>Requests Used Today</span><span class="api-stat-val" id="aps-used">—</span></div>
+        <div class="api-stat-row"><span>Remaining</span><span class="api-stat-val green" id="aps-remaining">—</span></div>
+        <div class="api-stat-row"><span>Daily Limit</span><span class="api-stat-val" id="aps-limit">—</span></div>
+        <div class="api-stat-row"><span>Season</span><span class="api-stat-val" id="aps-season">—</span></div>
+        <div class="api-progress mt-2"><div class="api-progress-bar" id="aps-bar" style="width:0%"></div></div>
+        <div class="api-progress-label" id="aps-pct">—% used</div>
+      </div>
+      <div>
+        <button class="btn btn-outline btn-sm" onclick="loadApiStatus()">
+          <span class="material-icons-round" style="font-size:15px">refresh</span> Refresh
         </button>
       </div>
-      <div id="log-seed-historical" class="sync-log mt-2"></div>
     </div>
 
-    <div class="admin-card" style="border-color:rgba(0,180,216,0.25);grid-column:1/-1">
-      <h3 style="font-size:15px;margin-bottom:8px"><span class="material-icons-round">science</span> Backtest Engine</h3>
-      <p class="text-soft mb-3" style="font-size:13px">Fetches historical match results from API-Football, runs the Poisson model against each past fixture, grades its accuracy, and seeds the league reliability table. Use this once to calibrate the model before live predictions accumulate. <strong style="color:var(--primary)">Runs in the background — check the summary after ~2 minutes.</strong></p>
-      <div class="flex gap-2 mb-3" style="align-items:center;flex-wrap:wrap">
-        <div class="form-group" style="margin:0"><label class="form-label" style="font-size:12px">Max fixtures</label><input type="number" class="form-control" id="bt-limit" value="300" min="50" max="2000" style="max-width:100px"></div>
-        <button class="btn btn-primary btn-sm" data-sync="backtest">▶ Run Backtest</button>
-        <button class="btn btn-ghost btn-sm" data-sync="backtest-summary">📊 View Summary</button>
+    <!-- Sync All Leagues -->
+    <div class="sync-card">
+      <div class="sync-card-head">
+        <div class="sync-icon red"><span class="material-icons-round">emoji_events</span></div>
+        Sync All Leagues
       </div>
-      <div id="log-backtest" class="sync-log mt-2"></div>
-      <div id="log-backtest-summary" class="sync-log mt-2" style="max-height:300px"></div>
+      <p class="sync-desc">Pull all 1,200+ leagues from API-Football. Run once a week. Uses ~1 request.</p>
+      <div>
+        <button class="btn btn-sm btn-green" onclick="runSync('leagues')">
+          <span class="material-icons-round" style="font-size:15px">sync</span> Sync Leagues
+        </button>
+      </div>
     </div>
+
+    <!-- Sync Today + Tomorrow -->
+    <div class="sync-card">
+      <div class="sync-card-head">
+        <div class="sync-icon red"><span class="material-icons-round">today</span></div>
+        Sync Today + Tomorrow
+      </div>
+      <p class="sync-desc">Fetch fixtures for today and tomorrow across popular leagues. Uses ~20 requests.</p>
+      <div>
+        <button class="btn btn-sm btn-green" onclick="runSync('fixtures-today')">
+          <span class="material-icons-round" style="font-size:15px">sync</span> Sync Today
+        </button>
+      </div>
+    </div>
+
+    <!-- Sync by Date -->
+    <div class="sync-card">
+      <div class="sync-card-head">
+        <div class="sync-icon red"><span class="material-icons-round">calendar_month</span></div>
+        Sync by Date
+      </div>
+      <p class="sync-desc">Sync all fixtures for a specific date.</p>
+      <input type="date" class="form-control" id="fix-date" value="">
+      <div>
+        <button class="btn btn-sm btn-green" onclick="runSync('fixtures-date')">
+          <span class="material-icons-round" style="font-size:15px">sync</span> Sync Date
+        </button>
+      </div>
+    </div>
+
+    <!-- Update Results -->
+    <div class="sync-card">
+      <div class="sync-card-head">
+        <div class="sync-icon red"><span class="material-icons-round">scoreboard</span></div>
+        Update Results
+      </div>
+      <p class="sync-desc">Update won/lost results for finished matches.</p>
+      <input type="date" class="form-control" id="results-date" value="">
+      <div>
+        <button class="btn btn-sm btn-green" onclick="runSync('results-date')">
+          <span class="material-icons-round" style="font-size:15px">sync</span> Update Results
+        </button>
+      </div>
+    </div>
+
+    <!-- Odds Backfill -->
+    <div class="sync-card">
+      <div class="sync-card-head">
+        <div class="sync-icon gold"><span class="material-icons-round">payments</span></div>
+        Odds Backfill
+        <span class="sync-badge amber">1 CALL / PREDICTION</span>
+      </div>
+      <p class="sync-desc">Fetch bookmaker odds for published predictions that are missing odds. Skips minor leagues where no bookmaker publishes data.</p>
+      <div>
+        <div class="sync-label">Date scope</div>
+        <select class="form-control" id="odds-scope" style="max-width:180px">
+          <option value="today">Today only</option>
+          <option value="tomorrow">Tomorrow</option>
+          <option value="week">This week</option>
+        </select>
+      </div>
+      <div>
+        <button class="btn btn-sm btn-amber" onclick="runSync('odds')">
+          <span class="material-icons-round" style="font-size:15px">sync</span> Fetch Missing Odds
+        </button>
+      </div>
+    </div>
+
+    <!-- Auto-Predict Engine -->
+    <div class="sync-card full">
+      <div class="sync-card-head">
+        <div class="sync-icon red"><span class="material-icons-round">auto_awesome</span></div>
+        Auto-Predict Engine
+        <span class="sync-badge pink">AI</span>
+      </div>
+      <p class="sync-desc">Fetches form, H2H, standings and stats for all pending TBD fixtures, generates tips automatically, and publishes high-confidence predictions.<br><strong>Uses ~6 API requests per fixture.</strong></p>
+      <div class="sync-controls">
+        <div>
+          <div class="sync-label">Target Date</div>
+          <select class="form-control" id="ap-target">
+            <option value="today">Today</option>
+            <option value="tomorrow">Tomorrow</option>
+            <option value="today+tomorrow">Today + Tomo</option>
+          </select>
+        </div>
+        <div>
+          <div class="sync-label">Fixtures to process</div>
+          <input type="number" class="form-control" id="ap-limit" value="10" min="1" max="100">
+        </div>
+        <div>
+          <div class="sync-label">Min confidence to publish</div>
+          <input type="number" class="form-control" id="ap-confidence" value="55" min="1" max="99">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:16px">
+          <input type="checkbox" id="ap-autopublish" checked style="accent-color:#a0d000;width:16px;height:16px">
+          <label for="ap-autopublish" style="font-size:13px;cursor:pointer">Auto-publish high-confidence tips</label>
+        </div>
+        <div style="margin-top:16px">
+          <button class="btn btn-sm btn-green" onclick="runSync('auto-predict')">
+            <span class="material-icons-round" style="font-size:15px">stars</span> Run Auto-Predict
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Historical Backfill -->
+    <div class="sync-card full">
+      <div class="sync-card-head">
+        <div class="sync-icon purple"><span class="material-icons-round">history</span></div>
+        Historical Backfill
+        <span class="sync-badge purple">CALIBRATION</span>
+      </div>
+      <p class="sync-desc">Pull completed historical fixtures (with actual scores) into the database so the confidence engine can calibrate. <strong>1 API request per league × season.</strong> After backfill, run Auto-Predict with "Include Past" then click Grade &amp; Recalibrate.</p>
+
+      <div>
+        <div class="sync-label">Seasons to backfill</div>
+        <div class="season-checks" id="season-checks">
+          <label class="season-check-item checked"><input type="checkbox" value="2026" checked> 2026</label>
+          <label class="season-check-item checked"><input type="checkbox" value="2025" checked> 2025</label>
+          <label class="season-check-item checked"><input type="checkbox" value="2024" checked> 2024</label>
+          <label class="season-check-item"><input type="checkbox" value="2023"> 2023</label>
+          <label class="season-check-item"><input type="checkbox" value="2022"> 2022</label>
+          <label class="season-check-item"><input type="checkbox" value="2021"> 2021</label>
+          <label class="season-check-item"><input type="checkbox" value="2020"> 2020</label>
+          <label class="season-check-item"><input type="checkbox" value="2019"> 2019</label>
+        </div>
+      </div>
+
+      <div>
+        <div class="sync-label">Leagues <span style="font-weight:400;text-transform:none">(popular pre-selected)</span></div>
+        <div class="league-checks" id="league-checks">
+          <label class="league-check-item checked"><input type="checkbox" value="39" checked> <span class="league-flag">🏴󠁧󠁢󠁥󠁮󠁧󠁿</span> Premier League</label>
+          <label class="league-check-item checked"><input type="checkbox" value="140" checked> <span class="league-flag">🇪🇸</span> La Liga</label>
+          <label class="league-check-item checked"><input type="checkbox" value="135" checked> <span class="league-flag">🇮🇹</span> Serie A</label>
+          <label class="league-check-item checked"><input type="checkbox" value="78" checked> <span class="league-flag">🇩🇪</span> Bundesliga</label>
+          <label class="league-check-item checked"><input type="checkbox" value="61" checked> <span class="league-flag">🇫🇷</span> Ligue 1</label>
+          <label class="league-check-item checked"><input type="checkbox" value="2" checked> <span class="league-flag">🏆</span> Champions League</label>
+          <label class="league-check-item checked"><input type="checkbox" value="3" checked> <span class="league-flag">🏆</span> Europa League</label>
+          <label class="league-check-item"><input type="checkbox" value="848"> <span class="league-flag">🏆</span> Conference League</label>
+          <label class="league-check-item checked"><input type="checkbox" value="253" checked> <span class="league-flag">🇺🇸</span> MLS</label>
+          <label class="league-check-item checked"><input type="checkbox" value="71" checked> <span class="league-flag">🇧🇷</span> Brasileirao</label>
+          <label class="league-check-item"><input type="checkbox" value="307"> <span class="league-flag">🇸🇦</span> Saudi Pro League</label>
+          <label class="league-check-item"><input type="checkbox" value="203"> <span class="league-flag">🇹🇷</span> Süper Lig</label>
+          <label class="league-check-item"><input type="checkbox" value="88"> <span class="league-flag">🇳🇱</span> Eredivisie</label>
+          <label class="league-check-item"><input type="checkbox" value="94"> <span class="league-flag">🇵🇹</span> Primeira Liga</label>
+          <label class="league-check-item"><input type="checkbox" value="144"> <span class="league-flag">🇧🇪</span> Belgian Pro League</label>
+          <label class="league-check-item"><input type="checkbox" value="197"> <span class="league-flag">🇬🇷</span> Super League Greece</label>
+          <label class="league-check-item"><input type="checkbox" value="262"> <span class="league-flag">🇲🇽</span> Liga MX</label>
+          <label class="league-check-item"><input type="checkbox" value="98"> <span class="league-flag">🇯🇵</span> J1 League</label>
+        </div>
+      </div>
+
+      <div class="flex" style="align-items:center;gap:16px;flex-wrap:wrap">
+        <div class="api-cost">Estimated API cost: <strong id="bf-cost">27</strong> requests</div>
+        <button class="btn btn-sm btn-purple" onclick="runSync('seed-historical')">
+          <span class="material-icons-round" style="font-size:15px">download</span> Start Backfill
+        </button>
+      </div>
+    </div>
+
+    <!-- Grade & Recalibrate -->
+    <div class="sync-card">
+      <div class="sync-card-head">
+        <div class="sync-icon purple"><span class="material-icons-round">auto_fix_high</span></div>
+        Grade &amp; Recalibrate
+      </div>
+      <p class="sync-desc">Grade all predictions that have stored scores, log outcomes, and recalculate accuracy stats. Run this after every backfill or results sync.</p>
+      <div>
+        <button class="btn btn-sm btn-purple" onclick="runSync('accuracy')">
+          <span class="material-icons-round" style="font-size:15px">equalizer</span> Grade &amp; Recalibrate
+        </button>
+      </div>
+    </div>
+
+    <!-- More tools -->
+    <div class="sync-card">
+      <div class="sync-card-head">
+        <div class="sync-icon blue"><span class="material-icons-round">more_horiz</span></div>
+        More Sync Tools
+      </div>
+      <p class="sync-desc">Additional sync operations for team stats, H2H data, and market weight tuning.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <button class="btn btn-ghost btn-sm" onclick="runSync('team-stats')">Team Stats</button>
+        <button class="btn btn-ghost btn-sm" onclick="runSync('corner-stats')">Corner Stats</button>
+        <button class="btn btn-ghost btn-sm" onclick="runSync('h2h')">H2H Data</button>
+        <button class="btn btn-ghost btn-sm" onclick="runSync('adjust-weights')">Adjust Weights</button>
+        <button class="btn btn-ghost btn-sm" onclick="runSync('daily-specials')">Daily Specials</button>
+        <button class="btn btn-ghost btn-sm" onclick="runSync('grade')">Grade Pending</button>
+      </div>
+    </div>
+
+    <!-- Sync Log -->
+    <div class="sync-card full">
+      <div class="sync-card-head" style="justify-content:space-between">
+        <span style="display:flex;align-items:center;gap:10px">
+          <div class="sync-icon green"><span class="material-icons-round">terminal</span></div>
+          Sync Log
+        </span>
+        <button class="btn btn-ghost btn-sm" onclick="clearLog()">Clear</button>
+      </div>
+      <div id="sync-log">Waiting for sync actions…</div>
+    </div>
+
   </div>
 </main>
-<style>
-.sync-log{font-size:12px;font-family:monospace;background:rgba(0,0,0,0.3);border:1px solid rgba(173,223,241,0.07);border-radius:8px;padding:10px;min-height:40px;max-height:120px;overflow-y:auto;color:rgba(173,223,241,0.7);white-space:pre-wrap;display:none}
-.sync-log.visible{display:block}
-</style>
+
 <script src="admin.js"></script>
 <script>
 injectAdminShell('sync.html');
 
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('[data-sync]').forEach(btn => {
-    btn.addEventListener('click', () => runSync(btn.dataset.sync, btn));
+// set today's date as default
+const todayStr = new Date().toISOString().split('T')[0];
+document.getElementById('fix-date').value = todayStr;
+document.getElementById('results-date').value = todayStr;
+
+// ── Season/league checkboxes ────────────────────────────────────────────────
+document.querySelectorAll('.season-check-item input, .league-check-item input').forEach(cb => {
+  const lbl = cb.closest('label');
+  cb.addEventListener('change', () => {
+    lbl.classList.toggle('checked', cb.checked);
+    updateBfCost();
   });
 });
 
-async function runSync(type, btn) {
-  const logEl = document.getElementById(`log-${type}`);
-  logEl.textContent = `[${new Date().toLocaleTimeString()}] Starting ${type} sync…`;
-  logEl.classList.add('visible');
-  if (btn) { btn.disabled = true; }
+function updateBfCost() {
+  const seasons = document.querySelectorAll('.season-check-item input:checked').length;
+  const leagues = document.querySelectorAll('.league-check-item input:checked').length;
+  document.getElementById('bf-cost').textContent = seasons * leagues;
+}
+updateBfCost();
 
-  const endpoints = {
-    'fixtures': () => api(`/sync/fixtures?days=${document.getElementById('fix-days').value}`, {method:'POST'}),
-    'results': () => api('/sync/results', {method:'POST'}),
-    'intelligence': () => api('/admin/intelligence/run', {method:'POST'}),
-    'accuracy': () => api('/sync/accuracy', {method:'POST'}),
-    'statistics': () => api('/sync/statistics', {method:'POST'}),
-    'odds': () => api('/sync/odds', {method:'POST'}),
-    'auto-predict': () => api('/sync/auto-predict', {method:'POST'}),
-    'grade': () => api('/sync/scores', {method:'POST'}),
-    'daily-specials': () => api('/admin/intelligence/daily-specials', {method:'POST'}),
-    'backtest': () => api('/admin/intelligence/backtest', {method:'POST', body:JSON.stringify({limit:parseInt(document.getElementById('bt-limit').value)||300})}),
-    'backtest-summary': () => api('/admin/intelligence/backtest/summary'),
-    'team-stats':     () => api('/sync/team-stats',    {method:'POST'}),
-    'corner-stats':   () => api('/sync/corner-stats',  {method:'POST'}),
-    'h2h':            () => api('/sync/h2h',           {method:'POST'}),
-    'adjust-weights':   () => api('/sync/adjust-weights', {method:'POST'}),
-    'seed-historical':  () => api('/sync/seed-historical', {
-      method: 'POST',
-      body: JSON.stringify({
-        seasons: document.getElementById('hist-seasons').value.split(',').map(s => s.trim()).filter(Boolean)
-      })
-    }),
-  };
-
+// ── API Status ──────────────────────────────────────────────────────────────
+async function loadApiStatus() {
   try {
-    const d = await endpoints[type]();
+    const d = await api('/sync/api-status');
+    const req = d.data?.requests || {};
+    const used = req.current ?? 0;
+    const limit = req.limit_day ?? 0;
+    const remaining = limit - used;
+    const pct = limit ? Math.round(used / limit * 100) : 0;
+    const season = d.data?.subscription?.plan || process.env.API_FOOTBALL_SEASON || '—';
+    document.getElementById('aps-used').textContent = used;
+    document.getElementById('aps-remaining').textContent = remaining.toLocaleString();
+    document.getElementById('aps-limit').textContent = limit.toLocaleString();
+    document.getElementById('aps-season').textContent = d.data?.subscription?.end?.slice(0,4) || '—';
+    document.getElementById('aps-bar').style.width = pct + '%';
+    document.getElementById('aps-pct').textContent = pct + '% used';
+  } catch(e) {
+    log('[ERR] Could not load API status: ' + e.message, 'err');
+  }
+}
+loadApiStatus();
+
+// ── Log helpers ─────────────────────────────────────────────────────────────
+function log(msg, type = 'info') {
+  const el = document.getElementById('sync-log');
+  const t = new Date().toLocaleTimeString();
+  const cls = type === 'ok' ? 'log-ok' : type === 'err' ? 'log-err' : 'log-info';
+  el.innerHTML += `<span class="${cls}">[${t}] ${msg}</span>\n`;
+  el.scrollTop = el.scrollHeight;
+}
+function clearLog() { document.getElementById('sync-log').innerHTML = ''; }
+
+// ── Endpoint map ─────────────────────────────────────────────────────────────
+const ENDPOINTS = {
+  'leagues':          () => api('/sync/leagues', { method: 'POST' }),
+  'fixtures-today':   () => api('/sync/fixtures', { method: 'POST' }),
+  'fixtures-date':    () => api('/sync/fixtures/by-date', { method: 'POST', body: JSON.stringify({ date: document.getElementById('fix-date').value }) }),
+  'results-date':     () => api('/sync/results/by-date', { method: 'POST', body: JSON.stringify({ date: document.getElementById('results-date').value }) }),
+  'odds':             () => api('/sync/odds', { method: 'POST', body: JSON.stringify({ scope: document.getElementById('odds-scope').value }) }),
+  'auto-predict':     () => api('/sync/auto-predict/run', { method: 'POST', body: JSON.stringify({
+                          targetDate:    document.getElementById('ap-target').value,
+                          limit:         parseInt(document.getElementById('ap-limit').value),
+                          minConfidence: parseInt(document.getElementById('ap-confidence').value),
+                          autoPublish:   document.getElementById('ap-autopublish').checked,
+                        }) }),
+  'seed-historical':  () => {
+    const seasons = [...document.querySelectorAll('.season-check-item input:checked')].map(c => c.value);
+    const leagues = [...document.querySelectorAll('.league-check-item input:checked')].map(c => parseInt(c.value));
+    return api('/sync/seed-historical', { method: 'POST', body: JSON.stringify({ seasons, leagues }) });
+  },
+  'accuracy':         () => api('/sync/accuracy', { method: 'POST' }),
+  'team-stats':       () => api('/sync/team-stats', { method: 'POST' }),
+  'corner-stats':     () => api('/sync/corner-stats', { method: 'POST' }),
+  'h2h':              () => api('/sync/h2h', { method: 'POST' }),
+  'adjust-weights':   () => api('/sync/adjust-weights', { method: 'POST' }),
+  'daily-specials':   () => api('/admin/intelligence/daily-specials', { method: 'POST' }),
+  'grade':            () => api('/sync/scores', { method: 'POST' }),
+};
+
+async function runSync(type) {
+  const btn = event?.currentTarget;
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+  log(`Starting ${type}…`);
+  try {
+    const d = await ENDPOINTS[type]();
     if (d.success) {
-      const info = d.data ? JSON.stringify(d.data, null, 2) : 'Done.';
-      logEl.textContent += `\n[${new Date().toLocaleTimeString()}] [OK] Success\n${info}`;
+      const info = d.data ? JSON.stringify(d.data) : '';
+      log(`[OK] ${d.message || type + ' complete'} ${info}`, 'ok');
     } else {
-      logEl.textContent += `\n[${new Date().toLocaleTimeString()}] [ERR] Error: ${d.message}`;
+      log(`[ERR] ${d.message || 'Unknown error'}`, 'err');
     }
-  } catch (e) {
-    logEl.textContent += `\n[${new Date().toLocaleTimeString()}] [ERR] Network error: ${e.message}`;
+  } catch(e) {
+    log(`[ERR] Network error: ${e.message}`, 'err');
   } finally {
-    if (btn) { btn.disabled = false; }
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
   }
 }
 </script>

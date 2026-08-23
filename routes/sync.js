@@ -1,4 +1,5 @@
 const router = require('express').Router();
+const axios = require('axios');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { asyncHandler, successResponse } = require('../utils/helpers');
 const { syncFixtures, syncResults, syncLiveScores, autoPredictFixtures } = require('../services/apiFootball');
@@ -109,6 +110,85 @@ router.get('/status', asyncHandler(async (req, res) => {
   const status = {};
   rows.forEach(r => { status[r.setting_key] = r.setting_value; });
   return successResponse(res, status);
+}));
+
+// API-Football live quota status
+router.get('/api-status', asyncHandler(async (req, res) => {
+  const KEY = process.env.API_FOOTBALL_KEY;
+  const BASE = process.env.API_FOOTBALL_BASE_URL || 'https://v3.football.api-sports.io';
+  if (!KEY) return successResponse(res, { requests: { current: 0, limit_day: 0 } });
+  const r = await axios.get(`${BASE}/status`, { headers: { 'x-apisports-key': KEY }, timeout: 8000 });
+  return successResponse(res, r.data.response || {});
+}));
+
+// Sync all leagues from API-Football
+router.post('/leagues', asyncHandler(async (req, res) => {
+  const KEY = process.env.API_FOOTBALL_KEY;
+  const BASE = process.env.API_FOOTBALL_BASE_URL || 'https://v3.football.api-sports.io';
+  if (!KEY) return successResponse(res, { synced: 0 }, 'No API key configured');
+  const r = await axios.get(`${BASE}/leagues`, { headers: { 'x-apisports-key': KEY }, timeout: 15000 });
+  const leagues = r.data.response || [];
+  let synced = 0;
+  for (const item of leagues) {
+    const l = item.league;
+    const c = item.country;
+    if (!l?.id) continue;
+    await pool.query(
+      `INSERT INTO leagues (api_league_id, name, country, logo_url, is_active)
+       VALUES (?, ?, ?, ?, 0)
+       ON DUPLICATE KEY UPDATE name=VALUES(name), country=VALUES(country), logo_url=VALUES(logo_url)`,
+      [l.id, l.name, c?.name || '', l.logo || '']
+    );
+    synced++;
+  }
+  return successResponse(res, { synced }, `Synced ${synced} leagues`);
+}));
+
+// Sync fixtures for a specific date
+router.post('/fixtures/by-date', asyncHandler(async (req, res) => {
+  const date = req.body?.date;
+  if (!date) return res.status(400).json({ success: false, message: 'date required' });
+  const KEY = process.env.API_FOOTBALL_KEY;
+  const BASE = process.env.API_FOOTBALL_BASE_URL || 'https://v3.football.api-sports.io';
+  if (!KEY) return successResponse(res, { synced: 0 }, 'No API key');
+  const r = await axios.get(`${BASE}/fixtures`, {
+    params: { date },
+    headers: { 'x-apisports-key': KEY },
+    timeout: 20000,
+  });
+  const fixtures = r.data.response || [];
+  const { pool: db } = require('../config/db');
+  let synced = 0;
+  for (const f of fixtures) {
+    const fix = f.fixture; const teams = f.teams; const league = f.league;
+    if (!fix?.id) continue;
+    const [leagueRows] = await db.query('SELECT id FROM leagues WHERE api_league_id = ?', [league.id]);
+    if (!leagueRows.length) continue;
+    await db.query(
+      `INSERT INTO fixtures (api_fixture_id, league_id, home_team, away_team, match_date, status, season)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE status=VALUES(status)`,
+      [fix.id, leagueRows[0].id, teams.home.name, teams.away.name, new Date(fix.date), fix.status?.short || 'TBD', league.season]
+    );
+    synced++;
+  }
+  return successResponse(res, { synced, date }, `Synced ${synced} fixtures for ${date}`);
+}));
+
+// Update results for a specific date
+router.post('/results/by-date', asyncHandler(async (req, res) => {
+  const date = req.body?.date;
+  if (!date) return res.status(400).json({ success: false, message: 'date required' });
+  const count = await syncResults(date);
+  return successResponse(res, { updated: count, date }, `Updated ${count} results for ${date}`);
+}));
+
+// Auto-predict with controls
+router.post('/auto-predict/run', asyncHandler(async (req, res) => {
+  const { targetDate, limit = 10, minConfidence = 55, autoPublish = true } = req.body || {};
+  const fixtures = await autoPredictFixtures({ targetDate, limit: parseInt(limit), minConfidence: parseInt(minConfidence), autoPublish });
+  const result = await runForAllToday(targetDate);
+  return successResponse(res, { fixtures: Array.isArray(fixtures) ? fixtures.length : 0, ...result }, 'Auto-predict complete');
 }));
 
 module.exports = router;
