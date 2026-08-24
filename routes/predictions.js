@@ -11,6 +11,7 @@ router.get('/bankers', optionalAuth, ctrl.getBankers);
 router.get('/featured', optionalAuth, ctrl.getFeatured);
 router.get('/id/:id/h2h', optionalAuth, ctrl.getH2H);
 router.get('/id/:id/probabilities', optionalAuth, ctrl.getProbabilities);
+router.get('/:slug/detail', optionalAuth, ctrl.getDetail);
 router.get('/:slug', optionalAuth, ctrl.getBySlug);
 
 // Admin

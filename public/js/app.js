@@ -218,7 +218,7 @@ function buildPredictionCard(p, isVip = false) {
     ? `<span class="badge badge-${p.result}">${p.result.toUpperCase()}</span>`
     : isLive ? `<span class="badge" style="background:rgba(255,71,87,0.15);color:#ff4757;border:1px solid rgba(255,71,87,0.3)"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#ff4757;animation:livePulse 1s infinite;vertical-align:middle;margin-right:4px"></span>LIVE</span>` : '';
 
-  return `<div class="prediction-card ${isBanker ? 'banker-card' : ''} ${p.is_vip && !isBanker ? 'vip-card' : ''}" data-id="${p.id}">
+  return `<div class="prediction-card ${isBanker ? 'banker-card' : ''} ${p.is_vip && !isBanker ? 'vip-card' : ''}" data-id="${p.id}" data-slug="${escapeHtml(p.slug||String(p.id))}" style="cursor:pointer">
     ${isBanker ? '<div style="text-align:center;margin-bottom:10px"><span class="badge badge-banker"><span class="material-icons-round" style="font-size:12px;vertical-align:middle">star</span> BANKER OF THE DAY</span></div>' : ''}
     ${p.is_vip && !isBanker ? '<div style="text-align:right;margin-bottom:6px"><span class="badge badge-vip">VIP</span></div>' : ''}
     <div class="prediction-header">
@@ -958,5 +958,239 @@ if (document.readyState === 'loading') {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', showBanner);
     else showBanner();
   }
+})();
+
+// ── Prediction Detail Modal ───────────────────────────────────────────────────
+(function () {
+  let overlay;
+
+  function injectModal() {
+    if (document.getElementById('pred-detail-overlay')) return;
+    overlay = document.createElement('div');
+    overlay.id = 'pred-detail-overlay';
+    overlay.className = 'pred-detail-overlay';
+    overlay.innerHTML = `
+      <div class="pred-detail-modal" id="pred-detail-modal">
+        <button class="pdm-close" id="pdm-close" aria-label="Close">&#x2715;</button>
+        <div id="pdm-content"><div style="padding:60px;text-align:center"><div class="skeleton" style="height:200px;border-radius:12px"></div></div></div>
+      </div>`;
+    document.body.appendChild(overlay);
+    document.getElementById('pdm-close').addEventListener('click', closeDetail);
+    overlay.addEventListener('click', e => { if (e.target === overlay) closeDetail(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
+  }
+
+  function closeDetail() {
+    if (!overlay) return;
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function fmtForm(formStr, last = 5) {
+    if (!formStr) return '';
+    return [...formStr].slice(-last).map(c => `<span class="pdm-form-badge ${c}">${c}</span>`).join('');
+  }
+
+  function statBar(homeVal, awayVal, label) {
+    const h = parseFloat(homeVal) || 0;
+    const a = parseFloat(awayVal) || 0;
+    const total = h + a || 1;
+    const homePct = Math.round(h / total * 100);
+    const awayPct = 100 - homePct;
+    return `<div class="pdm-stat-row">
+      <div class="pdm-stat-label">${label}</div>
+      <div class="pdm-stat-bar-wrap">
+        <span class="pdm-stat-val home" style="color:var(--primary)">${h % 1 === 0 ? h : h.toFixed(2)}</span>
+        <div class="pdm-stat-bar">
+          <div class="pdm-stat-bar-home" style="width:${homePct}%"></div>
+          <div class="pdm-stat-bar-away" style="width:${awayPct}%"></div>
+        </div>
+        <span class="pdm-stat-val away" style="color:#ef4444">${a % 1 === 0 ? a : a.toFixed(2)}</span>
+      </div>
+    </div>`;
+  }
+
+  async function openDetail(slug) {
+    injectModal();
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    document.getElementById('pdm-content').innerHTML =
+      '<div style="padding:60px;text-align:center"><div class="skeleton" style="height:180px;border-radius:12px;margin-bottom:16px"></div><div class="skeleton" style="height:120px;border-radius:12px"></div></div>';
+
+    try {
+      const r = await fetch(`/api/predictions/${slug}/detail`);
+      const data = await r.json();
+      if (!data.success) throw new Error(data.message);
+      renderDetail(data.data);
+    } catch (e) {
+      document.getElementById('pdm-content').innerHTML =
+        `<div style="padding:40px;text-align:center;color:var(--text-soft)">Could not load prediction details.</div>`;
+    }
+  }
+
+  function renderDetail({ prediction: p, h2h, homeStats, awayStats, standings }) {
+    const hasScore = p.home_score !== null && p.away_score !== null;
+    const isLive   = LIVE_STATUS_SET && LIVE_STATUS_SET.has(p.fixture_status) && hasScore;
+    const statusLabel = hasScore
+      ? (p.fixture_status === 'FT' || !isLive ? 'FT' : p.fixture_status + (p.elapsed_minutes ? ` ${p.elapsed_minutes}'` : ''))
+      : '';
+
+    // H2H summary
+    let homeW = 0, draws = 0, awayW = 0;
+    h2h.forEach(m => { if (m.result === 'H') homeW++; else if (m.result === 'A') awayW++; else draws++; });
+
+    const teamLogoHtml = (logo, name, form) => logo
+      ? `<img src="${escapeHtml(logo)}" alt="${escapeHtml(name)}" loading="lazy">`
+      : `<span class="material-icons-round pdm-team-icon">sports_soccer</span>`;
+
+    const content = `
+      <div class="pdm-header">
+        <div class="pdm-league-row">
+          <span>${p.league_logo ? `<img src="${escapeHtml(p.league_logo)}" alt="">` : ''}${escapeHtml(p.league_name || '')} · ${escapeHtml(p.country || '')}</span>
+          <span>${formatMatchDate ? formatMatchDate(p.match_date) : ''}</span>
+        </div>
+        <div class="pdm-teams-row">
+          <div class="pdm-team">
+            ${teamLogoHtml(p.home_team_logo, p.home_team)}
+            <div class="pdm-team-name">${escapeHtml(p.home_team)}</div>
+            <div class="pdm-form-row">${fmtForm(p.home_form)}</div>
+          </div>
+          <div class="pdm-score-col">
+            ${hasScore
+              ? `<div class="pdm-score">${p.home_score} : ${p.away_score}</div><div class="pdm-status">${statusLabel}</div>`
+              : `<div class="pdm-score-vs">VS</div>`}
+            <div class="pdm-date">${new Date(p.match_date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</div>
+          </div>
+          <div class="pdm-team">
+            ${teamLogoHtml(p.away_team_logo, p.away_team)}
+            <div class="pdm-team-name">${escapeHtml(p.away_team)}</div>
+            <div class="pdm-form-row">${fmtForm(p.away_form)}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pdm-tip-bar">
+        <div><div class="pdm-tip-label">Our Pick</div><div class="pdm-tip-value">${escapeHtml(p.tip)}</div></div>
+        ${p.market ? `<div class="pdm-tip-divider"></div><div><div class="pdm-tip-label">Market</div><div class="pdm-tip-value" style="color:var(--text)">${escapeHtml(p.market)}</div></div>` : ''}
+        ${p.odds ? `<div class="pdm-tip-divider"></div><div><div class="pdm-tip-label">Odds</div><div class="pdm-tip-value">${parseFloat(p.odds).toFixed(2)}</div></div>` : ''}
+        ${p.confidence_score ? `<div class="pdm-tip-divider"></div><div><div class="pdm-tip-label">Confidence</div><div class="pdm-tip-value">${p.confidence_score}%</div></div>` : ''}
+      </div>
+
+      <div class="pdm-body">
+        <div class="pdm-grid">
+          <!-- H2H -->
+          <div class="pdm-section">
+            <div class="pdm-section-head"><span class="material-icons-round" style="font-size:16px">swap_horiz</span>Head to Head</div>
+            <div class="pdm-section-body">
+              ${h2h.length ? `
+                <div class="pdm-h2h-summary">
+                  <div class="pdm-h2h-sum-item"><div class="pdm-h2h-sum-num" style="color:var(--primary)">${homeW}</div><div class="pdm-h2h-sum-lbl">${escapeHtml(p.home_team.split(' ')[0])}</div></div>
+                  <div class="pdm-h2h-sum-item"><div class="pdm-h2h-sum-num" style="color:var(--text-soft)">${draws}</div><div class="pdm-h2h-sum-lbl">Draws</div></div>
+                  <div class="pdm-h2h-sum-item"><div class="pdm-h2h-sum-num" style="color:#ef4444">${awayW}</div><div class="pdm-h2h-sum-lbl">${escapeHtml(p.away_team.split(' ')[0])}</div></div>
+                </div>
+                ${h2h.map(m => `
+                  <div class="pdm-h2h-row">
+                    <span class="pdm-h2h-date">${m.date}</span>
+                    <span style="font-size:12px;color:var(--text-soft);flex:1;text-align:center">${escapeHtml(p.home_team)}</span>
+                    <span class="pdm-h2h-score">${m.homeScore} – ${m.awayScore}</span>
+                    <span style="font-size:12px;color:var(--text-soft);flex:1;text-align:center">${escapeHtml(p.away_team)}</span>
+                  </div>`).join('')}
+              ` : `<div class="pdm-h2h-empty">No H2H history found</div>`}
+            </div>
+          </div>
+
+          <!-- Team Stats -->
+          <div class="pdm-section">
+            <div class="pdm-section-head"><span class="material-icons-round" style="font-size:16px">bar_chart</span>Team Stats</div>
+            <div class="pdm-section-body">
+              ${(homeStats || awayStats) ? `
+                ${statBar(homeStats?.matches_played||0, awayStats?.matches_played||0, 'Matches Played')}
+                ${statBar(homeStats?.wins||0, awayStats?.wins||0, 'Wins')}
+                ${statBar(homeStats?.draws||0, awayStats?.draws||0, 'Draws')}
+                ${statBar(homeStats?.losses||0, awayStats?.losses||0, 'Losses')}
+                ${statBar(homeStats?.goals_scored_avg||0, awayStats?.goals_scored_avg||0, 'Goals Scored / Game')}
+                ${statBar(homeStats?.goals_conceded_avg||0, awayStats?.goals_conceded_avg||0, 'Goals Conceded / Game')}
+                ${statBar(homeStats?.clean_sheets||0, awayStats?.clean_sheets||0, 'Clean Sheets')}
+                <p style="font-size:10px;color:var(--text-soft);margin-top:8px">
+                  <span style="color:var(--primary)">■</span> ${escapeHtml(p.home_team)} &nbsp;
+                  <span style="color:#ef4444">■</span> ${escapeHtml(p.away_team)}
+                </p>
+              ` : `<div style="color:var(--text-soft);font-size:13px;padding:12px 0">No team stats available</div>`}
+            </div>
+          </div>
+        </div>
+
+        ${p.analysis ? `
+          <div class="pdm-section" style="margin-bottom:20px">
+            <div class="pdm-section-head"><span class="material-icons-round" style="font-size:16px">notes</span>Analysis</div>
+            <div class="pdm-section-body" style="font-size:14px;line-height:1.6;color:var(--text)">${escapeHtml(p.analysis)}</div>
+          </div>` : ''}
+
+        ${standings.length ? `
+          <div class="pdm-standings">
+            <h3 style="font-size:14px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+              <span class="material-icons-round" style="font-size:16px">format_list_numbered</span>League Standings
+            </h3>
+            <div class="pdm-section">
+              <div class="pdm-section-body" style="padding:0;overflow-x:auto">
+                <table>
+                  <thead><tr>
+                    <th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--text-soft);font-weight:600">#</th>
+                    <th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--text-soft);font-weight:600">Team</th>
+                    <th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--text-soft);font-weight:600">MP</th>
+                    <th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--text-soft);font-weight:600">W</th>
+                    <th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--text-soft);font-weight:600">D</th>
+                    <th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--text-soft);font-weight:600">L</th>
+                    <th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--text-soft);font-weight:600">G</th>
+                    <th style="padding:8px 12px;text-align:center;font-size:11px;color:var(--text-soft);font-weight:600;color:var(--primary)">Pts</th>
+                  </tr></thead>
+                  <tbody>
+                    ${standings.map(t => {
+                      const isHome = t.team === p.home_team;
+                      const isAway = t.team === p.away_team;
+                      const hl = isHome || isAway ? 'style="background:rgba(160,208,0,0.07)"' : '';
+                      return `<tr ${hl}>
+                        <td style="padding:8px 12px;font-size:13px;color:var(--text-soft)">${t.rank}</td>
+                        <td style="padding:8px 12px">
+                          <div style="display:flex;align-items:center;gap:8px">
+                            ${t.logo ? `<img src="${t.logo}" style="width:20px;height:20px;object-fit:contain" loading="lazy">` : ''}
+                            <span style="font-size:13px;font-weight:${isHome||isAway?'700':'400'}">${escapeHtml(t.team)}</span>
+                          </div>
+                        </td>
+                        <td style="padding:8px 12px;text-align:center;font-size:13px">${t.played}</td>
+                        <td style="padding:8px 12px;text-align:center;font-size:13px;color:#22c55e">${t.won}</td>
+                        <td style="padding:8px 12px;text-align:center;font-size:13px">${t.drawn}</td>
+                        <td style="padding:8px 12px;text-align:center;font-size:13px;color:#ef4444">${t.lost}</td>
+                        <td style="padding:8px 12px;text-align:center;font-size:13px">${t.goalsFor}:${t.goalsAgainst}</td>
+                        <td style="padding:8px 12px;text-align:center;font-size:13px;font-weight:700;color:var(--primary)">${t.points}</td>
+                      </tr>`;
+                    }).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>` : ''}
+      </div>`;
+
+    document.getElementById('pdm-content').innerHTML = content;
+  }
+
+  // Intercept clicks on prediction cards
+  document.addEventListener('click', e => {
+    const card = e.target.closest('.prediction-card');
+    if (!card) return;
+    // Don't intercept VIP lock overlay or explicit external links
+    if (e.target.closest('.vip-overlay')) return;
+    if (e.target.tagName === 'A' && e.target.hostname && e.target.hostname !== location.hostname) return;
+    const slug = card.dataset.slug || (() => {
+      const a = card.querySelector('a[href^="/prediction/"]');
+      return a ? a.pathname.split('/').pop() : null;
+    })();
+    if (!slug) return;
+    e.preventDefault();
+    openDetail(slug);
+  });
+
+  window.openPredictionDetail = openDetail;
 })();
 

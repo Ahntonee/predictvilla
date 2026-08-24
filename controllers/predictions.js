@@ -77,7 +77,7 @@ exports.list = asyncHandler(async (req, res) => {
   const [rows] = await pool.query(
     `SELECT p.*, l.name as league_name, l.logo_url as league_logo
      FROM predictions p LEFT JOIN leagues l ON l.id = p.league_id
-     ${whereStr} ORDER BY p.match_date ASC LIMIT ? OFFSET ?`,
+     ${whereStr} ORDER BY CASE WHEN p.league_id = 1 THEN 0 ELSE 1 END ASC, p.match_date ASC LIMIT ? OFFSET ?`,
     [...params, limit, offset]
   );
 
@@ -137,6 +137,69 @@ exports.getFeatured = asyncHandler(async (req, res) => {
      ORDER BY p.match_date DESC LIMIT 6`
   );
   return successResponse(res, { predictions: rows.map(p => redactVip(p, req.user)) });
+});
+
+exports.getDetail = asyncHandler(async (req, res) => {
+  const [preds] = await pool.query(
+    `SELECT p.*, l.name as league_name, l.logo_url as league_logo, l.api_league_id, l.country
+     FROM predictions p LEFT JOIN leagues l ON l.id = p.league_id
+     WHERE p.slug = ? AND p.published_at IS NOT NULL`,
+    [req.params.slug]
+  );
+  if (!preds.length) return errorResponse(res, 'Prediction not found', 404);
+  const pred = preds[0];
+
+  const [h2hRows] = await pool.query(
+    `SELECT home_team, away_team, home_score, away_score,
+            DATE_FORMAT(match_date,'%b %d, %Y') as date_fmt
+     FROM h2h_history
+     WHERE (home_team = ? AND away_team = ?) OR (home_team = ? AND away_team = ?)
+     ORDER BY match_date DESC LIMIT 6`,
+    [pred.home_team, pred.away_team, pred.away_team, pred.home_team]
+  );
+
+  const [homeStats] = await pool.query(
+    `SELECT * FROM team_statistics WHERE team_name = ? AND league_id = ?
+     ORDER BY season DESC LIMIT 1`,
+    [pred.home_team, pred.league_id]
+  );
+  const [awayStats] = await pool.query(
+    `SELECT * FROM team_statistics WHERE team_name = ? AND league_id = ?
+     ORDER BY season DESC LIMIT 1`,
+    [pred.away_team, pred.league_id]
+  );
+
+  let standings = [];
+  if (pred.api_league_id && process.env.API_FOOTBALL_KEY) {
+    try {
+      const axios = require('axios');
+      const season = new Date().getFullYear();
+      const r = await axios.get('https://v3.football.api-sports.io/standings', {
+        headers: { 'x-apisports-key': process.env.API_FOOTBALL_KEY },
+        params: { league: pred.api_league_id, season },
+        timeout: 5000,
+      });
+      const table = r.data?.response?.[0]?.league?.standings?.[0] || [];
+      standings = table.map(t => ({
+        rank: t.rank, team: t.team.name, logo: t.team.logo,
+        played: t.all.played, won: t.all.win, drawn: t.all.draw, lost: t.all.lose,
+        goalsFor: t.all.goals.for, goalsAgainst: t.all.goals.against,
+        points: t.points, form: t.form,
+      }));
+    } catch {}
+  }
+
+  const h2h = h2hRows.map(m => {
+    const flipped = m.home_team === pred.away_team;
+    const hs = flipped ? m.away_score : m.home_score;
+    const as_ = flipped ? m.home_score : m.away_score;
+    return { date: m.date_fmt, homeScore: hs, awayScore: as_, result: hs > as_ ? 'H' : hs < as_ ? 'A' : 'D' };
+  });
+
+  return successResponse(res, {
+    prediction: redactVip(pred, req.user),
+    h2h, homeStats: homeStats[0] || null, awayStats: awayStats[0] || null, standings,
+  });
 });
 
 exports.getBySlug = asyncHandler(async (req, res) => {
