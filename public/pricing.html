@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>VIP Subscription — Predictvilla</title>
-<meta name="description" content="Unlock VIP football tips, AI-powered picks, and access to the Telegram VIP channel.">
+<title>VIP Football Prediction Tips — Monthly, Quarterly & Annual | Predictvilla</title>
+<meta name="description" content="Subscribe to Predictvilla VIP for exclusive AI-powered football tips, Intelligence Engine picks, banker of the day, and Telegram VIP channel access. From ₦7,500/month.">
 <link rel="canonical" href="https://predictvilla.com/pricing.html">
 <meta property="og:title" content="VIP Subscription — Predictvilla">
 <meta property="og:description" content="Unlock VIP football tips, AI-powered picks, and exclusive access to the Telegram VIP channel.">
@@ -22,17 +22,21 @@
 <link rel="apple-touch-icon" href="/images/logo.png">
 <link rel="stylesheet" href="/css/style.css">
 <script src="https://js.paystack.co/v2/inline.js"></script>
+<link rel="alternate" hreflang="en" href="https://predictvilla.com/pricing.html">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://predictvilla.com"},{"@type":"ListItem","position":2,"name":"VIP Subscription","item":"https://predictvilla.com/pricing.html"}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is VIP access?","acceptedAnswer":{"@type":"Answer","text":"VIP gives you full access to all our prediction picks including high-confidence Intelligence Engine tips, banker-of-the-day selections, early access to tomorrow's tips, and entry to our private Telegram channel."}},{"@type":"Question","name":"How does payment work?","acceptedAnswer":{"@type":"Answer","text":"We use Paystack — a secure African payments platform. You can pay with debit/credit card. No card details are stored on our servers."}},{"@type":"Question","name":"Can I cancel anytime?","acceptedAnswer":{"@type":"Answer","text":"Yes. You can cancel from your dashboard at any time. Your access continues until the end of your billing period."}},{"@type":"Question","name":"What is the Intelligence Engine?","acceptedAnswer":{"@type":"Answer","text":"Our AI analyses team form, head-to-head data, league statistics, and live odds using a Poisson statistical model to generate high-confidence predictions."}},{"@type":"Question","name":"How do I access the Telegram channel?","acceptedAnswer":{"@type":"Answer","text":"After payment, you'll receive an invite link via email. You can also find it in your dashboard."}},{"@type":"Question","name":"What currency is used?","acceptedAnswer":{"@type":"Answer","text":"Prices are in Nigerian Naira (NGN). The USD equivalent is shown for reference. Paystack handles currency conversion for international cards."}}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"ItemList","name":"Predictvilla VIP Subscription Plans","itemListElement":[{"@type":"ListItem","position":1,"item":{"@type":"Product","name":"Monthly VIP","description":"Full VIP access to all predictions, Intelligence Engine picks, Telegram channel, and banker exclusives for one month.","offers":{"@type":"Offer","priceCurrency":"NGN","price":"7500","availability":"https://schema.org/InStock","url":"https://predictvilla.com/pricing.html"}}},{"@type":"ListItem","position":2,"item":{"@type":"Product","name":"Quarterly VIP","description":"Full VIP access for 3 months. Save 13% vs monthly. Includes Intelligence Engine picks, Telegram channel, and priority support.","offers":{"@type":"Offer","priceCurrency":"NGN","price":"19500","availability":"https://schema.org/InStock","url":"https://predictvilla.com/pricing.html"}}},{"@type":"ListItem","position":3,"item":{"@type":"Product","name":"Annual VIP","description":"Full VIP access for 12 months. Save 33% vs monthly. Best value for serious punters.","offers":{"@type":"Offer","priceCurrency":"NGN","price":"59900","availability":"https://schema.org/InStock","url":"https://predictvilla.com/pricing.html"}}}]}</script>
 </head>
 <body>
 <div id="header-placeholder"></div>
 
 <main>
   <!-- Hero -->
-  <section class="hero" style="padding-bottom:32px">
+  <section class="page-hero" style="padding-bottom:32px">
     <div class="container">
       <span class="hero-tag">VIP Access</span>
-      <h1 style="margin-top:16px">Unlock the <span>Full Edge</span></h1>
-      <p>Intelligence Engine picks, early access, banker exclusives and a private Telegram channel — all in one subscription.</p>
+      <h1 class="page-hero-title" style="margin-top:16px">VIP Football <span>Prediction Tips</span></h1>
+      <p class="page-hero-sub">Intelligence Engine picks, early access to tomorrow's tips, banker exclusives, and a private Telegram VIP channel — all in one subscription.</p>
     </div>
   </section>
 
@@ -173,9 +177,15 @@ function toggleFaq(btn) {
   if (!isOpen) { ans.classList.add('open'); btn.classList.add('open'); }
 }
 
-let pendingPlan = null, currentUser = null;
+let pendingPlan = null, currentUser = null, paystackKey = '';
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Load Paystack public key from server
+  try {
+    const cfgR = await fetch('/api/config/public');
+    if (cfgR.ok) { const cfg = await cfgR.json(); paystackKey = cfg.paystackKey || ''; }
+  } catch {}
+
   try {
     const r = await fetch('/api/auth/me');
     if (r.ok) {
@@ -238,28 +248,45 @@ async function doVerify() {
 }
 
 function startPayment(plan, amount) {
-  if (!currentUser) { showToast('Please login or register first','info'); document.getElementById('auth-section').style.display='block'; document.getElementById('auth-section').scrollIntoView({behavior:'smooth'}); return; }
-  const handler = PaystackPop.setup({
-    key: 'pk_test_YOUR_PAYSTACK_PUBLIC_KEY',
-    email: currentUser.email,
-    amount: amount * 100,
-    currency: 'NGN',
-    ref: 'OL_' + Date.now() + '_' + Math.random().toString(36).substr(2,9),
-    metadata: { plan, user_id: currentUser.id },
-    callback: async function(response) {
-      showToast('Verifying payment…','info');
-      const r = await fetch('/api/subscriptions/paystack/verify', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ reference: response.reference, plan })
-      });
-      const data = await r.json();
-      if (data.success) { showToast('VIP activated! Welcome to the club!','success'); setTimeout(() => location.href='/dashboard.html', 2000); }
-      else showToast(data.message,'error');
-    },
-    onClose: function() { showToast('Payment cancelled.','info'); }
-  });
-  handler.openIframe();
+  if (!currentUser) {
+    showToast('Please login or register to continue','info');
+    const authSec = document.getElementById('auth-section');
+    authSec.style.display = 'block';
+    authSec.style.outline = '2px solid var(--primary)';
+    authSec.style.borderRadius = '12px';
+    authSec.scrollIntoView({behavior:'smooth', block:'start'});
+    setTimeout(() => { authSec.style.outline = ''; authSec.style.borderRadius = ''; }, 2000);
+    return;
+  }
+  if (!paystackKey || paystackKey.includes('YOUR_PAYSTACK')) {
+    showToast('Payment is temporarily unavailable. Please contact support.','error');
+    return;
+  }
+  try {
+    const handler = PaystackPop.setup({
+      key: paystackKey,
+      email: currentUser.email,
+      amount: amount * 100,
+      currency: 'NGN',
+      ref: 'PV_' + Date.now() + '_' + Math.random().toString(36).substr(2,9),
+      metadata: { plan, user_id: currentUser.id },
+      callback: async function(response) {
+        showToast('Verifying payment…','info');
+        const r = await fetch('/api/subscriptions/paystack/verify', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ reference: response.reference, plan })
+        });
+        const data = await r.json();
+        if (data.success) { showToast('VIP activated! Welcome to the club!','success'); setTimeout(() => location.href='/dashboard.html', 2000); }
+        else showToast(data.message,'error');
+      },
+      onClose: function() { showToast('Payment cancelled.','info'); }
+    });
+    handler.openIframe();
+  } catch (e) {
+    showToast('Could not open payment. Please try again.','error');
+  }
 }
 </script>
 </body>

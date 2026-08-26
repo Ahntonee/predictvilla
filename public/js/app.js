@@ -389,12 +389,14 @@ function setCanonical(url) {
   el.href = url;
 }
 function injectJsonLd(data) {
-  const existing = document.querySelector('script[type="application/ld+json"]');
-  if (existing) existing.remove();
-  const el = document.createElement('script');
-  el.type = 'application/ld+json';
+  let el = document.getElementById('ld-json-dynamic');
+  if (!el) {
+    el = document.createElement('script');
+    el.type = 'application/ld+json';
+    el.id = 'ld-json-dynamic';
+    document.head.appendChild(el);
+  }
   el.textContent = JSON.stringify(data);
-  document.head.appendChild(el);
 }
 function setPageMeta({ title, description, image, type = 'website', noindex = false } = {}) {
   const BASE = 'https://predictvilla.com';

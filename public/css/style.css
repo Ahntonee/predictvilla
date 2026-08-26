@@ -555,19 +555,19 @@ section { padding: 48px 0; }
   cursor: pointer; transition: all 0.2s; white-space: nowrap;
 }
 .category-tab:hover {
-  background: #f4f8e0;
-  border-color: rgba(160,208,0,0.5); color: #0d1600;
+  background: #fff8cc;
+  border-color: rgba(255,208,0,0.5); color: #0d1600;
 }
 .category-tab.active {
-  background: #a0d000;
-  border-color: #a0d000; color: #0d1600; font-weight: 700;
+  background: #ffd000;
+  border-color: #ffd000; color: #0d1600; font-weight: 700;
 }
 [data-theme="dark"] .category-tab:hover {
-  background: rgba(160,208,0,0.10);
-  color: #a0d000;
+  background: rgba(255,208,0,0.10);
+  color: #ffd000;
 }
 [data-theme="dark"] .category-tab.active {
-  background: #a0d000; color: #0d1600;
+  background: #ffd000; color: #0d1600;
 }
 
 /* ── Stat Cards ── */
@@ -1233,15 +1233,14 @@ select.form-control { cursor: pointer; }
 .page-hero-title {
   font-size: clamp(24px, 4vw, 38px);
   font-weight: 900;
-  color: #fff;
+  color: #ffd000;
   line-height: 1.15;
   margin: 0 0 8px;
-  color: var(--text);
 }
-.page-hero-title span { color: var(--primary); }
+.page-hero-title span { color: #ffd000; }
 .page-hero-sub {
   font-size: 15px;
-  color: rgba(255,255,255,0.55);
+  color: #fff;
   margin: 0;
   max-width: 540px;
 }
@@ -2065,12 +2064,12 @@ body.has-sidebar { padding-left: var(--sidebar-w); padding-top: var(--topbar-h);
   padding: 8px 12px;
   font-size: 12.5px;
   font-weight: 500;
-  color: rgba(255,255,255,0.65);
+  color: #fff;
   text-decoration: none;
   border-radius: 6px;
   transition: all 0.15s;
 }
-.league-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+.league-item:hover { background: rgba(255,255,255,0.08); color: #ffd000; }
 
 /* Page hero dark (same as default — kept for specificity if needed) */
 [data-theme="dark"] .page-hero {

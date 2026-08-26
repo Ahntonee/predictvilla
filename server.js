@@ -112,6 +112,11 @@ app.use('/api/backlinks', require('./routes/backlinks'));
 app.use('/api/ads', require('./routes/ads'));
 app.use('/api/admin/seo-pages', require('./routes/seoPages'));
 
+// Public config (safe keys only — never expose secrets)
+app.get('/api/config/public', (req, res) => {
+  res.json({ paystackKey: process.env.PAYSTACK_PUBLIC_KEY || '' });
+});
+
 // Public SEO article page data
 app.get('/api/seo-article-public/:slug', async (req, res) => {
   try {
@@ -198,7 +203,9 @@ async function buildStaticFooter() {
       ).join('');
     }
   } catch {}
-  const html = `<footer class="site-footer" id="footer-placeholder">
+  const base2 = process.env.SITE_URL || 'https://www.predictvilla.com';
+  const orgSchema = `<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Predictvilla","url":"${base2}","logo":{"@type":"ImageObject","url":"${base2}/images/logo.png"},"sameAs":["https://twitter.com/predictvilla","https://t.me/predictvilla"],"description":"AI-powered football predictions and VIP betting tips covering 160+ leagues worldwide."}</script>`;
+  const html = `${orgSchema}<footer class="site-footer" id="footer-placeholder">
   <div class="container">
     <div class="footer-grid">
       <div class="footer-brand">
@@ -256,7 +263,7 @@ function buildPredictionCard(p) {
   <p class="text-soft" style="font-size:12px;margin-bottom:6px">${esc(p.league_name || 'Football')}</p>
   <h3 style="font-size:15px;font-weight:700;margin-bottom:8px">${esc(p.home_team)} vs ${esc(p.away_team)}</h3>
   <div class="flex-between mb-2">
-    <span class="badge" style="background:rgba(2,245,161,0.1);color:var(--primary);font-size:12px">${esc(p.tip || 'TBD')}</span>
+    <span class="badge" style="background:rgba(160,208,0,0.1);color:var(--primary);font-size:12px">${esc(p.tip || 'TBD')}</span>
     ${p.odds ? `<span class="text-soft" style="font-size:12px">@ ${parseFloat(p.odds).toFixed(2)}</span>` : ''}
   </div>
   <div class="flex-between mt-2">
@@ -295,22 +302,27 @@ app.get('/sitemap.xml', async (req, res) => {
   const [activeLeagues] = await pool.query('SELECT name FROM leagues WHERE is_active = 1');
   const [seoArticles] = await pool.query('SELECT slug, updated_at FROM seo_article_pages WHERE is_published=1 ORDER BY updated_at DESC LIMIT 200').catch(() => [[]]);
 
-  const staticUrls = ['', '/predictions.html', '/pricing.html', '/blog.html', '/about.html', '/statistics.html'];
+  const today = new Date().toISOString();
+  const staticPriorities = {
+    '': '1.0', '/predictions.html': '0.9', '/pricing.html': '0.85',
+    '/statistics.html': '0.8', '/blog.html': '0.8', '/about.html': '0.6',
+  };
+  const staticUrls = Object.entries(staticPriorities);
   const marketUrls = Object.keys(MARKET_PAGES).map(slug =>
-    `<url><loc>${base}/predictions/${slug}</loc><changefreq>daily</changefreq><priority>0.8</priority></url>`
+    `<url><loc>${base}/predictions/${slug}</loc><lastmod>${today}</lastmod><changefreq>daily</changefreq><priority>0.85</priority></url>`
   );
   const leagueUrls = activeLeagues.map(l =>
-    `<url><loc>${base}/league/${leagueSlug(l.name)}</loc><changefreq>daily</changefreq><priority>0.7</priority></url>`
+    `<url><loc>${base}/league/${leagueSlug(l.name)}</loc><lastmod>${today}</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>`
   );
   const urls = [
-    ...staticUrls.map(p => `<url><loc>${base}${p}</loc><changefreq>daily</changefreq><priority>1.0</priority></url>`),
+    ...staticUrls.map(([p, pri]) => `<url><loc>${base}${p}</loc><lastmod>${today}</lastmod><changefreq>daily</changefreq><priority>${pri}</priority></url>`),
     ...marketUrls,
     ...leagueUrls,
-    ...preds.map(p => `<url><loc>${base}/prediction/${p.slug}</loc><lastmod>${new Date(p.updated_at).toISOString()}</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>`),
+    ...preds.map(p => `<url><loc>${base}/prediction/${p.slug}</loc><lastmod>${new Date(p.updated_at).toISOString()}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority><image:image><image:loc>${base}/images/logo.png</image:loc><image:title>${esc(p.home_team)} vs ${esc(p.away_team)}</image:title></image:image></url>`),
     ...posts.map(p => `<url><loc>${base}/blog/${p.slug}</loc><lastmod>${new Date(p.updated_at).toISOString()}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>`),
     ...seoArticles.map(p => `<url><loc>${base}/tips/${p.slug}</loc><lastmod>${new Date(p.updated_at).toISOString()}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`),
   ];
-  const xml = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.join('')}</urlset>`;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">${urls.join('')}</urlset>`;
   sitemapCache = { xml, at: Date.now() };
   res.type('xml').send(xml);
 });
@@ -372,6 +384,7 @@ app.use(async (req, res, next) => {
     const descText = descMatch ? descMatch[1] : '';
     if (!html.includes('rel="canonical"')) {
       html = html.replace('</head>', `<link rel="canonical" href="${canonicalUrl}">
+<link rel="alternate" hreflang="en" href="${canonicalUrl}">
 <meta property="og:title" content="${titleText}">
 <meta property="og:description" content="${descText}">
 <meta property="og:url" content="${canonicalUrl}">
@@ -380,6 +393,10 @@ app.use(async (req, res, next) => {
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${titleText}">
 <meta name="twitter:description" content="${descText}">
+<meta name="twitter:image" content="${base}/images/logo.png">
+</head>`);
+    } else if (!html.includes('hreflang')) {
+      html = html.replace('</head>', `<link rel="alternate" hreflang="en" href="${canonicalUrl}">
 </head>`);
     }
 
@@ -410,7 +427,7 @@ app.use(async (req, res, next) => {
               <div class="text-center mb-2"><span class="badge badge-banker">⭐ Banker of the Day</span></div>
               <h2 style="text-align:center;font-size:20px;margin:8px 0">${esc(banker.home_team)} vs ${esc(banker.away_team)}</h2>
               <p class="text-soft text-center" style="font-size:13px">${esc(banker.league_name||'Football')}</p>
-              <div class="text-center mt-2"><span class="badge" style="background:rgba(2,245,161,0.15);color:var(--primary);font-size:14px;padding:6px 18px">${esc(banker.tip||'TBD')}</span></div>
+              <div class="text-center mt-2"><span class="badge" style="background:rgba(160,208,0,0.15);color:var(--primary);font-size:14px;padding:6px 18px">${esc(banker.tip||'TBD')}</span></div>
               <div class="text-center mt-3"><a href="/prediction/${banker.slug}" class="btn btn-primary">View Banker →</a></div>
             </div>`;
             html = html.replace('<div class="container" id="banker-section"></div>', `<div class="container" id="banker-section">${bankerHtml}</div>`);
@@ -525,6 +542,14 @@ app.get('/league/:slug', async (req, res) => {
     const description = `Today's ${league.name} football predictions with AI-powered analysis. Free and VIP ${league.name} tips updated daily.`;
     const keywords = `${league.name} predictions, ${league.name} tips${league.country ? `, ${league.country} football predictions` : ''}`;
 
+    const leagueBreadcrumbLd = JSON.stringify({
+      '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: base },
+        { '@type': 'ListItem', position: 2, name: 'Predictions', item: `${base}/predictions.html` },
+        { '@type': 'ListItem', position: 3, name: `${league.name} Predictions`, item: canonical },
+      ],
+    });
     let html = getLeaguePredTemplate()
       .replace(/__META_TITLE__/g,    esc(title))
       .replace(/__META_DESC__/g,     esc(description))
@@ -533,6 +558,9 @@ app.get('/league/:slug', async (req, res) => {
       .replace(/__LEAGUE_ID__/g,     league.id)
       .replace(/__LEAGUE_NAME__/g,   esc(league.name))
       .replace(/__LEAGUE_COUNTRY__/g, esc(league.country || ''));
+    html = html.replace('</head>', `<link rel="alternate" hreflang="en" href="${canonical}">
+<script type="application/ld+json">${leagueBreadcrumbLd}</script>
+</head>`);
 
     html = await injectStaticShell(html, req.path);
     res.type('html').send(html);
@@ -570,11 +598,21 @@ app.get('/prediction/:slug', async (req, res) => {
       ],
     });
     let html = readHtmlFile(path.join(__dirname, 'public', 'prediction-detail.html'));
+    // Build full BreadcrumbList + SportsEvent schema
+    const breadcrumbLd = JSON.stringify({
+      '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: base },
+        { '@type': 'ListItem', position: 2, name: 'Predictions', item: `${base}/predictions.html` },
+        { '@type': 'ListItem', position: 3, name: `${p.home_team} vs ${p.away_team}`, item: canonical },
+      ],
+    });
     html = html.replace(
-      '<title>Prediction — Predictvilla</title>',
+      /<title>[^<]*<\/title>/,
       `<title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
 <link rel="canonical" href="${canonical}">
+<link rel="alternate" hreflang="en" href="${canonical}">
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${canonical}">
@@ -583,7 +621,9 @@ app.get('/prediction/:slug', async (req, res) => {
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${esc(title)}">
 <meta name="twitter:description" content="${esc(description)}">
-<script type="application/ld+json">${ldJson}</script>`
+<meta name="twitter:image" content="${base}/images/logo.png">
+<script type="application/ld+json">${ldJson}</script>
+<script type="application/ld+json">${breadcrumbLd}</script>`
     );
 
     // Fix 3: SSR prediction body so Google reads actual content
@@ -602,7 +642,7 @@ app.get('/prediction/:slug', async (req, res) => {
       <h1 style="font-size:22px;font-weight:800;text-align:center;margin:20px 0">${esc(p.home_team)} vs ${esc(p.away_team)}</h1>
       ${p.tip && p.tip !== 'TBD' ? `<div class="text-center mb-3">
         <span style="font-size:13px;color:var(--text-soft)">Our Prediction</span>
-        <div style="margin-top:6px"><span class="badge" style="background:rgba(2,245,161,0.15);color:var(--primary);font-size:16px;padding:8px 24px;border-radius:20px">${esc(p.tip)}</span>
+        <div style="margin-top:6px"><span class="badge" style="background:rgba(160,208,0,0.15);color:var(--primary);font-size:16px;padding:8px 24px;border-radius:20px">${esc(p.tip)}</span>
         ${p.odds ? `<span class="text-soft" style="margin-left:10px;font-size:14px">@ ${parseFloat(p.odds).toFixed(2)}</span>` : ''}</div>
       </div>` : ''}
       ${p.analysis ? `<div style="margin-top:16px;padding:16px;background:rgba(173,223,241,0.04);border-radius:10px;font-size:14px;line-height:1.7">${esc(p.analysis)}</div>` : ''}

@@ -5,6 +5,7 @@
 <title>My Dashboard — Predictvilla</title>
 <meta name="description" content="Your personal Predictvilla dashboard — track predictions, bookmarks, and account settings.">
 <meta name="robots" content="noindex,nofollow">
+<meta name="googlebot" content="noindex,nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Jura:wght@400;500;600;700&family=Exo+2:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
@@ -61,7 +62,7 @@
       <div id="tab-tokens" style="display:none">
         <!-- Balance + Check-in row -->
         <div class="grid-2 mb-3">
-          <div class="card" style="border-color:rgba(2,245,161,0.25)">
+          <div class="card" style="border-color:rgba(160,208,0,0.25)">
             <div class="flex gap-3 mb-3" style="align-items:center">
               <span class="material-icons-round" style="font-size:36px;color:var(--primary)">toll</span>
               <div>
@@ -72,7 +73,7 @@
             <p class="text-soft" style="font-size:12px">Total earned: <strong id="odlt-total-earned">—</strong> ODLT &nbsp;|&nbsp; Spent: <strong id="odlt-total-spent">—</strong> ODLT</p>
             <p class="text-soft mt-2" style="font-size:11px">Tokens are platform-only credits — not redeemable for cash.</p>
           </div>
-          <div class="card" style="border-color:rgba(2,245,161,0.15)" id="checkin-card">
+          <div class="card" style="border-color:rgba(160,208,0,0.15)" id="checkin-card">
             <h3 class="mb-2"><span class="material-icons-round" style="vertical-align:middle;font-size:18px">today</span> Daily Check-in</h3>
             <p class="text-soft mb-3" style="font-size:13px" id="checkin-status-text">Loading…</p>
             <div class="flex gap-2" style="align-items:center;margin-bottom:12px">

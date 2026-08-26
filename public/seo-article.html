@@ -5,14 +5,18 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Football Betting Tips & Predictions Guide — Predictvilla</title>
 <meta name="description" content="Expert guide to football betting tips and predictions. Learn how data-driven analysis helps you make smarter bets and win more.">
-<link rel="canonical" href="https://predictvilla.com/seo-article.html">
-<meta property="og:title" content="Football Betting Tips & Predictions Guide — Predictvilla">
-<meta property="og:description" content="Learn how data-driven football predictions help you make smarter bets with higher win rates.">
+<link rel="canonical" id="art-canonical" href="https://predictvilla.com/seo-article.html">
+<meta property="og:title" id="art-og-title" content="Football Betting Tips & Predictions Guide — Predictvilla">
+<meta property="og:description" id="art-og-desc" content="Learn how data-driven football predictions help you make smarter bets with higher win rates.">
+<meta property="og:url" id="art-og-url" content="https://predictvilla.com/seo-article.html">
 <meta property="og:image" content="https://predictvilla.com/images/logo.webp">
 <meta property="og:type" content="article">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" id="art-tw-title" content="Football Betting Tips & Predictions Guide — Predictvilla">
+<meta name="twitter:description" id="art-tw-desc" content="Learn how data-driven football predictions help you make smarter bets with higher win rates.">
+<meta name="twitter:image" content="https://predictvilla.com/images/logo.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Jura:wght@400;500;600;700&family=Exo+2:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 <link rel="stylesheet" href="/css/style.css">
 <link rel="icon" href="/images/logo.svg" type="image/svg+xml"><link rel="icon" href="/images/logo.png" type="image/png">
@@ -148,6 +152,28 @@ async function loadArticle() {
     }
 
     const page = data.data.page;
+    // Fix canonical, OG, and Twitter to match actual page URL
+    const actualUrl = 'https://predictvilla.com' + window.location.pathname;
+    const artTitle = page.title + ' | Predictvilla';
+    const artDesc = page.meta_description || 'Expert football predictions guide from Predictvilla.';
+    document.getElementById('art-canonical').href = actualUrl;
+    document.getElementById('art-og-url').content = actualUrl;
+    document.getElementById('art-og-title').content = artTitle;
+    document.getElementById('art-og-desc').content = artDesc;
+    document.getElementById('art-tw-title').content = artTitle;
+    document.getElementById('art-tw-desc').content = artDesc;
+    document.title = artTitle;
+    // Article JSON-LD
+    const artLd = document.createElement('script');
+    artLd.type = 'application/ld+json';
+    artLd.textContent = JSON.stringify({"@context":"https://schema.org","@type":"Article","headline":page.title,"description":artDesc,"url":actualUrl,"image":"https://predictvilla.com/images/logo.webp","datePublished":page.updated_at,"dateModified":page.updated_at,"author":{"@type":"Organization","name":"Predictvilla"},"publisher":{"@type":"Organization","name":"Predictvilla","logo":{"@type":"ImageObject","url":"https://predictvilla.com/images/logo.png"}}});
+    document.head.appendChild(artLd);
+    // BreadcrumbList JSON-LD
+    const bcLd = document.createElement('script');
+    bcLd.type = 'application/ld+json';
+    bcLd.textContent = JSON.stringify({"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://predictvilla.com"},{"@type":"ListItem","position":2,"name":"Tips & Guides","item":"https://predictvilla.com/blog.html"},{"@type":"ListItem","position":3,"name":page.title,"item":actualUrl}]});
+    document.head.appendChild(bcLd);
+
     document.getElementById('article-loading').style.display = 'none';
     document.getElementById('article-body').style.display = 'block';
     document.getElementById('art-title').textContent = page.title;

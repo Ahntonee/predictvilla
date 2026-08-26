@@ -15,7 +15,7 @@
 <meta name="twitter:description" content="Build football accumulators from AI-powered predictions with auto odds calculation.">
 <meta name="twitter:image" content="https://predictvilla.com/images/logo.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Jura:wght@400;500;600;700&family=Exo+2:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 <link rel="icon" href="/images/logo.svg" type="image/svg+xml"><link rel="icon" href="/images/logo.png" type="image/png">
 <link rel="apple-touch-icon" href="/images/logo.png">
@@ -26,7 +26,7 @@
 @media(max-width:900px){ .bb-layout{ grid-template-columns:1fr; } .slip-sticky{ position:static !important; } }
 
 /* ── Hero ── */
-.bb-hero { background:linear-gradient(135deg,rgba(2,245,161,.08) 0%,rgba(0,40,60,.0) 60%); border:1px solid rgba(2,245,161,.15); border-radius:14px; padding:28px 28px 24px; margin-bottom:24px; }
+.bb-hero { background:linear-gradient(135deg,rgba(160,208,0,.08) 0%,rgba(0,40,60,.0) 60%); border:1px solid rgba(160,208,0,.15); border-radius:14px; padding:28px 28px 24px; margin-bottom:24px; }
 .bb-hero h1 { font-size:26px; font-weight:900; color:var(--text); margin-bottom:4px; }
 .bb-hero p  { font-size:14px; color:var(--text-soft); margin:0; }
 
@@ -38,11 +38,11 @@
 
 /* ── Game list ── */
 .game-card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:12px; cursor:pointer; transition:border-color .15s, box-shadow .15s; display:flex; align-items:center; gap:14px; }
-.game-card:hover { border-color:rgba(2,245,161,.35); }
-.game-card.selected { border-color:var(--primary); box-shadow:0 0 0 2px rgba(2,245,161,.18); }
+.game-card:hover { border-color:rgba(160,208,0,.35); }
+.game-card.selected { border-color:var(--primary); box-shadow:0 0 0 2px rgba(160,208,0,.18); }
 .game-chk { width:20px; height:20px; border-radius:5px; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; flex-shrink:0; background:var(--bg); transition:all .15s; }
 .game-card.selected .game-chk { background:var(--primary); border-color:var(--primary); }
-.game-chk-icon { font-size:14px; color:#07191e; display:none; }
+.game-chk-icon { font-size:14px; color:#0d1600; display:none; }
 .game-card.selected .game-chk-icon { display:block; }
 .game-info { flex:1; min-width:0; }
 .game-match { font-size:14px; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -56,7 +56,7 @@
 /* ── Slip (sticky right panel) ── */
 .slip-sticky { position:sticky; top:80px; }
 .slip-card { background:var(--card); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
-.slip-head { background:linear-gradient(135deg,rgba(2,245,161,.12),rgba(0,40,60,0)); padding:16px 18px; border-bottom:1px solid var(--border); }
+.slip-head { background:linear-gradient(135deg,rgba(160,208,0,.12),rgba(0,40,60,0)); padding:16px 18px; border-bottom:1px solid var(--border); }
 .slip-head h2 { font-size:15px; font-weight:800; margin:0; display:flex; align-items:center; gap:6px; }
 .slip-body { padding:16px 18px; }
 .slip-empty { text-align:center; padding:32px 0; color:var(--text-soft); font-size:13px; }
@@ -77,7 +77,7 @@
 .stake-prefix { font-size:16px; font-weight:700; color:var(--text-soft); }
 .stake-input { flex:1; background:var(--bg); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:10px 12px; font-size:16px; font-weight:700; font-family:inherit; width:100%; }
 .stake-input:focus { outline:none; border-color:var(--primary); }
-.payout-box { background:rgba(2,245,161,.08); border:1px solid rgba(2,245,161,.2); border-radius:8px; padding:14px; margin-top:12px; text-align:center; }
+.payout-box { background:rgba(160,208,0,.08); border:1px solid rgba(160,208,0,.2); border-radius:8px; padding:14px; margin-top:12px; text-align:center; }
 .payout-lbl { font-size:12px; color:var(--text-soft); }
 .payout-val { font-size:28px; font-weight:900; color:var(--primary); margin-top:4px; }
 .share-row { display:flex; gap:8px; margin-top:14px; }
@@ -95,7 +95,7 @@
 /* ── Filter ── */
 .filter-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
 .filter-chip { padding:5px 12px; border-radius:20px; border:1px solid var(--border); background:var(--bg); color:var(--text-soft); font-size:12px; font-weight:600; cursor:pointer; transition:all .15s; }
-.filter-chip.active { background:rgba(2,245,161,.15); border-color:var(--primary); color:var(--primary); }
+.filter-chip.active { background:rgba(160,208,0,.15); border-color:var(--primary); color:var(--primary); }
 
 /* ── Skeleton ── */
 .game-card.skeleton-card { background:var(--card); min-height:72px; border-radius:10px; }
@@ -105,6 +105,7 @@
 <div id="header-placeholder"></div>
 <div id="page-loading" style="display:none"></div>
 
+<main>
 <div class="bb-layout">
   <!-- ═══ LEFT: Game List ═══ -->
   <div>
@@ -148,13 +149,13 @@
     <!-- Filters -->
     <div class="filter-row" id="filter-row">
       <button class="filter-chip active" data-market="">All Markets</button>
-      <button class="filter-chip" data-market="Over 1.5 Goals">O1.5</button>
-      <button class="filter-chip" data-market="Over 2.5 Goals">O2.5</button>
+      <button class="filter-chip" data-market="Over 1.5 Goals">Over 1.5</button>
+      <button class="filter-chip" data-market="Over 2.5 Goals">Over 2.5</button>
       <button class="filter-chip" data-market="BTTS - Yes">BTTS</button>
-      <button class="filter-chip" data-market="Home Win">1</button>
-      <button class="filter-chip" data-market="Away Win">2</button>
-      <button class="filter-chip" data-market="Draw">X</button>
-      <button class="filter-chip" data-market="Double Chance">DC</button>
+      <button class="filter-chip" data-market="Home Win">Home Win</button>
+      <button class="filter-chip" data-market="Away Win">Away Win</button>
+      <button class="filter-chip" data-market="Draw">Draw</button>
+      <button class="filter-chip" data-market="Double Chance">Double Chance</button>
     </div>
 
     <!-- Section header -->
@@ -178,7 +179,7 @@
         <h2>
           <span class="material-icons-round" style="color:var(--primary)">receipt_long</span>
           Bet Slip
-          <span id="slip-count" style="background:var(--primary);color:#07191e;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:900;margin-left:4px">0</span>
+          <span id="slip-count" style="background:var(--primary);color:#0d1600;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:900;margin-left:4px">0</span>
         </h2>
       </div>
       <div class="slip-body">
@@ -235,6 +236,7 @@
     </p>
   </div>
 </div>
+</main>
 
 <div id="footer-placeholder"></div>
 <script src="/js/app.js"></script>

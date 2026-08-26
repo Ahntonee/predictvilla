@@ -3,13 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Football Prediction — Predictvilla</title>
-<meta name="description" content="Expert football prediction with AI-powered analysis, confidence score, and VIP tips on Predictvilla.">
-<meta property="og:title" content="Football Prediction — Predictvilla">
-<meta property="og:description" content="Expert football prediction with AI analysis and confidence score.">
+<title>Football Prediction | Predictvilla</title>
+<meta name="description" content="Expert football match prediction with AI-powered analysis, confidence score, H2H data and VIP tips on Predictvilla.">
+<meta property="og:title" content="Football Prediction | Predictvilla">
+<meta property="og:description" content="Expert football prediction with AI analysis, confidence score and H2H data.">
 <meta property="og:image" content="https://predictvilla.com/images/logo.webp">
+<meta property="og:url" content="https://predictvilla.com/predictions.html">
 <meta property="og:type" content="article">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Football Prediction | Predictvilla">
+<meta name="twitter:description" content="Expert AI-powered football prediction with confidence score, H2H data and tips.">
 <meta name="twitter:image" content="https://predictvilla.com/images/logo.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Jura:wght@400;500;600;700&family=Exo+2:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -53,8 +56,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const matchTitle = `${p.home_team} vs ${p.away_team} Prediction`;
     const matchDesc = `${p.tip} at odds ${p.odds ? parseFloat(p.odds).toFixed(2) : 'N/A'}. ${p.confidence_score ? 'Confidence: '+p.confidence_score+'%. ' : ''}Expert football prediction for ${p.league_name || 'football'} on Predictvilla.`;
-    setPageMeta({ title: matchTitle, description: matchDesc, type: 'article' });
-    injectJsonLd({ "@context":"https://schema.org","@type":"SportsEvent","name":`${p.home_team} vs ${p.away_team}`,"startDate":p.match_date,"sport":"Football","homeTeam":{"@type":"SportsTeam","name":p.home_team},"awayTeam":{"@type":"SportsTeam","name":p.away_team},"location":{"@type":"Place","name":p.league_name||'Football'},"url":window.location.href });
+    const fullTitle = `${p.home_team} vs ${p.away_team} Prediction — ${p.league_name || 'Football'} | Predictvilla`;
+    setPageMeta({ title: `${p.home_team} vs ${p.away_team} Prediction — ${p.league_name || 'Football'}`, description: matchDesc, type: 'article' });
+    // SportsEvent schema
+    injectJsonLd({ "@context":"https://schema.org","@type":"SportsEvent","name":`${p.home_team} vs ${p.away_team}`,"startDate":p.match_date,"sport":"Football","homeTeam":{"@type":"SportsTeam","name":p.home_team},"awayTeam":{"@type":"SportsTeam","name":p.away_team},"location":{"@type":"Place","name":p.league_name||'Football'},"url":window.location.href,"description":matchDesc });
+    // Article schema
+    const artEl = document.createElement('script'); artEl.type='application/ld+json';
+    artEl.textContent = JSON.stringify({"@context":"https://schema.org","@type":"Article","headline":fullTitle,"description":matchDesc,"url":window.location.href,"datePublished":p.match_date,"dateModified":p.updated_at||p.match_date,"author":{"@type":"Organization","name":"Predictvilla"},"publisher":{"@type":"Organization","name":"Predictvilla","logo":{"@type":"ImageObject","url":"https://predictvilla.com/images/logo.png"}}});
+    document.head.appendChild(artEl);
+    // BreadcrumbList
+    const bcEl = document.createElement('script'); bcEl.type='application/ld+json';
+    bcEl.textContent = JSON.stringify({"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://predictvilla.com"},{"@type":"ListItem","position":2,"name":"Predictions","item":"https://predictvilla.com/predictions.html"},{"@type":"ListItem","position":3,"name":`${p.home_team} vs ${p.away_team}`,"item":window.location.href}]});
+    document.head.appendChild(bcEl);
     document.getElementById('bc-title').textContent = `${p.home_team} vs ${p.away_team}`;
 
     const isVip = user?.role === 'vip' || user?.role === 'admin';
@@ -243,9 +256,9 @@ async function loadH2H(predId) {
 
         <!-- Summary bar -->
         <div style="display:flex;align-items:center;gap:0;border-radius:8px;overflow:hidden;height:28px;margin-bottom:14px">
-          <div style="flex:${s.homeWins};background:var(--primary);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#07191e;min-width:${s.homeWins?'28px':'0'}">${s.homeWins||''}</div>
-          <div style="flex:${s.draws};background:var(--warning);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#07191e;min-width:${s.draws?'28px':'0'}">${s.draws||''}</div>
-          <div style="flex:${s.awayWins};background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#07191e;min-width:${s.awayWins?'28px':'0'}">${s.awayWins||''}</div>
+          <div style="flex:${s.homeWins};background:var(--primary);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#0d1600;min-width:${s.homeWins?'28px':'0'}">${s.homeWins||''}</div>
+          <div style="flex:${s.draws};background:var(--warning);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#0d1600;min-width:${s.draws?'28px':'0'}">${s.draws||''}</div>
+          <div style="flex:${s.awayWins};background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#0d1600;min-width:${s.awayWins?'28px':'0'}">${s.awayWins||''}</div>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-soft);margin-bottom:16px">
           <span><strong style="color:var(--primary)">${s.homeWins}W</strong> ${escapeHtml(d.homeTeam)}</span>
@@ -259,7 +272,7 @@ async function loadH2H(predId) {
             <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-3,rgba(255,255,255,0.04));border-radius:8px;font-size:13px">
               <span style="color:var(--text-soft);width:82px;flex-shrink:0;font-size:12px">${m.date}</span>
               <span style="flex:1;text-align:right;color:var(--text)">${escapeHtml(d.homeTeam)}</span>
-              <span style="padding:2px 10px;border-radius:6px;background:${resultColor(m.result)};color:#07191e;font-weight:800;font-size:14px;min-width:42px;text-align:center">${m.homeScore} - ${m.awayScore}</span>
+              <span style="padding:2px 10px;border-radius:6px;background:${resultColor(m.result)};color:#0d1600;font-weight:800;font-size:14px;min-width:42px;text-align:center">${m.homeScore} - ${m.awayScore}</span>
               <span style="flex:1;color:var(--text)">${escapeHtml(d.awayTeam)}</span>
               <span style="font-size:11px;color:${resultColor(m.result)};font-weight:700;width:60px;flex-shrink:0;text-align:right">${resultLabel(m.result,d.homeTeam,d.awayTeam).split(' ')[0]}</span>
             </div>`).join('')}
@@ -272,7 +285,7 @@ function renderForm(form) {
   if (!form) return '';
   const dots = form.split('').map(r => {
     const bg = r==='W' ? 'var(--primary)' : r==='L' ? 'var(--danger)' : 'var(--warning)';
-    const fg = r==='L' ? '#fff' : '#07191e';
+    const fg = r==='L' ? '#fff' : '#0d1600';
     return `<span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:${bg};color:${fg};font-size:11px;font-weight:800;margin:0 2px">${r}</span>`;
   }).join('');
   return `<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
