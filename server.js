@@ -160,7 +160,7 @@ function buildStaticHeader(currentPath = '/') {
     const active = (href === '/' ? currentPath === '/' : currentPath.startsWith(href.replace('.html', ''))) ? ' class="nav-link active"' : ' class="nav-link"';
     return `<a href="${href}"${active}>${label}</a>`;
   }).join('');
-  return `<header class="site-header" id="header-placeholder">
+  return `<link rel="manifest" href="/manifest.json"><meta name="theme-color" content="#a0d000"><header class="site-header" id="header-placeholder">
   <div class="container"><div class="header-inner">
     <a href="/" class="site-logo">
       <img src="/images/logo.png" alt="Predictvilla" width="32" height="32">
@@ -730,6 +730,106 @@ ${p.meta_keywords ? `<meta name="keywords" content="${esc(p.meta_keywords)}">` :
   } catch {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
   }
+});
+
+// ─── Programmatic league × date pages (SEO) ──────────────────────────────────
+app.get('/predictions/:league/:date', async (req, res) => {
+  try {
+    const { league: leagueParam, date: dateParam } = req.params;
+    // Validate date format (YYYY-MM-DD or 'today' / 'tomorrow')
+    let resolvedDate = dateParam;
+    if (dateParam === 'today') {
+      resolvedDate = new Date().toISOString().slice(0, 10);
+    } else if (dateParam === 'tomorrow') {
+      const d = new Date(); d.setDate(d.getDate() + 1);
+      resolvedDate = d.toISOString().slice(0, 10);
+    } else if (!/^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+      return res.redirect('/predictions.html');
+    }
+
+    const [leagues] = await pool.query('SELECT id, name, country FROM leagues WHERE is_active = 1');
+    const league = leagues.find(l => leagueSlug(l.name) === leagueParam);
+    if (!league) return res.status(404).sendFile(path.join(__dirname, 'public', 'predictions.html'));
+
+    const base = process.env.SITE_URL || 'https://www.predictvilla.com';
+    const dateObj = new Date(resolvedDate);
+    const dateLabel = dateObj.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const canonical = `${base}/predictions/${leagueParam}/${resolvedDate}`;
+    const title = `${league.name} Predictions ${dateLabel} | Predictvilla`;
+    const description = `AI-powered ${league.name} football predictions for ${dateLabel}. Free tips, confidence scores, H2H data and VIP picks.`;
+    const keywords = `${league.name} predictions ${dateLabel}, ${league.name} tips today, ${league.country ? league.country + ' football predictions, ' : ''}football tips`;
+
+    const breadcrumbLd = JSON.stringify({
+      '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: base },
+        { '@type': 'ListItem', position: 2, name: 'Predictions', item: `${base}/predictions.html` },
+        { '@type': 'ListItem', position: 3, name: `${league.name} Predictions`, item: `${base}/league/${leagueParam}` },
+        { '@type': 'ListItem', position: 4, name: dateLabel, item: canonical },
+      ],
+    });
+    const webpageLd = JSON.stringify({
+      '@context': 'https://schema.org', '@type': 'WebPage',
+      name: title, description, url: canonical,
+      breadcrumb: `${base}/predictions/${leagueParam}/${resolvedDate}`,
+    });
+
+    let html = getLeaguePredTemplate()
+      .replace(/__META_TITLE__/g,    esc(title))
+      .replace(/__META_DESC__/g,     esc(description))
+      .replace(/__META_KEYWORDS__/g, esc(keywords))
+      .replace(/__CANONICAL__/g,     canonical)
+      .replace(/__LEAGUE_ID__/g,     league.id)
+      .replace(/__LEAGUE_NAME__/g,   esc(league.name))
+      .replace(/__LEAGUE_COUNTRY__/g, esc(league.country || ''));
+    html = html.replace('</head>',
+      `<link rel="alternate" hreflang="en" href="${canonical}">
+<script type="application/ld+json">${breadcrumbLd}</script>
+<script type="application/ld+json">${webpageLd}</script>
+</head>`);
+    // Pass the date to the league page JS via a global var
+    html = html.replace('</body>', `<script>window.__PV_DATE__ = ${JSON.stringify(resolvedDate)};</script></body>`);
+    html = await injectStaticShell(html, req.path);
+    res.type('html').send(html);
+  } catch {
+    res.status(500).sendFile(path.join(__dirname, 'public', 'predictions.html'));
+  }
+});
+
+// ─── Prediction votes API ─────────────────────────────────────────────────────
+app.get('/api/predictions/:id/votes', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ success: false });
+    const [[row]] = await pool.query(
+      `SELECT
+         COALESCE(SUM(vote_type='home'),0) as home,
+         COALESCE(SUM(vote_type='draw'),0) as draw,
+         COALESCE(SUM(vote_type='away'),0) as away
+       FROM prediction_votes WHERE prediction_id = ?`, [id]
+    );
+    res.json({ success: true, data: { votes: { home: Number(row.home), draw: Number(row.draw), away: Number(row.away) } } });
+  } catch { res.status(500).json({ success: false }); }
+});
+
+app.post('/api/predictions/:id/vote', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { vote } = req.body;
+    if (isNaN(id) || !['home','draw','away'].includes(vote)) return res.status(400).json({ success: false, message: 'Invalid vote' });
+    const ip = req.ip || req.connection.remoteAddress || '';
+    const crypto = require('crypto');
+    const ipHash = crypto.createHash('sha256').update(ip + id).digest('hex').slice(0, 64);
+    // One vote per IP per prediction
+    const [[exists]] = await pool.query('SELECT id FROM prediction_votes WHERE prediction_id=? AND ip_hash=?', [id, ipHash]);
+    if (exists) return res.status(409).json({ success: false, message: 'Already voted' });
+    await pool.query('INSERT INTO prediction_votes (prediction_id, vote_type, ip_hash) VALUES (?,?,?)', [id, vote, ipHash]);
+    const [[row]] = await pool.query(
+      `SELECT COALESCE(SUM(vote_type='home'),0) as home, COALESCE(SUM(vote_type='draw'),0) as draw, COALESCE(SUM(vote_type='away'),0) as away
+       FROM prediction_votes WHERE prediction_id=?`, [id]
+    );
+    res.json({ success: true, data: { votes: { home: Number(row.home), draw: Number(row.draw), away: Number(row.away) } } });
+  } catch { res.status(500).json({ success: false }); }
 });
 
 // ─── Static files ────────────────────────────────────────────────────────────

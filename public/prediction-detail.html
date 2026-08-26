@@ -18,6 +18,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Jura:wght@400;500;600;700&family=Exo+2:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 <link rel="icon" href="/images/logo.svg" type="image/svg+xml"><link rel="icon" href="/images/logo.png" type="image/png">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#a0d000">
 <link rel="apple-touch-icon" href="/images/logo.png">
 <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -125,7 +127,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         ${p.market ? `<p class="text-soft" style="font-size:13px">Market: <strong style="color:var(--text)">${escapeHtml(p.market)}</strong></p>` : ''}
 
-        ${bookies.length ? `<div class="bookie-tags mt-2">${bookies.map(b => `<span class="bookie-tag"><span class="odds-live-dot"></span>${escapeHtml(b)}</span>`).join('')}</div>` : ''}
+        <!-- Community Votes -->
+        <div class="card mt-3" style="background:var(--bg-2)">
+          <h3 style="font-size:15px;font-weight:700;margin-bottom:10px"><span class="material-icons-round" style="font-size:16px;vertical-align:middle">how_to_vote</span> Community Pick</h3>
+          <div id="vote-section">Loading votes…</div>
+        </div>
+
+        ${bookies.length ? `
+        <!-- Bookmaker links -->
+        <div class="card mt-3" style="background:var(--bg-2)">
+          <h3 style="font-size:15px;font-weight:700;margin-bottom:10px"><span class="material-icons-round" style="font-size:16px;vertical-align:middle">casino</span> Bet on This Match</h3>
+          <div class="aff-odds-grid">${bookies.slice(0,6).map(b => {
+            const links = {'Bet9ja':'https://bet9ja.com','Sportybet':'https://sportybet.com','1xBet':'https://1xbet.com','BetWay':'https://betway.com','Betano':'https://betano.com'};
+            const link = links[b] || '#';
+            return `<a href="${escapeHtml(link)}" target="_blank" rel="nofollow noopener" class="aff-odds-card"><div class="aff-odds-bookie">${escapeHtml(b)}</div><div class="aff-odds-val">Bet Now →</div></a>`;
+          }).join('')}</div>
+        </div>` : ''}
 
         ${p.analysis && (!p.is_vip || isVip) ? `
         <div class="card mt-3" style="background:var(--bg-2)">
@@ -162,6 +179,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadComments(p.id);
     loadProbabilities(p.id);
     loadH2H(p.id);
+    loadVotes(p.id);
     if (user) document.getElementById('comment-form').style.display = 'block';
     else document.getElementById('comment-login-prompt').style.display = 'block';
   } catch (err) {
@@ -279,6 +297,19 @@ async function loadH2H(predId) {
         </div>
       </div>`;
   } catch {}
+}
+
+async function loadVotes(predId) {
+  const el = document.getElementById('vote-section');
+  if (!el) return;
+  try {
+    const stored = JSON.parse(localStorage.getItem('pv_votes') || '{}');
+    const userVote = stored[predId] || null;
+    const r = await fetch(`/api/predictions/${predId}/votes`);
+    if (!r.ok) { el.innerHTML = ''; return; }
+    const d = await r.json();
+    el.innerHTML = buildVoteBar(d.data?.votes || {home:0,draw:0,away:0}, predId, userVote);
+  } catch { if (el) el.innerHTML = ''; }
 }
 
 function renderForm(form) {

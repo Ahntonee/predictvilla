@@ -1,0 +1,29 @@
+{
+  "name": "Predictvilla — Football Predictions",
+  "short_name": "Predictvilla",
+  "description": "AI-powered football predictions and VIP betting tips covering 160+ leagues worldwide.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d1600",
+  "theme_color": "#a0d000",
+  "orientation": "portrait-primary",
+  "categories": ["sports", "entertainment"],
+  "lang": "en",
+  "icons": [
+    { "src": "/images/logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/images/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Today's Predictions",
+      "url": "/predictions.html",
+      "description": "View today's football predictions"
+    },
+    {
+      "name": "VIP Tips",
+      "url": "/pricing.html",
+      "description": "Unlock VIP predictions"
+    }
+  ]
+}

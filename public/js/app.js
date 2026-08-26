@@ -112,7 +112,7 @@ function buildConfidenceBar(score) {
   const cls = score >= 80 ? 'conf-high' : score >= 60 ? 'conf-med' : score >= 40 ? 'conf-low' : 'conf-poor';
   return `<div class="confidence-wrap ${cls}">
     <div class="confidence-label"><span>Confidence</span><span>${score}%</span></div>
-    <div class="confidence-bar"><div class="confidence-fill" style="width:${score}%"></div></div>
+    <div class="confidence-bar"><div class="confidence-fill" style="--conf-w:${score}%"></div></div>
   </div>`;
 }
 
@@ -265,6 +265,7 @@ async function renderBankerCards(container) {
     if (!bankers.length) { container.style.display = 'none'; return; }
     container.innerHTML = `<h2 class="section-title"><span class="material-icons-round">star</span> <span>Banker of the Day</span></h2>
       <div class="grid-2">${bankers.map(p => buildPredictionCard(p, true)).join('')}</div>`;
+    container.querySelectorAll('.prediction-card').forEach((el, i) => { el.style.animationDelay = `${i * 60}ms`; });
   } catch { container.style.display = 'none'; }
 }
 
@@ -816,9 +817,12 @@ async function loadPredictions(params = {}, container, append = false) {
     if (append) {
       let list = container.querySelector('.pred-list');
       if (!list) { list = document.createElement('div'); list.className = 'pred-list'; container.appendChild(list); }
+      const before = list.children.length;
       list.insertAdjacentHTML('beforeend', rows);
+      applyRowStagger(list, before);
     } else {
       container.innerHTML = `<div class="pred-list">${header}${rows}</div>`;
+      applyRowStagger(container.querySelector('.pred-list'), 0);
     }
     return pagination;
   } catch (err) {
@@ -1175,6 +1179,45 @@ if (document.readyState === 'loading') {
       </div>`;
 
     document.getElementById('pdm-content').innerHTML = content;
+
+    // Load votes asynchronously after content renders
+    const stored = JSON.parse(localStorage.getItem('pv_votes') || '{}');
+    const userVote = stored[p.id] || null;
+    loadPredictionVotes(p.id).then(votesData => {
+      const voteContainer = document.createElement('div');
+      voteContainer.className = 'pdm-section';
+      voteContainer.style.marginBottom = '20px';
+      voteContainer.innerHTML = `
+        <div class="pdm-section-head"><span class="material-icons-round" style="font-size:16px">how_to_vote</span>Community Pick</div>
+        <div class="pdm-section-body">${buildVoteBar(votesData?.votes || {home:0,draw:0,away:0}, p.id, userVote)}</div>`;
+      const body = document.querySelector('.pdm-body');
+      if (body) body.insertBefore(voteContainer, body.firstChild);
+    });
+
+    // Show affiliate odds if bookies available
+    try {
+      const bookies = JSON.parse(p.bookies_available || '[]');
+      if (bookies.length) {
+        const affSection = document.createElement('div');
+        affSection.className = 'pdm-section aff-odds-section';
+        affSection.style.marginBottom = '20px';
+        affSection.innerHTML = `
+          <div class="pdm-section-head"><span class="material-icons-round" style="font-size:16px">casino</span>Bet on This Match</div>
+          <div class="pdm-section-body">
+            <div class="aff-odds-grid">
+              ${bookies.slice(0, 6).map(b => {
+                const link = BOOKIE_LINKS?.[b] || '#';
+                return `<a href="${link}" target="_blank" rel="nofollow noopener" class="aff-odds-card">
+                  <div class="aff-odds-bookie">${escapeHtml(b)}</div>
+                  <div class="aff-odds-val">Bet Now →</div>
+                </a>`;
+              }).join('')}
+            </div>
+          </div>`;
+        const body = document.querySelector('.pdm-body');
+        if (body) body.insertBefore(affSection, body.firstChild);
+      }
+    } catch {}
   }
 
   // Intercept clicks on prediction cards
@@ -1196,3 +1239,185 @@ if (document.readyState === 'loading') {
   window.openPredictionDetail = openDetail;
 })();
 
+
+// ═══════════════════════════════════════════════════════
+// COMPETITIVE PARITY FEATURES
+// ═══════════════════════════════════════════════════════
+
+// ── Row stagger helper ─────────────────────────────────
+function applyRowStagger(list, startFrom = 0) {
+  if (!list) return;
+  const rows = list.querySelectorAll('.pred-row');
+  rows.forEach((el, i) => {
+    if (i >= startFrom) el.style.animationDelay = `${(i - startFrom) * 30}ms`;
+  });
+}
+
+// ── Win-rate trust badge ───────────────────────────────
+async function renderWinrateBadge(container) {
+  if (!container) return;
+  try {
+    const r = await fetch('/api/statistics/accuracy/summary');
+    if (!r.ok) { container.style.display = 'none'; return; }
+    const d = await r.json();
+    const { total = 0, won = 0, accuracy = 0 } = d.data || {};
+    if (total < 10) { container.style.display = 'none'; return; }
+    const pct = Math.round(accuracy);
+    container.innerHTML = `
+      <div class="winrate-badge">
+        <div class="winrate-badge-icon">🏆</div>
+        <div>
+          <div class="winrate-badge-stat">
+            <span class="winrate-badge-num">${pct}%</span>
+            <span class="winrate-badge-label">tip accuracy</span>
+          </div>
+          <div class="winrate-badge-sub">
+            <strong>${won.toLocaleString()}</strong> winning tips from <strong>${total.toLocaleString()}</strong> predictions tracked
+          </div>
+        </div>
+        <div class="winrate-badge-divider"></div>
+        <div class="winrate-badge-sub" style="font-size:12px">
+          AI-powered predictions<br>updated daily across 160+ leagues
+        </div>
+      </div>`;
+  } catch { container.style.display = 'none'; }
+}
+
+// ── Community votes ────────────────────────────────────
+const _votedCache = {};
+
+async function loadPredictionVotes(predId) {
+  try {
+    const r = await fetch(`/api/predictions/${predId}/votes`);
+    if (!r.ok) return null;
+    const d = await r.json();
+    return d.data || null;
+  } catch { return null; }
+}
+
+function buildVoteBar(votes, predId, userVote) {
+  if (!votes) return '';
+  const { home = 0, draw = 0, away = 0 } = votes;
+  const total = home + draw + away;
+  if (total === 0 && !userVote) {
+    return `<div class="vote-bar-wrap" id="votes-${predId}">
+      <div class="vote-actions">
+        <button class="vote-btn" onclick="castVote(${predId},'home',this)">🏠 Home</button>
+        <button class="vote-btn" onclick="castVote(${predId},'draw',this)">🤝 Draw</button>
+        <button class="vote-btn" onclick="castVote(${predId},'away',this)">✈️ Away</button>
+      </div>
+    </div>`;
+  }
+  const hw = total ? Math.round(home / total * 100) : 33;
+  const dw = total ? Math.round(draw / total * 100) : 34;
+  const aw = 100 - hw - dw;
+  const vc = userVote ? `voted-${userVote}` : '';
+  return `<div class="vote-bar-wrap" id="votes-${predId}">
+    <div class="vote-bar-label"><span>🏠 ${hw}%</span><span>🤝 ${dw}%</span><span>✈️ ${aw}%</span></div>
+    <div class="vote-bar-track">
+      <div class="vote-home" style="width:${hw}%"></div>
+      <div class="vote-draw" style="width:${dw}%"></div>
+      <div class="vote-away" style="width:${aw}%"></div>
+    </div>
+    <div class="vote-actions">
+      <button class="vote-btn ${userVote==='home'?'voted-home':''}" onclick="castVote(${predId},'home',this)">🏠 Home</button>
+      <button class="vote-btn ${userVote==='draw'?'voted-draw':''}" onclick="castVote(${predId},'draw',this)">🤝 Draw</button>
+      <button class="vote-btn ${userVote==='away'?'voted-away':''}" onclick="castVote(${predId},'away',this)">✈️ Away</button>
+    </div>
+    ${total > 0 ? `<div style="font-size:11px;color:var(--text-soft);margin-top:4px;text-align:center">${total} community pick${total===1?'':'s'}</div>` : ''}
+  </div>`;
+}
+
+window.castVote = async function(predId, type, btn) {
+  const stored = JSON.parse(localStorage.getItem('pv_votes') || '{}');
+  if (stored[predId]) {
+    showToast('You already voted on this match', 'info');
+    return;
+  }
+  try {
+    const r = await fetch(`/api/predictions/${predId}/vote`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vote: type }),
+    });
+    if (!r.ok) throw new Error();
+    const d = await r.json();
+    stored[predId] = type;
+    localStorage.setItem('pv_votes', JSON.stringify(stored));
+    const wrap = document.getElementById(`votes-${predId}`);
+    if (wrap) wrap.outerHTML = buildVoteBar(d.data?.votes, predId, type);
+    showToast('Vote cast!', 'success');
+  } catch { showToast('Could not cast vote', 'error'); }
+};
+
+// ── Bookmaker odds display ─────────────────────────────
+const BOOKIE_LINKS = {
+  'Bet9ja':    'https://bet9ja.com',
+  'Sportybet': 'https://sportybet.com',
+  '1xBet':     'https://1xbet.com',
+  'BetWay':    'https://betway.com',
+  'Betano':    'https://betano.com',
+};
+
+function buildBookieOdds(bookiesJson, tip) {
+  try {
+    const bookies = JSON.parse(bookiesJson || '[]');
+    if (!bookies.length) return '';
+    const pills = bookies.slice(0, 4).map(b => {
+      const link = BOOKIE_LINKS[b] || '#';
+      return `<a href="${link}" target="_blank" rel="nofollow noopener" class="bookie-odds-pill">
+        <span class="bookie-odds-name">${escapeHtml(b)}</span>
+      </a>`;
+    }).join('');
+    return `<div class="bookie-odds-row">${pills}</div>`;
+  } catch { return ''; }
+}
+
+// ── PWA install prompt ─────────────────────────────────
+let _deferredPwaPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _deferredPwaPrompt = e;
+  if (localStorage.getItem('pv_pwa_dismissed')) return;
+  // Show after 30s on site
+  setTimeout(showPwaBanner, 30000);
+});
+
+function showPwaBanner() {
+  if (document.getElementById('pwa-install-banner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'pwa-install-banner';
+  banner.innerHTML = `
+    <div class="pwa-icon">⚽</div>
+    <div class="pwa-text">
+      <div class="pwa-title">Add Predictvilla to Home Screen</div>
+      <div class="pwa-sub">Get instant tips without opening a browser</div>
+    </div>
+    <div class="pwa-actions">
+      <button class="btn-pwa-install" onclick="installPwa()">Install</button>
+      <button class="btn-pwa-dismiss" onclick="dismissPwa()" aria-label="Dismiss">×</button>
+    </div>`;
+  document.body.appendChild(banner);
+}
+
+window.installPwa = async function() {
+  if (!_deferredPwaPrompt) return;
+  _deferredPwaPrompt.prompt();
+  const { outcome } = await _deferredPwaPrompt.userChoice;
+  _deferredPwaPrompt = null;
+  document.getElementById('pwa-install-banner')?.remove();
+  if (outcome === 'accepted') showToast('Predictvilla added to your home screen!', 'success');
+};
+
+window.dismissPwa = function() {
+  localStorage.setItem('pv_pwa_dismissed', '1');
+  document.getElementById('pwa-install-banner')?.remove();
+};
+
+// ── Service Worker Registration ────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}

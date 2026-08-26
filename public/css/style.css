@@ -2255,3 +2255,102 @@ body.has-sidebar { padding-left: var(--sidebar-w); padding-top: var(--topbar-h);
 [data-theme="light"] .pdm-header, [data-theme="light"] .pdm-section { background: #f8f9fa; }
 
 
+
+/* ═══════════════════════════════════════════════════════
+   ANIMATIONS & MOTION — Competitive Parity Upgrade
+   ═══════════════════════════════════════════════════════ */
+
+/* Page entrance fade */
+@keyframes pageFadeIn { from { opacity: 0; } to { opacity: 1; } }
+body { animation: pageFadeIn 0.2s ease-out; }
+@media (prefers-reduced-motion: reduce) { body, * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+
+/* Confidence bar animate from 0 → target */
+@keyframes confFill { to { width: var(--conf-w, 0%); } }
+.confidence-fill {
+  width: 0 !important;
+  animation: confFill 0.75s cubic-bezier(.22,.68,0,1.2) 0.1s forwards;
+}
+
+/* Prediction row stagger entrance */
+@keyframes rowSlideIn { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+.pred-row { animation: rowSlideIn 0.28s ease-out both; }
+
+/* Prediction card stagger entrance */
+@keyframes cardSlideIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.prediction-card { animation: cardSlideIn 0.32s ease-out both; }
+.acca-card { animation: cardSlideIn 0.32s ease-out both; }
+
+/* Stats chart bar animate */
+@keyframes barGrow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.stat-bar { transform-origin: bottom; animation: barGrow 0.6s cubic-bezier(.22,.68,0,1.2) both; }
+
+/* Win-rate trust badge on homepage */
+.winrate-badge {
+  background: linear-gradient(135deg, rgba(160,208,0,0.1), rgba(160,208,0,0.04));
+  border: 1px solid rgba(160,208,0,0.25);
+  border-radius: 14px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.winrate-badge-icon { font-size: 36px; flex-shrink: 0; }
+.winrate-badge-stat { display: flex; align-items: baseline; gap: 6px; }
+.winrate-badge-num { font-family: 'Exo 2', 'Jura', sans-serif; font-size: 36px; font-weight: 900; color: var(--primary); line-height: 1; }
+.winrate-badge-label { font-size: 13px; color: var(--text-soft); }
+.winrate-badge-divider { width: 1px; height: 40px; background: rgba(160,208,0,0.2); flex-shrink: 0; }
+.winrate-badge-sub { font-size: 13px; color: var(--text-soft); }
+.winrate-badge-sub strong { color: var(--text); }
+[data-theme="light"] .winrate-badge { background: linear-gradient(135deg, rgba(160,208,0,0.12), rgba(160,208,0,0.04)); }
+
+/* Community vote bar */
+.vote-bar-wrap { margin-top: 10px; }
+.vote-bar-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-soft); margin-bottom: 4px; }
+.vote-bar-track { height: 8px; background: rgba(255,255,255,0.07); border-radius: 99px; overflow: hidden; display: flex; gap: 1px; }
+.vote-home { background: var(--primary); border-radius: 99px 0 0 99px; transition: width 0.6s ease; }
+.vote-draw  { background: var(--warning); transition: width 0.6s ease; }
+.vote-away  { background: var(--info, #5090d0); border-radius: 0 99px 99px 0; transition: width 0.6s ease; }
+.vote-actions { display: flex; gap: 6px; margin-top: 8px; }
+.vote-btn { flex: 1; padding: 5px 0; font-size: 11px; font-weight: 600; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; background: transparent; color: var(--text-soft); cursor: pointer; transition: background 0.2s, color 0.2s, border-color 0.2s; }
+.vote-btn:hover, .vote-btn.voted { background: rgba(160,208,0,0.12); color: var(--primary); border-color: rgba(160,208,0,0.3); }
+.vote-btn.voted-home { background: rgba(160,208,0,0.12); color: var(--primary); border-color: rgba(160,208,0,0.3); }
+.vote-btn.voted-draw { background: rgba(255,208,0,0.12); color: var(--warning); border-color: rgba(255,208,0,0.3); }
+.vote-btn.voted-away { background: rgba(80,144,208,0.12); color: var(--info, #5090d0); border-color: rgba(80,144,208,0.3); }
+[data-theme="light"] .vote-bar-track { background: rgba(0,0,0,0.07); }
+
+/* Bookmaker odds strip on prediction row */
+.bookie-odds-row { display: flex; gap: 8px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+.bookie-odds-pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 99px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); font-size: 11px; color: var(--text-soft); text-decoration: none; transition: background 0.2s; }
+.bookie-odds-pill:hover { background: rgba(160,208,0,0.1); color: var(--primary); border-color: rgba(160,208,0,0.2); }
+.bookie-odds-name { font-weight: 600; }
+.bookie-odds-val { color: var(--primary); font-weight: 700; }
+[data-theme="light"] .bookie-odds-pill { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.08); }
+
+/* PWA install banner */
+#pwa-install-banner {
+  position: fixed; bottom: 80px; left: 16px; right: 16px; max-width: 420px;
+  background: var(--bg-card, #182200); border: 1px solid rgba(160,208,0,0.3);
+  border-radius: 16px; padding: 16px 20px; display: flex; align-items: center; gap: 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 9000;
+  animation: cardSlideIn 0.3s ease-out;
+}
+#pwa-install-banner .pwa-icon { font-size: 32px; flex-shrink: 0; }
+#pwa-install-banner .pwa-text { flex: 1; }
+#pwa-install-banner .pwa-title { font-weight: 700; font-size: 14px; margin-bottom: 2px; }
+#pwa-install-banner .pwa-sub { font-size: 12px; color: var(--text-soft); }
+#pwa-install-banner .pwa-actions { display: flex; gap: 8px; flex-shrink: 0; }
+#pwa-install-banner .btn-pwa-install { background: var(--primary); color: #0d1600; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; }
+#pwa-install-banner .btn-pwa-dismiss { background: none; border: none; cursor: pointer; font-size: 18px; color: var(--text-soft); padding: 4px; }
+
+/* Affiliate odds section in prediction modal */
+.aff-odds-section { margin-top: 16px; }
+.aff-odds-title { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-soft); margin-bottom: 8px; }
+.aff-odds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
+.aff-odds-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 10px 12px; text-align: center; text-decoration: none; transition: background 0.2s, border-color 0.2s; display: block; }
+.aff-odds-card:hover { background: rgba(160,208,0,0.08); border-color: rgba(160,208,0,0.2); }
+.aff-odds-bookie { font-size: 11px; color: var(--text-soft); margin-bottom: 3px; }
+.aff-odds-val { font-family: 'Exo 2', sans-serif; font-weight: 800; font-size: 18px; color: var(--primary); }
+[data-theme="light"] .aff-odds-card { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.07); }

@@ -25,13 +25,22 @@
 <link rel="stylesheet" href="/css/style.css">
 <link rel="icon" href="/images/logo.svg" type="image/svg+xml"><link rel="icon" href="/images/logo.png" type="image/png">
 <link rel="apple-touch-icon" href="/images/logo.png">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#a0d000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
 <div id="header-placeholder"></div>
 
 <main>
+  <!-- Win-rate trust badge -->
+  <section style="padding-top:20px;padding-bottom:0">
+    <div class="container" id="winrate-badge-section"></div>
+  </section>
+
   <!-- Banker of the Day -->
-  <section style="padding-top:24px">
+  <section style="padding-top:12px">
     <div class="container" id="banker-section"></div>
   </section>
 
@@ -151,6 +160,7 @@ let totalPages = 1;
 
 document.addEventListener('DOMContentLoaded', async () => {
   await initPage();
+  renderWinrateBadge(document.getElementById('winrate-badge-section'));
   await renderBankerCards(document.getElementById('banker-section'));
   await renderVipTeaser(document.getElementById('vip-section'));
   buildDatePicker();
