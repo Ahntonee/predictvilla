@@ -119,6 +119,10 @@
         <div class="form-group"><label class="form-label">Bookie</label><input type="text" class="form-control" id="f-bookie" placeholder="Bet9ja"></div>
       </div>
       <div class="form-group"><label class="form-label">Analysis</label><textarea class="form-control" id="f-analysis" rows="4" placeholder="Match analysis…"></textarea></div>
+      <div class="form-group">
+        <label class="form-label">SEO Article Body <span style="font-weight:400;color:var(--text-soft);font-size:11px">(optional — appears below the tip on the prediction page, boosts search ranking)</span></label>
+        <textarea class="form-control" id="f-seo-body" rows="6" placeholder="Write a 200–400 word article about this match, teams, or league for SEO. Supports basic HTML or plain text."></textarea>
+      </div>
       <div class="flex gap-3 mt-1">
         <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="f-publish" checked> Publish immediately</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="f-banker"> Mark as Banker</label>
@@ -325,6 +329,7 @@ function openModal(p = null) {
   // For new predictions: always pre-check "publish immediately"
   document.getElementById('f-publish').checked = p ? !!p.published_at : true;
   document.getElementById('f-banker').checked = !!p?.is_banker;
+  document.getElementById('f-seo-body').value = p?.seo_body || '';
   // Populate tip dropdown based on selected market
   updateTipOptions(p?.tip || '');
 
@@ -359,6 +364,7 @@ async function savePred() {
     league_id: document.getElementById('f-league').value||null,
     is_published: document.getElementById('f-publish').checked ? 1 : 0,
     is_banker: document.getElementById('f-banker').checked ? 1 : 0,
+    seo_body: document.getElementById('f-seo-body').value.trim() || null,
   };
   if (!body.home_team || !body.away_team || !body.tip || !body.match_date) { showToast('Fill required fields','error'); return; }
   const d = id

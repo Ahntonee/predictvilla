@@ -70,7 +70,9 @@ async function fetchLeagues() {
   try {
     const r = await fetch('/api/leagues?grouped=true');
     const data = await r.json();
-    _leagueCache = data.data?.leagues || data.leagues || {};
+    const leagues = data.data?.leagues || data.leagues || {};
+    if (!Object.keys(leagues).length) throw new Error('empty');
+    _leagueCache = leagues;
     _leagueCacheAt = Date.now();
     return _leagueCache;
   } catch {
@@ -667,6 +669,12 @@ async function injectFooter() {
 // ── Ads Renderer ─────────────────────────────────────────────────────────────
 async function renderAds(position, container) {
   if (!container) return;
+  // Suppress wide banner/inline ads on small screens — they blow the layout
+  const inlinePositions = ['homepage_mid', 'predictions_top', 'predictions_bottom', 'predictions_mid'];
+  if (window.innerWidth <= 640 && inlinePositions.includes(position)) {
+    container.style.display = 'none';
+    return;
+  }
   try {
     const r = await fetch(`/api/ads/position/${encodeURIComponent(position)}`);
     if (!r.ok) return;
@@ -693,9 +701,8 @@ async function renderAds(position, container) {
         </a>`;
       }
       // banner (default)
-      const style = [ad.width ? `width:${ad.width}px` : '', ad.height ? `height:${ad.height}px` : ''].filter(Boolean).join(';');
-      return `<a class="ad-slot ad-banner" href="${ad.link_url||'#'}" target="_blank" rel="nofollow noopener" data-id="${ad.id}" onclick="trackAdClick(${ad.id})">
-        <img src="${ad.image_url}" alt="${ad.alt_text||ad.name}" style="${style}" loading="lazy">
+      return `<a class="ad-slot ad-banner" href="${ad.link_url||'#'}" target="_blank" rel="nofollow noopener" data-id="${ad.id}" onclick="trackAdClick(${ad.id})" style="display:block;max-width:100%;overflow:hidden">
+        <img src="${ad.image_url}" alt="${ad.alt_text||ad.name}" style="width:100%;height:auto;max-width:${ad.width||468}px;display:block" loading="lazy">
       </a>`;
     }).join('');
   } catch {}
@@ -1399,6 +1406,12 @@ function showPwaBanner() {
       <button class="btn-pwa-dismiss" onclick="dismissPwa()" aria-label="Dismiss">×</button>
     </div>`;
   document.body.appendChild(banner);
+  // On mobile: toggle open/close by tapping anywhere except the action buttons
+  banner.addEventListener('click', function(e) {
+    if (!e.target.closest('.pwa-actions')) {
+      this.classList.toggle('pwa-open');
+    }
+  });
 }
 
 window.installPwa = async function() {

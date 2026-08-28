@@ -68,7 +68,7 @@
           <!-- Date Picker -->
           <div class="date-picker-row" id="date-picker-row"></div>
 
-          <!-- Category Tabs -->
+          <!-- Category Tabs (desktop) -->
           <div class="tab-row mb-2" id="category-tabs" style="overflow-x:auto;scrollbar-width:none;flex-wrap:nowrap">
             <button class="category-tab active" data-cat="free">Tips</button>
             <button class="category-tab" data-cat="over_2_5">Over 2.5</button>
@@ -79,6 +79,18 @@
             <button class="category-tab" data-cat="over_1_5">Over 1.5</button>
             <button class="category-tab" data-cat="under_2_5">Under 2.5</button>
           </div>
+          <!-- Category Select (mobile only) -->
+          <select id="category-select" class="category-select-mobile" style="display:none">
+            <option value="" disabled>🎯 Filter by tip type</option>
+            <option value="free">Tips (All Free)</option>
+            <option value="over_2_5">Over 2.5 Goals</option>
+            <option value="gg">BTTS (Both Teams Score)</option>
+            <option value="home_win">Home Win</option>
+            <option value="draw">Draw</option>
+            <option value="away_win">Away Win</option>
+            <option value="over_1_5">Over 1.5 Goals</option>
+            <option value="under_2_5">Under 2.5 Goals</option>
+          </select>
 
           <!-- Mid-feed Ad -->
           <div id="ad-homepage-mid" class="ad-wrap ad-wrap-inline"></div>
@@ -157,6 +169,7 @@
 <script>
 let currentPage = 1, currentDate = 'today', currentCat = 'free';
 let totalPages = 1;
+let liveMode = false, liveRefreshTimer = null, liveCountdown = 30;
 
 document.addEventListener('DOMContentLoaded', async () => {
   await initPage();
@@ -222,15 +235,41 @@ async function loadSponsorWidget2() {
 }
 
 function setupCategoryTabs() {
+  const tabs = document.getElementById('category-tabs');
+  const sel  = document.getElementById('category-select');
+
+  function applyResponsive() {
+    const mobile = window.innerWidth <= 640;
+    if (tabs) tabs.style.display = mobile ? 'none' : '';
+    if (sel)  sel.style.display  = mobile ? 'block' : 'none';
+    // sync select value to the currently active tab
+    if (sel) sel.value = currentCat;
+  }
+  applyResponsive();
+  window.addEventListener('resize', applyResponsive);
+
   document.querySelectorAll('.category-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.category-tab').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentCat = btn.dataset.cat;
+      if (sel) sel.value = currentCat;
       currentPage = 1;
       applyFilters();
     });
   });
+
+  if (sel) {
+    sel.addEventListener('change', () => {
+      currentCat = sel.value;
+      // keep tabs in sync
+      document.querySelectorAll('.category-tab').forEach(b => {
+        b.classList.toggle('active', b.dataset.cat === currentCat);
+      });
+      currentPage = 1;
+      applyFilters();
+    });
+  }
 }
 
 function buildDatePicker() {
@@ -258,6 +297,7 @@ function buildDatePicker() {
     }).join('');
   row.querySelectorAll('.date-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (liveMode) exitLiveMode(row);
       row.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentDate = btn.dataset.iso;
@@ -266,16 +306,65 @@ function buildDatePicker() {
     });
   });
   document.getElementById('live-date-btn')?.addEventListener('click', () => {
-    currentDate = 'today';
-    currentPage = 1;
-    applyFilters();
+    if (liveMode) {
+      exitLiveMode(row);
+    } else {
+      enterLiveMode(row);
+    }
   });
+}
+
+function enterLiveMode(row) {
+  liveMode = true;
+  // deactivate date buttons
+  row = row || document.getElementById('date-picker-row');
+  if (row) row.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('live-date-btn');
+  if (btn) btn.classList.add('active');
+  currentPage = 1;
+  applyFilters();
+  // auto-refresh every 30s, show countdown on button
+  liveCountdown = 30;
+  clearInterval(liveRefreshTimer);
+  liveRefreshTimer = setInterval(() => {
+    liveCountdown--;
+    const btn = document.getElementById('live-date-btn');
+    if (btn) {
+      const cd = btn.querySelector('.live-countdown');
+      if (cd) cd.textContent = liveCountdown + 's';
+    }
+    if (liveCountdown <= 0) {
+      liveCountdown = 30;
+      loadPredictions({ view: 'live', page: 1 }, document.getElementById('predictions-grid'));
+    }
+  }, 1000);
+  // update button label
+  if (btn) btn.innerHTML = `<span class="live-pulse"></span>Live <span class="live-countdown" style="font-size:10px;opacity:.7;margin-left:4px">30s</span>`;
+}
+
+function exitLiveMode(row) {
+  liveMode = false;
+  clearInterval(liveRefreshTimer);
+  liveRefreshTimer = null;
+  const btn = document.getElementById('live-date-btn');
+  if (btn) { btn.classList.remove('active'); btn.innerHTML = `<span class="live-pulse"></span>Live`; }
+  // restore today active
+  row = row || document.getElementById('date-picker-row');
+  if (row) {
+    const todayBtn = row.querySelector('.date-btn[data-date="today"]');
+    if (todayBtn) { todayBtn.classList.add('active'); currentDate = 'today'; }
+  }
+  currentPage = 1;
+  applyFilters();
 }
 
 function applyFilters() {
   currentPage = 1;
   const grid = document.getElementById('predictions-grid');
-  loadPredictions({ date: currentDate, category: currentCat, page: currentPage }, grid)
+  const params = liveMode
+    ? { view: 'live', page: currentPage }
+    : { date: currentDate, category: currentCat, page: currentPage };
+  loadPredictions(params, grid)
     .then(pg => {
       totalPages = pg?.totalPages || 1;
       document.getElementById('load-more').style.display = totalPages > 1 ? 'inline-flex' : 'none';

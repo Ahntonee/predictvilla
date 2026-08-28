@@ -144,6 +144,56 @@ router.post('/leagues', asyncHandler(async (req, res) => {
   return successResponse(res, { synced }, `Synced ${synced} leagues`);
 }));
 
+// Seed fixtures for a date range (up to 60 days) — runs in background
+router.post('/fixtures/range', asyncHandler(async (req, res) => {
+  const KEY = process.env.API_FOOTBALL_KEY;
+  const BASE = process.env.API_FOOTBALL_BASE_URL || 'https://v3.football.api-sports.io';
+  if (!KEY) return successResponse(res, { synced: 0 }, 'No API key configured');
+
+  const days = Math.min(Math.max(parseInt(req.body?.days) || 30, 1), 60);
+  const fromOffset = Math.max(parseInt(req.body?.fromOffset) || 0, 0);
+  const season = process.env.API_FOOTBALL_SEASON || new Date().getFullYear();
+
+  // Respond immediately — work runs in background
+  res.json({ success: true, data: { days, fromOffset }, message: `Seeding ${days} days of fixtures in background (offsets +${fromOffset} to +${fromOffset + days - 1}). Watch server logs.` });
+
+  setImmediate(async () => {
+    let totalSynced = 0;
+    for (let i = fromOffset; i < fromOffset + days; i++) {
+      const d = new Date(); d.setDate(d.getDate() + i);
+      const dateStr = d.toISOString().split('T')[0];
+      try {
+        const r = await axios.get(`${BASE}/fixtures`, {
+          params: { date: dateStr, season },
+          headers: { 'x-apisports-key': KEY },
+          timeout: 20000,
+        });
+        const fixtures = r.data.response || [];
+        let dayCnt = 0;
+        for (const f of fixtures) {
+          const fix = f.fixture, teams = f.teams, league = f.league;
+          if (!fix?.id) continue;
+          const [leagueRows] = await pool.query('SELECT id FROM leagues WHERE api_league_id = ?', [league.id]);
+          if (!leagueRows.length) continue;
+          await pool.query(
+            `INSERT INTO fixtures (api_fixture_id, league_id, home_team, away_team, match_date, status, season)
+             VALUES (?,?,?,?,?,?,?)
+             ON DUPLICATE KEY UPDATE status=VALUES(status)`,
+            [fix.id, leagueRows[0].id, teams.home.name, teams.away.name, new Date(fix.date), fix.status?.short || 'TBD', league.season]
+          );
+          dayCnt++;
+        }
+        totalSynced += dayCnt;
+        console.log(`[range-seed] ${dateStr}: ${dayCnt} fixtures stored`);
+        await new Promise(r => setTimeout(r, 150)); // gentle rate-limit
+      } catch (err) {
+        console.error(`[range-seed] ${dateStr} error:`, err.message);
+      }
+    }
+    console.log(`[range-seed] Done — ${totalSynced} total fixtures across ${days} days`);
+  });
+}));
+
 // Sync fixtures for a specific date
 router.post('/fixtures/by-date', asyncHandler(async (req, res) => {
   const date = req.body?.date;

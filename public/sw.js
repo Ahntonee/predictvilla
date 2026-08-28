@@ -1,12 +1,10 @@
-const CACHE = 'pv-v1';
+const CACHE = 'pv-v2';
 const STATIC_ASSETS = [
   '/',
   '/predictions.html',
   '/pricing.html',
   '/statistics.html',
   '/blog.html',
-  '/css/style.css',
-  '/js/app.js',
   '/images/logo.png',
   '/images/logo.svg',
   '/manifest.json',
@@ -41,8 +39,22 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Cache-first for static assets (CSS, JS, images, fonts)
-  if (/\.(css|js|png|svg|webp|jpg|jpeg|woff2?|ico)$/.test(url.pathname)) {
+  // Network-first for CSS and JS — always get the latest, cache as fallback
+  if (/\.(css|js)$/.test(url.pathname)) {
+    e.respondWith(
+      fetch(request).then(res => {
+        if (res.ok) {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(request, clone));
+        }
+        return res;
+      }).catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  // Cache-first for images and fonts (change rarely)
+  if (/\.(png|svg|webp|jpg|jpeg|woff2?|ico)$/.test(url.pathname)) {
     e.respondWith(
       caches.match(request).then(cached => {
         if (cached) return cached;

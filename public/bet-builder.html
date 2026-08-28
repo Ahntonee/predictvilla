@@ -28,9 +28,10 @@
 @media(max-width:900px){ .bb-layout{ grid-template-columns:1fr; } .slip-sticky{ position:static !important; } }
 
 /* ── Hero ── */
-.bb-hero { background:linear-gradient(135deg,rgba(160,208,0,.08) 0%,rgba(0,40,60,.0) 60%); border:1px solid rgba(160,208,0,.15); border-radius:14px; padding:28px 28px 24px; margin-bottom:24px; }
-.bb-hero h1 { font-size:26px; font-weight:900; color:var(--text); margin-bottom:4px; }
-.bb-hero p  { font-size:14px; color:var(--text-soft); margin:0; }
+.bb-hero { background:linear-gradient(135deg,rgba(160,208,0,.10) 0%,rgba(0,20,0,.0) 60%); border:1px solid rgba(160,208,0,.2); border-radius:14px; padding:24px 24px 20px; margin-bottom:24px; display:flex; align-items:center; gap:18px; }
+.bb-hero-logo { width:52px; height:52px; object-fit:contain; flex-shrink:0; }
+.bb-hero h1 { font-size:24px; font-weight:900; color:var(--text); margin-bottom:4px; }
+.bb-hero p  { font-size:13px; color:var(--text-soft); margin:0; }
 
 /* ── Auto-pick bar ── */
 .auto-bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:16px; background:var(--card); border:1px solid var(--border); border-radius:10px; margin-bottom:20px; }
@@ -82,8 +83,11 @@
 .payout-box { background:rgba(160,208,0,.08); border:1px solid rgba(160,208,0,.2); border-radius:8px; padding:14px; margin-top:12px; text-align:center; }
 .payout-lbl { font-size:12px; color:var(--text-soft); }
 .payout-val { font-size:28px; font-weight:900; color:var(--primary); margin-top:4px; }
-.share-row { display:flex; gap:8px; margin-top:14px; }
-.share-row .btn { flex:1; font-size:13px; }
+.share-row { display:flex; gap:6px; margin-top:14px; flex-wrap:wrap; }
+.share-row .btn { flex:1; font-size:12px; min-width:72px; }
+.slip-brand { display:flex; align-items:center; gap:8px; }
+.slip-brand img { width:28px; height:28px; object-fit:contain; }
+.slip-brand-name { font-size:12px; font-weight:800; color:var(--primary); letter-spacing:.04em; text-transform:uppercase; }
 
 /* ── Section header ── */
 .section-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:8px; }
@@ -113,8 +117,11 @@
   <div>
     <!-- Hero -->
     <div class="bb-hero">
-      <h1><span class="material-icons-round" style="font-size:28px;color:var(--primary);vertical-align:middle;margin-right:6px">construction</span>Bet Builder</h1>
-      <p>Auto-generate your accumulator from today's highest-confidence AI predictions. Add or remove picks, set your stake, and copy your slip.</p>
+      <img src="/images/logo.png" alt="Predictvilla" class="bb-hero-logo">
+      <div>
+        <h1>Bet Builder</h1>
+        <p>Auto-generate your accumulator from today's highest-confidence AI predictions. Add picks, set your stake, and share your slip as an image.</p>
+      </div>
     </div>
 
     <!-- Auto-pick bar -->
@@ -178,7 +185,11 @@
   <div class="slip-sticky">
     <div class="slip-card">
       <div class="slip-head">
-        <h2>
+        <div class="slip-brand">
+          <img src="/images/logo.png" alt="Predictvilla">
+          <span class="slip-brand-name">Predictvilla</span>
+        </div>
+        <h2 style="margin-top:10px">
           <span class="material-icons-round" style="color:var(--primary)">receipt_long</span>
           Bet Slip
           <span id="slip-count" style="background:var(--primary);color:#0d1600;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:900;margin-left:4px">0</span>
@@ -222,10 +233,13 @@
 
           <div class="share-row">
             <button class="btn btn-ghost btn-sm" id="copy-btn">
-              <span class="material-icons-round" style="font-size:15px">content_copy</span> Copy Slip
+              <span class="material-icons-round" style="font-size:14px">content_copy</span> Copy
             </button>
-            <button class="btn btn-primary btn-sm" id="share-btn">
-              <span class="material-icons-round" style="font-size:15px">share</span> Share
+            <button class="btn btn-primary btn-sm" id="img-btn">
+              <span class="material-icons-round" style="font-size:14px">image</span> Image
+            </button>
+            <button class="btn btn-primary btn-sm" id="share-btn" style="background:rgba(160,208,0,0.15);color:var(--primary);border:1px solid rgba(160,208,0,0.35)">
+              <span class="material-icons-round" style="font-size:14px">share</span> Share
             </button>
           </div>
         </div>
@@ -274,6 +288,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('clear-btn').addEventListener('click', () => { selectedIds.clear(); updateSlip(); renderGames(); });
   document.getElementById('stake-input').addEventListener('input', updatePayout);
   document.getElementById('copy-btn').addEventListener('click', copySlip);
+  document.getElementById('img-btn').addEventListener('click', exportSlipImage);
   document.getElementById('share-btn').addEventListener('click', shareSlip);
 });
 
@@ -490,6 +505,160 @@ function shareSlip() {
   } else {
     copySlip();
   }
+}
+
+// ─── Image Export ─────────────────────────────────────────────────────────
+
+function loadImg(src) {
+  return new Promise((res, rej) => {
+    const i = new Image(); i.crossOrigin = 'anonymous';
+    i.onload = () => res(i); i.onerror = () => res(null);
+    i.src = src;
+  });
+}
+
+async function exportSlipImage() {
+  const allGames = [...allPredictions.today, ...allPredictions.tomorrow];
+  const selected = allGames.filter(g => selectedIds.has(g.id));
+  if (!selected.length) { showToast('Add picks to your slip first', 'error'); return; }
+
+  showToast('Generating image…', 'info');
+
+  const W = 600;
+  const PAD = 28;
+  const HEADER_H = 120;
+  const ROW_H = 64;
+  const FOOTER_H = 130;
+  const H = HEADER_H + selected.length * ROW_H + FOOTER_H;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  // ── Background gradient ──
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0d1a00'); bg.addColorStop(1, '#0a1200');
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+  // ── Watermark logo (center, multiply-like with low alpha) ──
+  const logo = await loadImg(window.location.origin + '/images/logo.png');
+  if (logo) {
+    ctx.save();
+    ctx.globalAlpha = 0.04;
+    const wm = Math.min(W * 0.55, 300);
+    ctx.drawImage(logo, (W - wm) / 2, (H - wm) / 2, wm, wm);
+    ctx.restore();
+  }
+
+  // ── Top accent line ──
+  const accent = ctx.createLinearGradient(0, 0, W, 0);
+  accent.addColorStop(0, 'transparent'); accent.addColorStop(0.3, '#a0d000'); accent.addColorStop(0.7, '#ffd000'); accent.addColorStop(1, 'transparent');
+  ctx.fillStyle = accent; ctx.fillRect(0, 0, W, 3);
+
+  // ── Logo + brand ──
+  if (logo) { ctx.drawImage(logo, PAD, 18, 44, 44); }
+  ctx.fillStyle = '#a0d000';
+  ctx.font = 'bold 20px Arial, sans-serif';
+  ctx.fillText('PREDICTVILLA', PAD + (logo ? 52 : 0), 38);
+  ctx.fillStyle = 'rgba(244,248,224,0.5)';
+  ctx.font = '12px Arial, sans-serif';
+  const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  ctx.fillText(`Accumulator · ${dateStr}`, PAD + (logo ? 52 : 0), 56);
+
+  // ── Header separator ──
+  ctx.strokeStyle = 'rgba(160,208,0,0.25)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(PAD, HEADER_H - 14); ctx.lineTo(W - PAD, HEADER_H - 14); ctx.stroke();
+  ctx.fillStyle = 'rgba(244,248,224,0.35)';
+  ctx.font = '10px Arial, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('MATCH', W - PAD - 50); // not used — just label placeholders
+  ctx.textAlign = 'left';
+
+  // ── Picks ──
+  let y = HEADER_H;
+  for (let i = 0; i < selected.length; i++) {
+    const g = selected[i];
+    const odds = confToOdds(g.confidence_score || 60);
+    // alternating row tint
+    if (i % 2 === 0) { ctx.fillStyle = 'rgba(255,255,255,0.02)'; ctx.fillRect(0, y, W, ROW_H); }
+
+    // index circle
+    ctx.fillStyle = 'rgba(160,208,0,0.15)'; ctx.beginPath(); ctx.arc(PAD + 10, y + 22, 11, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#a0d000'; ctx.font = 'bold 11px Arial, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(i + 1, PAD + 10, y + 26);
+    ctx.textAlign = 'left';
+
+    // match name
+    ctx.fillStyle = '#f4f8e0'; ctx.font = 'bold 13px Arial, sans-serif';
+    const matchStr = `${g.home_team} vs ${g.away_team}`;
+    ctx.fillText(matchStr.length > 42 ? matchStr.slice(0, 40) + '…' : matchStr, PAD + 26, y + 19);
+
+    // tip + league
+    ctx.fillStyle = '#a0d000'; ctx.font = '11px Arial, sans-serif';
+    const meta = [g.tip || g.market, g.league_name].filter(Boolean).join(' · ');
+    ctx.fillText(meta.length > 50 ? meta.slice(0, 48) + '…' : meta, PAD + 26, y + 35);
+
+    // odds (right-aligned)
+    ctx.fillStyle = '#f4f8e0'; ctx.font = 'bold 16px Arial, sans-serif';
+    ctx.textAlign = 'right'; ctx.fillText(odds.toFixed(2), W - PAD, y + 24); ctx.textAlign = 'left';
+
+    // confidence dot
+    const conf = g.confidence_score || 0;
+    const dotColor = conf >= 70 ? '#a0d000' : conf >= 60 ? '#ffd000' : '#ef4444';
+    ctx.fillStyle = dotColor; ctx.beginPath(); ctx.arc(W - PAD - 6, y + 42, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(244,248,224,0.4)'; ctx.font = '10px Arial, sans-serif';
+    ctx.textAlign = 'right'; ctx.fillText(`${conf}% conf.`, W - PAD - 14, y + 46); ctx.textAlign = 'left';
+
+    // row separator
+    ctx.strokeStyle = 'rgba(244,248,224,0.05)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(PAD, y + ROW_H - 1); ctx.lineTo(W - PAD, y + ROW_H - 1); ctx.stroke();
+    y += ROW_H;
+  }
+
+  // ── Footer ──
+  ctx.strokeStyle = 'rgba(160,208,0,0.35)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(PAD, y + 14); ctx.lineTo(W - PAD, y + 14); ctx.stroke();
+
+  const combined = selected.reduce((acc, g) => acc * confToOdds(g.confidence_score || 60), 1);
+  const stake = parseFloat(document.getElementById('stake-input')?.value) || 10;
+  const payout = stake * combined;
+  const avgConf = Math.round(selected.reduce((a, g) => a + (g.confidence_score || 0), 0) / selected.length);
+
+  // Combined odds row
+  ctx.fillStyle = 'rgba(244,248,224,0.55)'; ctx.font = '12px Arial, sans-serif'; ctx.fillText('Combined Odds', PAD, y + 36);
+  ctx.fillStyle = '#a0d000'; ctx.font = 'bold 22px Arial, sans-serif'; ctx.textAlign = 'right'; ctx.fillText(combined.toFixed(2), W - PAD, y + 38); ctx.textAlign = 'left';
+
+  // Stake / payout row
+  ctx.fillStyle = 'rgba(244,248,224,0.55)'; ctx.font = '12px Arial, sans-serif'; ctx.fillText(`Stake $${stake.toFixed(2)}  →  Potential Payout`, PAD, y + 62);
+  ctx.fillStyle = '#ffd000'; ctx.font = 'bold 22px Arial, sans-serif'; ctx.textAlign = 'right'; ctx.fillText(`$${payout.toFixed(2)}`, W - PAD, y + 64); ctx.textAlign = 'left';
+
+  // Avg confidence
+  ctx.fillStyle = 'rgba(244,248,224,0.35)'; ctx.font = '11px Arial, sans-serif'; ctx.fillText(`Avg Confidence: ${avgConf}% · ${selected.length} selections`, PAD, y + 86);
+
+  // Bottom branding
+  const footerAcc = ctx.createLinearGradient(0, 0, W, 0);
+  footerAcc.addColorStop(0, 'transparent'); footerAcc.addColorStop(0.3, 'rgba(160,208,0,0.4)'); footerAcc.addColorStop(0.7, 'rgba(255,208,0,0.4)'); footerAcc.addColorStop(1, 'transparent');
+  ctx.fillStyle = footerAcc; ctx.fillRect(0, H - 28, W, 1);
+  ctx.fillStyle = 'rgba(160,208,0,0.55)'; ctx.font = '10px Arial, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('predictvilla.com — AI-Powered Football Predictions · Bet Responsibly', W / 2, H - 10);
+  ctx.textAlign = 'left';
+
+  // ── Export ──
+  canvas.toBlob(async blob => {
+    const fname = `predictvilla-acca-${new Date().toISOString().slice(0, 10)}.png`;
+    // Try Web Share API with file (mobile)
+    if (navigator.share && navigator.canShare) {
+      const file = new File([blob], fname, { type: 'image/png' });
+      if (navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ title: 'My Predictvilla Accumulator', files: [file] }); return; } catch (e) { /* fall through to download */ }
+      }
+    }
+    // Fallback: download
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = fname; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
+    showToast('Image saved!', 'success');
+  }, 'image/png');
 }
 
 function showToast(msg, type='info') {

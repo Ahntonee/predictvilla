@@ -5,6 +5,7 @@ const DEFAULT_PAGES = [
   { slug: 'terms',   title: 'Terms of Service', content: '# Terms of Service\n\nEdit this page from the admin panel.' },
   { slug: 'privacy', title: 'Privacy Policy',   content: '# Privacy Policy\n\nEdit this page from the admin panel.' },
   { slug: 'contact', title: 'Contact Us',        content: '# Contact Us\n\nEdit this page from the admin panel.' },
+  { slug: 'homepage_article', title: 'Homepage SEO Article', content: '## Football Predictions & Tips — Expert Guide\n\nWelcome to Predictvilla, your go-to destination for data-driven football predictions. Our AI-powered Intelligence Engine analyses form, H2H data, and live bookie odds to deliver the most accurate football tips across 160+ leagues.\n\n### What Are Football Predictions?\n\nFootball predictions use statistical models and team data to forecast match outcomes — from the final result to goals, corners, and more. At Predictvilla, every tip is backed by real-time data and a confidence score.\n\n### Free vs VIP Tips\n\nWe publish free tips daily for casual bettors and offer a VIP subscription for those who want our highest-confidence banker picks, AI-graded analysis, and early access to upcoming fixtures.\n\n### How to Use Our Tips\n\nBrowse by date, league, or market. Filter by category — Over 2.5 Goals, BTTS, 1X2, and more. Our confidence bar tells you how strongly our model backs each pick.\n\n*Always bet responsibly. Tips are for entertainment only.*' },
 ];
 
 exports.listPages = asyncHandler(async (req, res) => {

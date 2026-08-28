@@ -162,7 +162,7 @@
 /* ── Reset & Base ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; overflow-x: hidden; }
 
 body {
   font-family: var(--font-body);
@@ -171,6 +171,7 @@ body {
   line-height: 1.6;
   min-height: 100vh;
   transition: background 0.3s, color 0.3s;
+  overflow-x: hidden;
 }
 
 a { color: var(--primary); text-decoration: none; transition: color 0.2s; }
@@ -646,6 +647,40 @@ section { padding: 48px 0; }
 select.form-control { cursor: pointer; }
 .form-error { font-size: 12px; color: var(--danger); margin-top: 4px; }
 .form-hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+/* ── Custom Select Dropdown ── */
+.csel-wrap { position: relative; flex: 1; min-width: 0; }
+.csel-btn {
+  display: flex; justify-content: space-between; align-items: center;
+  text-align: left; cursor: pointer; width: 100%;
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text); font-size: 14px;
+  padding: 11px 14px; font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+  white-space: nowrap; overflow: hidden;
+}
+.csel-btn:focus, .csel-btn:hover { border-color: var(--primary); }
+.csel-btn.open { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(160,208,0,0.12); }
+.csel-label { flex: 1; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.csel-arrow { font-size: 10px; opacity: 0.5; transition: transform 0.2s; margin-left: 8px; flex-shrink: 0; }
+.csel-panel {
+  display: none; position: absolute; top: calc(100% + 4px); left: 0;
+  min-width: 100%; width: max-content; max-width: min(340px, 90vw);
+  z-index: 9000; background: var(--card); border: 1px solid var(--border);
+  border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  max-height: 260px; overflow-y: auto;
+}
+.csel-panel.open { display: block; }
+.csel-search-wrap { padding: 8px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--card); }
+.csel-search { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 13px; padding: 6px 10px; font-family: inherit; outline: none; }
+.csel-search:focus { border-color: var(--primary); }
+.csel-opt {
+  padding: 9px 14px; cursor: pointer; font-size: 13px;
+  color: var(--text); white-space: nowrap;
+}
+.csel-opt:hover { background: rgba(160,208,0,0.08); }
+.csel-opt.active { color: var(--primary); font-weight: 700; background: rgba(160,208,0,0.1); }
+.csel-grp { padding: 8px 14px 3px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-soft); opacity: 0.65; }
 
 /* ── Modal ── */
 .modal-overlay {
@@ -1604,7 +1639,11 @@ select.form-control { cursor: pointer; }
 .left-sidebar::-webkit-scrollbar { width: 3px; }
 .left-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
 
-body.has-sidebar { padding-left: var(--sidebar-w); padding-top: var(--topbar-h); }
+/* padding-top always (topbar is always fixed); padding-left only on desktop where sidebar is persistent */
+body.has-sidebar { padding-top: var(--topbar-h); }
+@media (min-width: 901px) {
+  body.has-sidebar { padding-left: var(--sidebar-w); }
+}
 
 .sidebar-overlay {
   display: none;
@@ -2354,3 +2393,220 @@ body { animation: pageFadeIn 0.2s ease-out; }
 .aff-odds-bookie { font-size: 11px; color: var(--text-soft); margin-bottom: 3px; }
 .aff-odds-val { font-family: 'Exo 2', sans-serif; font-weight: 800; font-size: 18px; color: var(--primary); }
 [data-theme="light"] .aff-odds-card { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.07); }
+
+/* ── Live mode active state ── */
+.live-date-btn.active {
+  background: #dc2626 !important;
+  color: #fff !important;
+  box-shadow: 0 0 0 3px rgba(220,38,38,0.3);
+}
+.live-date-btn.active .live-pulse { background: #fff; }
+
+/* ── Predictions filter row (desktop) ── */
+.pred-filters-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.pred-filters-row .form-control { max-width: 200px; }
+
+/* ═══════════════════════════════════════════════════════
+   MOBILE DISPLAY FIXES  (≤640px)
+   ═══════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+
+  /* ── Global layout — prevent any horizontal blowout ── */
+  body.has-sidebar { padding-left: 0 !important; }
+  * { box-sizing: border-box; }
+
+  /* ── 1. Header: logo only, no name, smaller Go Premium ── */
+  .topbar-logo span { display: none; }
+  .vip-premium-btn { padding: 5px 10px; }
+  .vip-premium-btn .prem-sub { display: none; }
+  .vip-premium-btn .prem-top { font-size: 11px; }
+
+  /* ── 2. Win-rate badge — single tight row, no wrap ── */
+  .winrate-badge {
+    padding: 9px 12px;
+    gap: 8px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+  .winrate-badge-icon { font-size: 18px; }
+  .winrate-badge-num  { font-size: 20px; }
+  .winrate-badge-label { font-size: 10px; }
+  .winrate-badge-divider { height: 22px; }
+  .winrate-badge-sub { font-size: 10px; }
+
+  /* ── 3. Page hero — tighter ── */
+  .page-hero { padding: 10px 0 8px; }
+  .page-hero-title { font-size: 17px; line-height: 1.2; margin-bottom: 4px; }
+  .page-hero-sub { font-size: 12px; }
+
+  /* Category tabs → hide on mobile, show select instead */
+  #category-tabs { display: none !important; }
+  .category-select-mobile {
+    display: block !important;
+    width: auto;
+    max-width: 58%;
+    min-width: 160px;
+    background: var(--card, #1e2e00);
+    border: 1px solid rgba(160,208,0,0.35);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 7px 32px 7px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 600;
+    margin-bottom: 10px;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a0d000' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+  }
+  .category-select-mobile option { background: var(--card, #1e2e00); color: var(--text); }
+
+  /* ── 4. PWA — left-edge sliding tab ── */
+  #pwa-install-banner {
+    position: fixed;
+    left: -250px;
+    top: 45%;
+    transform: translateY(-50%);
+    bottom: auto;
+    right: auto;
+    max-width: none;
+    width: 250px;
+    border-radius: 0 14px 14px 0;
+    padding: 14px 16px 14px 18px;
+    transition: left 0.35s cubic-bezier(.25,.8,.25,1);
+    background: #0d1a00;
+    border: 1px solid rgba(160,208,0,0.45);
+    border-left: 3px solid #a0d000;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    cursor: pointer;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.6);
+    animation: none;
+  }
+  #pwa-install-banner.pwa-open { left: 0; cursor: default; }
+  /* pull tab that peeks out from left edge */
+  #pwa-install-banner::before {
+    content: '📲';
+    position: absolute;
+    right: -40px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 52px;
+    background: #0d1a00;
+    border: 1px solid rgba(160,208,0,0.45);
+    border-left: none;
+    border-radius: 0 10px 10px 0;
+    line-height: 52px;
+    text-align: center;
+    font-size: 20px;
+    cursor: pointer;
+  }
+  #pwa-install-banner .pwa-icon { display: none; }
+  #pwa-install-banner .pwa-title { font-size: 13px; font-weight: 700; color: #f4f8e0; }
+  #pwa-install-banner .pwa-sub { font-size: 11px; color: rgba(244,248,224,0.65); }
+  #pwa-install-banner .pwa-actions { width: 100%; display: flex; gap: 8px; margin-top: 4px; }
+  #pwa-install-banner .btn-pwa-install {
+    flex: 1; padding: 7px 0; font-size: 12px; border-radius: 8px;
+    background: #a0d000; color: #0d1600; font-weight: 700; border: none; cursor: pointer;
+  }
+  #pwa-install-banner .btn-pwa-dismiss {
+    font-size: 18px; padding: 4px 8px; color: rgba(244,248,224,0.5);
+    background: none; border: none; cursor: pointer;
+  }
+
+  /* ── Ad units — hard-contain so nothing blows the layout ── */
+  .ad-wrap, .ad-slot, .ad-code {
+    max-width: 100% !important;
+    width: 100% !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+  .ad-wrap > *, .ad-slot > *, .ad-code > * {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .ad-wrap iframe, .ad-wrap ins, .ad-wrap img,
+  .ad-slot iframe, .ad-slot ins, .ad-slot img,
+  .ad-code iframe, .ad-code ins, .ad-code img {
+    max-width: 100% !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+  .ad-wrap-inline, .ad-section { display: none !important; }
+
+  /* ── Predictions grid — center empty state ── */
+  #predictions-grid { text-align: center; }
+  #predictions-grid .pred-row,
+  #predictions-grid .prediction-card { text-align: left; }
+
+  /* ── Date strip — full-width on mobile, scroll inside ── */
+  .date-strip {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: auto !important;
+  }
+
+  /* ── Date picker row — horizontal scroll without body overflow ── */
+  .date-picker-row {
+    display: flex;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 5px;
+    padding-bottom: 4px;
+    margin-left: -12px;
+    margin-right: -12px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .date-picker-row::-webkit-scrollbar { display: none; }
+  .date-btn { flex-shrink: 0; padding: 6px 10px; min-width: 38px; }
+  .date-btn .date-num { font-size: 13px; }
+  .date-btn .date-label { font-size: 8px; }
+  .live-date-btn { flex-shrink: 0; font-size: 11px; padding: 4px 10px; }
+
+  /* ── Predictions page filter row — 2-col grid on mobile ── */
+  .pred-filters-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .pred-filters-row .form-control { max-width: 100% !important; width: 100%; font-size: 12px; padding: 7px 10px; }
+  /* search spans full width */
+  /* search sits in its own column, not spanning full width */
+  .pred-filters-row input[type="text"] { grid-column: auto; }
+
+  /* ── Prediction rows ── */
+  .pred-row { padding: 10px 12px; }
+  .pred-teams { font-size: 12px; }
+  .pred-tip-badge { font-size: 11px; padding: 2px 8px; }
+  .confidence-bar { height: 3px; }
+
+  /* ── Banker card ── */
+  .banker-card { padding: 14px; }
+  .banker-match-title { font-size: 13px; }
+  .banker-teams { gap: 8px; }
+  .banker-team-name { font-size: 12px; max-width: 80px; }
+
+  /* ── Section spacing ── */
+  .recent-wins-section { padding: 12px 0; }
+  .seo-article-section { padding: 12px 0 24px; }
+
+  /* ── Affiliate odds grid — 2-col ── */
+  .aff-odds-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .aff-odds-val { font-size: 15px; }
+}

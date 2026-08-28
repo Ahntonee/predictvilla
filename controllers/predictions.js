@@ -256,9 +256,15 @@ exports.create = asyncHandler(async (req, res) => {
 });
 
 exports.update = asyncHandler(async (req, res) => {
+  // Auto-add seo_body column if missing
+  const [cols] = await pool.query(
+    `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='predictions' AND COLUMN_NAME='seo_body'`
+  );
+  if (!cols.length) await pool.query(`ALTER TABLE predictions ADD COLUMN seo_body MEDIUMTEXT DEFAULT NULL`);
+
   const { id } = req.params;
   const fields = ['home_team','away_team','match_date','tip','market','category','league_id',
-    'odds','confidence_score','intelligence_score','analysis','is_vip','is_banker','is_featured',
+    'odds','confidence_score','intelligence_score','analysis','seo_body','is_vip','is_banker','is_featured',
     'home_form','away_form','h2h_summary','home_goals_avg','away_goals_avg',
     'home_goals_conceded_avg','away_goals_conceded_avg','home_team_logo','away_team_logo'];
   const updates = [], params = [];

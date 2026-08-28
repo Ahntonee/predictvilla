@@ -65,6 +65,7 @@ async function migrate() {
       confidence_score INT,
       intelligence_score INT,
       analysis TEXT,
+      seo_body MEDIUMTEXT,
       is_vip TINYINT(1) DEFAULT 0,
       is_banker TINYINT(1) DEFAULT 0,
       is_featured TINYINT(1) DEFAULT 0,

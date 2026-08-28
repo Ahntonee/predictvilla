@@ -193,6 +193,34 @@
       </div>
     </div>
 
+    <!-- Seed Future Fixtures (Range) -->
+    <div class="sync-card full">
+      <div class="sync-card-head">
+        <div class="sync-icon green"><span class="material-icons-round">date_range</span></div>
+        Seed Future Fixtures
+        <span class="sync-badge amber">BULK</span>
+      </div>
+      <p class="sync-desc">
+        Fetch and store fixtures for the next <strong id="range-days-label">30</strong> days from today.
+        Runs in the background — each day = 1 API request.
+        <span style="color:#f43f5e">⚠ 30 days = 30 API requests; 60 days = 60 requests. Check your quota before running.</span>
+      </p>
+      <div class="sync-controls">
+        <label style="font-size:13px;color:var(--text-soft)">Days:</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-sm range-day-btn" data-days="7">7 days</button>
+          <button class="btn btn-sm range-day-btn active-range" data-days="30">30 days</button>
+          <button class="btn btn-sm range-day-btn" data-days="60">60 days</button>
+        </div>
+        <input type="hidden" id="range-days" value="30">
+        <label style="font-size:13px;color:var(--text-soft);margin-left:8px">Starting from offset:</label>
+        <input type="number" class="form-control" id="range-from-offset" value="0" min="0" max="59" style="max-width:70px" title="0 = today, 1 = tomorrow, etc.">
+        <button class="btn btn-sm btn-green" onclick="runSync('fixtures-range')">
+          <span class="material-icons-round" style="font-size:15px">cloud_download</span> Seed Fixtures
+        </button>
+      </div>
+    </div>
+
     <!-- Update Results -->
     <div class="sync-card">
       <div class="sync-card-head">
@@ -387,6 +415,19 @@ document.querySelectorAll('.season-check-item input, .league-check-item input').
   });
 });
 
+// ── Range seed day-picker buttons ───────────────────────────────────────────
+document.querySelectorAll('.range-day-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.range-day-btn').forEach(b => b.classList.remove('active-range', 'btn-primary'));
+    btn.classList.add('active-range', 'btn-primary');
+    const d = btn.dataset.days;
+    document.getElementById('range-days').value = d;
+    document.getElementById('range-days-label').textContent = d;
+  });
+});
+// Init active state style
+document.querySelector('.range-day-btn.active-range')?.classList.add('btn-primary');
+
 function updateBfCost() {
   const seasons = document.querySelectorAll('.season-check-item input:checked').length;
   const leagues = document.querySelectorAll('.league-check-item input:checked').length;
@@ -438,6 +479,10 @@ const ENDPOINTS = {
                           limit:         parseInt(document.getElementById('ap-limit').value),
                           minConfidence: parseInt(document.getElementById('ap-confidence').value),
                           autoPublish:   document.getElementById('ap-autopublish').checked,
+                        }) }),
+  'fixtures-range':   () => api('/sync/fixtures/range', { method: 'POST', body: JSON.stringify({
+                          days: parseInt(document.getElementById('range-days').value) || 30,
+                          fromOffset: parseInt(document.getElementById('range-from-offset').value) || 0,
                         }) }),
   'seed-historical':  () => {
     const seasons = [...document.querySelectorAll('.season-check-item input:checked')].map(c => c.value);
