@@ -1623,9 +1623,9 @@ select.form-control { cursor: pointer; }
 
 .left-sidebar {
   position: fixed;
-  top: var(--topbar-h); left: 0;
+  top: calc(var(--topbar-h) + env(safe-area-inset-top)); left: 0;
   width: var(--sidebar-w);
-  height: calc(100vh - var(--topbar-h));
+  height: calc(100vh - var(--topbar-h) - env(safe-area-inset-top));
   background: #0f1800;
   border-right: 1px solid rgba(160,208,0,0.08);
   overflow-y: auto;
@@ -1649,7 +1649,7 @@ body.has-sidebar { padding-top: calc(var(--topbar-h) + env(safe-area-inset-top))
 .sidebar-overlay {
   display: none;
   position: fixed;
-  top: var(--topbar-h); left: 0; right: 0; bottom: 0;
+  top: calc(var(--topbar-h) + env(safe-area-inset-top)); left: 0; right: 0; bottom: 0;
   background: rgba(0,0,0,0.6);
   z-index: 199;
 }
@@ -2610,4 +2610,205 @@ body { animation: pageFadeIn 0.2s ease-out; }
   /* ── Affiliate odds grid — 2-col ── */
   .aff-odds-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
   .aff-odds-val { font-size: 15px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   COMPREHENSIVE MOBILE RESPONSIVENESS  — iPhone 14 Pro (393px) baseline
+   Covers all pages equally. Keep below all other rules.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Hard containment: no element may cause a horizontal scroll ── */
+*, *::before, *::after { max-width: 100%; }
+img, video, iframe, embed, object, canvas, svg { max-width: 100%; height: auto; }
+/* restore elements that legitimately exceed parent */
+.left-sidebar, .topbar, .sidebar-overlay,
+.pred-detail-overlay, .mobile-bottom-nav,
+#pwa-install-banner { max-width: none; }
+
+/* ── 2. Ticker: hide on mobile — it bleeds below the fixed topbar ── */
+@media (max-width: 640px) {
+  .ticker-wrap { display: none; }
+}
+
+/* ── 3. Topbar: constrain inner to 52px row, left-pad for safe area ── */
+.topbar-inner {
+  height: var(--topbar-h);
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+}
+
+/* ── 4. Bottom nav: honour safe areas on notch phones ── */
+.mobile-bottom-nav {
+  padding-bottom: env(safe-area-inset-bottom);
+  height: calc(60px + env(safe-area-inset-bottom));
+}
+@media (max-width: 640px) {
+  body { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
+}
+
+/* ── 5. All flex & grid children: prevent text from pushing containers wide ── */
+.topbar-inner > *,
+.flex > *, .flex-between > *,
+.page-with-sidebar > *,
+.home-layout > *,
+.stats-banner > *,
+.grid-2 > *, .grid-3 > *, .grid-4 > * { min-width: 0; }
+
+/* ── 6. Container: never exceed viewport ── */
+.container { width: 100%; box-sizing: border-box; }
+
+/* ── 7. Negative-margin scroll rows: explicitly contain them ── */
+@media (max-width: 640px) {
+  .date-picker-row,
+  .tab-row {
+    /* Width = container width + 2×container-padding, clipped by html overflow:clip */
+    box-sizing: content-box;
+    max-width: calc(100vw - 0px); /* trust overflow:clip on html */
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   PAGE-BY-PAGE MOBILE FIXES  (≤640px)
+   ══════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+
+  /* ── Topbar ── */
+  .topbar-logo span { font-size: 14px; }
+  .vip-premium-btn { padding: 5px 8px; gap: 2px; }
+  .vip-premium-btn .prem-top { font-size: 10px; }
+  .vip-premium-btn .prem-sub { display: none; }
+  /* Hide text label when truly tiny (360px and below) */
+  @media (max-width: 360px) {
+    .topbar-logo span { display: none; }
+    .vip-premium-btn { padding: 5px 6px; }
+  }
+
+  /* ── Hero ── */
+  .page-hero { padding: 12px 0 10px; }
+  .page-hero-title { font-size: clamp(15px, 4.5vw, 20px); line-height: 1.2; margin-bottom: 4px; }
+  .page-hero-sub  { font-size: 12px; line-height: 1.5; }
+  .hero { padding: 32px 0 28px; }
+  .hero h1 { font-size: clamp(20px, 6vw, 26px); }
+  .hero p  { font-size: 13px; }
+
+  /* ── Cards: universal containment ── */
+  .prediction-card,
+  .banker-card,
+  .vip-teaser,
+  .sidebar-widget,
+  .card { width: 100%; box-sizing: border-box; overflow: hidden; }
+
+  /* ── Teams row: prevent team names from pushing layout ── */
+  .team { flex: 1; min-width: 0; max-width: 38%; }
+  .team-name { font-size: 11px; word-break: break-word; white-space: normal; text-align: center; }
+  .team img { width: 30px; height: 30px; }
+
+  /* ── Stats banner ── */
+  .stats-banner { grid-template-columns: repeat(2,1fr); gap: 8px; }
+  .stats-banner .stat-card { padding: 10px 12px; }
+
+  /* ── Win-rate badge ── */
+  .winrate-badge { padding: 10px 12px; gap: 10px; flex-wrap: nowrap; overflow: hidden; align-items: center; }
+  .winrate-badge-icon { font-size: 20px; flex-shrink: 0; }
+  .winrate-badge-num  { font-size: 22px; }
+  .winrate-badge-label { font-size: 10px; }
+  .winrate-badge-divider { height: 24px; flex-shrink: 0; }
+  .winrate-badge-sub { font-size: 10px; flex: 1; min-width: 0; }
+
+  /* ── Prediction rows (list view) ── */
+  .pred-row { padding: 10px 12px; }
+  .pred-teams { font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pred-team-name-row { min-width: 0; overflow: hidden; }
+  .pred-team-name-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+
+  /* ── Prediction detail modal ── */
+  .pred-detail-overlay { padding: 8px 8px 80px; }
+  .pred-detail-modal { border-radius: 12px; }
+  .pdm-header { padding: 16px 16px 14px; }
+  .pdm-league-row { margin-bottom: 12px; }
+  .pdm-team img { width: 40px; height: 40px; }
+  .pdm-team-name { font-size: 12px; }
+  .pdm-score { font-size: 26px; }
+  .pdm-score-vs { font-size: 18px; }
+  .pdm-tip-bar { padding: 10px 16px; gap: 10px; }
+  .pdm-body { padding: 12px; }
+  .pdm-grid { grid-template-columns: 1fr; gap: 12px; }
+  .pdm-section-head { padding: 10px 12px; font-size: 12px; }
+  .pdm-section-body { padding: 10px 12px; }
+  .pdm-h2h-date { min-width: 60px; font-size: 10px; }
+  .pdm-h2h-score { min-width: 32px; font-size: 12px; }
+  .pdm-standings { overflow-x: auto; }
+  .pdm-standings table { min-width: 280px; }
+  .pdm-comment-form { grid-template-columns: 1fr; }
+
+  /* ── Blog ── */
+  .blog-grid { grid-template-columns: 1fr !important; }
+  .blog-card { width: 100%; }
+  .blog-card-img { height: 160px; }
+  .blog-meta { flex-wrap: wrap; gap: 6px; }
+
+  /* ── Pricing / Subscription cards ── */
+  .pricing-grid, .plans-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
+  .plan-card { padding: 20px 16px !important; }
+
+  /* ── Dashboard stats ── */
+  .dash-stats-grid { grid-template-columns: repeat(2,1fr) !important; gap: 10px; }
+  .dash-stat-card { padding: 12px; }
+
+  /* ── Data tables: horizontal scroll ── */
+  .data-table-wrap,
+  .table-wrap,
+  .pdm-standings { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { min-width: max-content; }
+
+  /* ── Forms ── */
+  .form-row { flex-direction: column; gap: 12px; }
+  .form-control, select, textarea, input[type="text"],
+  input[type="email"], input[type="password"] {
+    width: 100%; box-sizing: border-box; font-size: 16px; /* prevent zoom on iOS */
+  }
+
+  /* ── Modals (generic) ── */
+  .modal { width: calc(100vw - 32px) !important; max-width: 100% !important;
+    margin: 16px; border-radius: 12px; }
+  .modal-body { padding: 16px; }
+
+  /* ── About / static pages ── */
+  .about-grid, .team-grid { grid-template-columns: 1fr !important; }
+  .about-card { padding: 16px; }
+
+  /* ── Contact ── */
+  .contact-grid { grid-template-columns: 1fr !important; }
+
+  /* ── Statistics page ── */
+  .stats-grid { grid-template-columns: 1fr !important; gap: 12px; }
+  .stat-detail-card { padding: 14px; }
+
+  /* ── Bet Builder ── */
+  .bb-grid, .builder-grid { grid-template-columns: 1fr !important; }
+  .bb-slip { position: static !important; width: 100% !important; }
+
+  /* ── Footer ── */
+  .footer-grid, .footer-grid-new { grid-template-columns: 1fr; gap: 20px; }
+  .footer-main { padding: 24px 0 16px; }
+  .footer-bottom-bar { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .footer-bottom-bar > * { font-size: 12px; }
+
+  /* ── Utility: full-width buttons ── */
+  .btn-block-mobile { display: block; width: 100%; text-align: center; }
+
+  /* ── Section spacing ── */
+  section { padding: 14px 0; }
+  .mb-4 { margin-bottom: 16px !important; }
+  .mb-3 { margin-bottom: 12px !important; }
+}
+
+/* ── Very small phones (≤360px): extra squeeze ── */
+@media (max-width: 360px) {
+  .container { padding: 0 10px; }
+  .stats-banner { grid-template-columns: 1fr; }
+  .winrate-badge { flex-wrap: wrap; }
+  .topbar-inner { gap: 8px; }
+  .pred-row { grid-template-columns: 3px 36px 1fr 82px 44px; padding: 8px 10px; }
+  .page-hero-title { font-size: 14px; }
 }
