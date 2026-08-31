@@ -101,6 +101,22 @@
           <div class="text-center mt-3">
             <button class="btn btn-outline" id="load-more" style="display:none">Load More</button>
           </div>
+
+          <!-- CTA Buttons -->
+          <div class="home-cta-row" id="home-cta-row" style="display:none">
+            <a href="#" id="cta-telegram-btn" class="cta-btn cta-btn-telegram">
+              ✈ Join Our Telegram
+            </a>
+            <a href="/predictions.html?cat=banker" class="cta-btn cta-btn-banker">
+              🔥 Banker Tips
+            </a>
+          </div>
+
+          <!-- Upcoming Picks -->
+          <div style="margin-top:24px" id="upcoming-section-wrap">
+            <h2 class="section-title mb-3">Upcoming <span>Picks</span></h2>
+            <div id="upcoming-picks-grid"></div>
+          </div>
         </div>
 
         <!-- Right Sidebar -->
@@ -118,6 +134,18 @@
               <a href="/predictions.html?league=Europa League" class="league-item"><span class="material-icons-round" style="font-size:16px;color:rgba(255,255,255,.35)">emoji_events</span> Europa League</a>
               <a href="/predictions.html?league=MLS" class="league-item"><span class="material-icons-round" style="font-size:16px;color:rgba(255,255,255,.35)">emoji_events</span> MLS</a>
             </div>
+          </div>
+
+          <!-- League Table Widget -->
+          <div class="sidebar-widget">
+            <div class="sidebar-widget-title">League Table</div>
+            <div id="league-table-content"></div>
+          </div>
+
+          <!-- Top Scorers Widget -->
+          <div class="sidebar-widget">
+            <div class="sidebar-widget-title">Top Scorers</div>
+            <div id="top-scorers-content"></div>
           </div>
 
           <!-- Sidebar Ad -->
@@ -182,6 +210,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupCategoryTabs();
   loadHomepageArticle();
   document.getElementById('load-more').addEventListener('click', loadMore);
+
+  // Upcoming picks
+  loadUpcomingPicks(document.getElementById('upcoming-picks-grid'));
+
+  // Sidebar widgets
+  renderLeagueTableWidget(document.getElementById('league-table-content'));
+  renderTopScorersWidget(document.getElementById('top-scorers-content'));
+
+  // CTA: show once social links are fetched
+  fetchSocialLinks().then(links => {
+    const ctaRow = document.getElementById('home-cta-row');
+    const telegramBtn = document.getElementById('cta-telegram-btn');
+    if (ctaRow) ctaRow.style.display = 'grid';
+    if (telegramBtn && links.social_telegram) telegramBtn.href = links.social_telegram;
+  });
 
   // Load ads
   renderAds('predictions_top', document.getElementById('ad-predictions-top'));

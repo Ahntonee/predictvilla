@@ -2812,3 +2812,179 @@ img, video, iframe, embed, object, canvas, svg { max-width: 100%; height: auto; 
   .pred-row { grid-template-columns: 3px 36px 1fr 82px 44px; padding: 8px 10px; }
   .page-hero-title { font-size: 14px; }
 }
+
+/* ═══════════════════════════════════════════════════
+   VP-STYLE PREDICTION ROWS
+   ═══════════════════════════════════════════════════ */
+.league-group { margin-bottom: 10px; }
+.league-group-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 14px;
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: 8px 8px 0 0;
+  font-size: 12px; font-weight: 600; color: var(--text-soft);
+}
+.league-group-header img { width: 18px; height: 18px; object-fit: contain; }
+
+.pred-row-vp {
+  display: grid;
+  grid-template-columns: 1fr 190px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-top: none;
+  text-decoration: none;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.15s ease;
+  animation: rowFadeIn 0.3s ease both;
+}
+.pred-row-vp:last-child { border-radius: 0 0 8px 8px; }
+.pred-row-vp:hover {
+  background: var(--card-2);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  position: relative; z-index: 1;
+}
+.pred-row-vp.result-won { border-left: 3px solid #22c55e !important; }
+.pred-row-vp.result-lost { border-left: 3px solid #ef4444 !important; }
+.pred-row-vp.result-live { border-left: 3px solid #ff4757 !important; }
+
+.vp-team { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.vp-away { flex-direction: row-reverse; }
+.vp-team-logo { width: 34px; height: 34px; object-fit: contain; flex-shrink: 0; }
+.vp-team-logo-ph {
+  width: 34px; height: 34px; background: var(--bg-2); border-radius: 50%;
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: var(--text-soft);
+}
+.vp-team-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.vp-away-info { align-items: flex-end; }
+.vp-team-name {
+  font-size: 12px; font-weight: 700; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.vp-form { display: flex; gap: 2px; flex-wrap: nowrap; }
+
+.vp-center { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.vp-time-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: 20px; padding: 3px 10px;
+  font-size: 11px; font-weight: 600; color: var(--text-soft);
+}
+.vp-score-chip { font-size: 18px; font-weight: 900; color: var(--text); text-align: center; line-height: 1; }
+.vp-ft-label { display: block; font-size: 9px; font-weight: 700; color: var(--text-soft); text-transform: uppercase; letter-spacing: .5px; text-align: center; margin-top: 2px; }
+.vp-live-label { display: block; font-size: 9px; font-weight: 800; color: #ff4757; text-transform: uppercase; text-align: center; margin-top: 2px; }
+
+.vp-odds-tips { display: flex; align-items: center; gap: 5px; }
+.vp-odds-pill {
+  display: flex; align-items: center; gap: 5px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 20px; padding: 3px 10px;
+  font-size: 11px; white-space: nowrap;
+}
+.vp-odds-label { font-size: 9px; font-weight: 700; color: var(--text-soft); text-transform: uppercase; letter-spacing: .4px; }
+.vp-odds-val { font-weight: 800; color: var(--text); }
+.vp-tips-pill {
+  background: var(--primary); color: #fff;
+  border-radius: 20px; padding: 4px 12px;
+  font-size: 11px; font-weight: 700; white-space: nowrap;
+}
+[data-theme="light"] .vp-tips-pill { color: #0d1600; }
+.vp-locked-pill {
+  background: rgba(255,71,87,0.15); color: #ff4757;
+  border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 700;
+}
+.pred-list-grouped { }
+
+/* ── CTA Buttons ── */
+.home-cta-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  margin: 16px 0;
+}
+.cta-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  border-radius: 30px; padding: 13px 20px;
+  font-weight: 700; font-size: 14px; text-decoration: none;
+  transition: opacity .2s, transform .15s; cursor: pointer; border: none;
+}
+.cta-btn:hover { opacity: .88; transform: translateY(-2px); }
+.cta-btn-telegram { background: #229ED9; color: #fff !important; }
+.cta-btn-banker { background: #c0392b; color: #fff !important; }
+
+/* ── Upcoming Picks ── */
+.upcoming-section { margin-top: 0; }
+
+/* ── League Table / Top Scorers Widgets ── */
+.lw-league-tabs { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+.lw-tab {
+  padding: 3px 8px; border-radius: 20px; font-size: 10px; font-weight: 600;
+  cursor: pointer; background: var(--bg-2); border: 1px solid var(--border);
+  color: var(--text-soft); transition: all .2s; white-space: nowrap;
+}
+.lw-tab.active { background: var(--primary); color: #0d1600; border-color: var(--primary); }
+.lw-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.lw-table th { padding: 3px 4px; text-align: center; color: var(--text-soft); font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: .3px; }
+.lw-table th:nth-child(2) { text-align: left; }
+.lw-table td { padding: 5px 4px; border-bottom: 1px solid var(--border); text-align: center; }
+.lw-table td:nth-child(2) { text-align: left; }
+.lw-table tr:last-child td { border: none; }
+.lw-team-cell { display: flex; align-items: center; gap: 5px; }
+.lw-team-cell img { width: 14px; height: 14px; object-fit: contain; }
+.lw-rank { color: var(--text-soft); }
+.lw-pts { font-weight: 800; color: var(--primary); }
+.ts-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.ts-table th { padding: 3px 4px; text-align: left; color: var(--text-soft); font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: .3px; }
+.ts-table th:nth-child(3), .ts-table th:nth-child(4) { text-align: center; }
+.ts-table td { padding: 5px 4px; border-bottom: 1px solid var(--border); }
+.ts-table td:nth-child(1) { text-align: center; color: var(--text-soft); }
+.ts-table td:nth-child(3), .ts-table td:nth-child(4) { text-align: center; }
+.ts-table tr:last-child td { border: none; }
+.ts-player { display: flex; flex-direction: column; }
+.ts-player-name { font-weight: 700; font-size: 11px; color: var(--text); }
+.ts-player-team { font-size: 10px; color: var(--text-soft); }
+.ts-goals { font-weight: 800; color: var(--primary); }
+.ts-matches { color: var(--text-soft); }
+
+/* ── Footer predictions-by-day column ── */
+.footer-predictions-col a {
+  display: block; padding: 2px 0;
+  font-size: 13px; color: var(--text-soft); transition: color .15s;
+}
+.footer-predictions-col a:hover { color: var(--primary); text-decoration: none; }
+.footer-grid-new { grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr !important; }
+
+/* ── Mobile VP row adjustments ── */
+@media (max-width: 640px) {
+  #category-tabs {
+    display: flex !important; overflow-x: auto !important;
+    scrollbar-width: none; flex-wrap: nowrap; gap: 6px;
+    -webkit-overflow-scrolling: touch;
+  }
+  #category-tabs::-webkit-scrollbar { display: none; }
+  #category-select { display: none !important; }
+  .category-tab { flex-shrink: 0; white-space: nowrap; }
+
+  .pred-row-vp {
+    grid-template-columns: 1fr 150px 1fr;
+    padding: 10px 10px; gap: 5px;
+  }
+  .vp-team-logo, .vp-team-logo-ph { width: 26px; height: 26px; }
+  .vp-team-name { font-size: 10px; }
+  .vp-odds-pill { padding: 2px 6px; }
+  .vp-tips-pill { padding: 3px 8px; font-size: 10px; }
+  .vp-odds-val { font-size: 10px; }
+  .league-group-header { font-size: 11px; padding: 6px 10px; }
+  .home-cta-row { gap: 8px; }
+  .cta-btn { font-size: 12px; padding: 10px 12px; }
+  .footer-grid-new { grid-template-columns: 1fr !important; }
+}
+
+@media (max-width: 400px) {
+  .pred-row-vp { grid-template-columns: 1fr 130px 1fr; gap: 4px; padding: 8px; }
+  .vp-odds-tips { flex-direction: column; gap: 3px; }
+  .vp-tips-pill, .vp-odds-pill { justify-content: center; }
+}

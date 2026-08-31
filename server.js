@@ -111,6 +111,7 @@ app.use('/api/tokens', require('./routes/tokens'));
 app.use('/api/backlinks', require('./routes/backlinks'));
 app.use('/api/ads', require('./routes/ads'));
 app.use('/api/admin/seo-pages', require('./routes/seoPages'));
+app.use('/api', require('./routes/standings'));
 
 // Public config (safe keys only — never expose secrets)
 app.get('/api/config/public', (req, res) => {

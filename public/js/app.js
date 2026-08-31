@@ -640,6 +640,17 @@ async function injectFooter() {
             <a href="#" onclick="event.preventDefault();openCookiePreferences()">Cookie Preferences</a>
           </div>
 
+          <div class="footer-links-col footer-predictions-col">
+            <h4 class="footer-col-title">Predictions by Day</h4>
+            <a href="/predictions.html">Monday Football Predictions</a>
+            <a href="/predictions.html">Tuesday Football Predictions</a>
+            <a href="/predictions.html">Wednesday Football Predictions</a>
+            <a href="/predictions.html">Thursday Football Predictions</a>
+            <a href="/predictions.html">Friday Football Predictions</a>
+            <a href="/predictions.html">Saturday Football Predictions</a>
+            <a href="/predictions.html">Sunday Football Predictions</a>
+          </div>
+
           <div class="footer-links-col">
             <h4 class="footer-col-title">Contact</h4>
             ${email ? `<span class="footer-contact-item"><strong>Email:</strong> <a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a></span>` : ''}
@@ -746,53 +757,59 @@ async function initPage() {
   } catch {}
 }
 
-// ── Prediction Row (list format) ──────────────────────────────────────────────
+// ── Prediction Row (VP-style 3-column layout) ─────────────────────────────────
 function buildPredictionRow(p, isVip = false) {
   const isLocked = p.is_vip && !isVip;
-  const isFT = ['FT', 'AET', 'PEN', 'FT_PEN'].includes(p.fixture_status);
+  const isFT = FINISHED_STATUS_SET.has(p.fixture_status);
   const isLive = LIVE_STATUS_SET.has(p.fixture_status) && p.home_score !== null;
   const resultClass = p.result === 'won' ? 'result-won' : p.result === 'lost' ? 'result-lost' : isLive ? 'result-live' : '';
 
   const matchDate = new Date(p.match_date);
   const timeStr = matchDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-  const timeHtml = isLive
-    ? `<div class="pred-time"><span class="live-dot"></span>${p.elapsed_minutes ? p.elapsed_minutes + "'" : 'LIVE'}</div>`
-    : `<div class="pred-time">${timeStr}</div>`;
-
-  const scoreHtml = (isFT || isLive) && p.home_score !== null
-    ? `<div class="pred-score-col"><span>${p.home_score}</span><span>${p.away_score}</span><span class="ft-label">${isLive ? (p.elapsed_minutes ? p.elapsed_minutes + "'" : 'LIVE') : 'FT'}</span></div>`
-    : `<div class="pred-score-col vs-text">vs</div>`;
-
-  const prob = p.confidence_score || p.intelligence_score || null;
-  const probClass = prob >= 70 ? 'prob-high' : prob >= 55 ? 'prob-med' : 'prob-low';
-  const probHtml = `<div class="pred-prob"><span class="prob-badge ${prob ? probClass : ''}">${prob ? prob + '%' : '—'}</span></div>`;
-
-  const tipText = isLocked ? '🔒 VIP Pick' : (p.tip || p.market || '—');
-  const tipCls = isLocked ? 'tip-vip' : '';
+  const hasScore = (isFT || isLive) && p.home_score !== null;
+  const tipText = isLocked ? 'VIP Only' : (p.tip || p.market || '—');
   const oddVal = p.odds ? parseFloat(p.odds).toFixed(2) : null;
+  const homeInitial = (p.home_team || '?')[0].toUpperCase();
+  const awayInitial = (p.away_team || '?')[0].toUpperCase();
 
-  return `<a href="/prediction/${escapeHtml(p.slug || p.id)}" class="pred-row ${resultClass}">
-    <div class="pred-result-bar"></div>
-    ${timeHtml}
-    <div class="pred-teams">
-      <div class="pred-team-wrap">
-        <div class="pred-team-name-row">
-          ${p.home_team_logo ? `<img src="${escapeHtml(p.home_team_logo)}" alt="" loading="lazy" onerror="this.style.display='none'">` : ''}
-          <span>${escapeHtml(p.home_team)}</span>
-        </div>
-        <div class="pred-team-name-row">
-          ${p.away_team_logo ? `<img src="${escapeHtml(p.away_team_logo)}" alt="" loading="lazy" onerror="this.style.display='none'">` : ''}
-          <span>${escapeHtml(p.away_team)}</span>
-        </div>
+  let centerTop = '';
+  if (hasScore) {
+    centerTop = `<div class="vp-score-chip">${p.home_score}–${p.away_score}</div>
+      ${isLive
+        ? `<span class="vp-live-label">${p.elapsed_minutes ? p.elapsed_minutes + "'" : 'LIVE'}</span>`
+        : `<span class="vp-ft-label">FT</span>`}`;
+  } else {
+    centerTop = `<div class="vp-time-chip"><span class="material-icons-round" style="font-size:11px">schedule</span>${timeStr}</div>`;
+  }
+
+  return `<a href="/prediction/${escapeHtml(p.slug || p.id)}" class="pred-row-vp ${resultClass}" data-id="${p.id}">
+    <div class="vp-team">
+      ${p.home_team_logo
+        ? `<img src="${escapeHtml(p.home_team_logo)}" alt="" loading="lazy" class="vp-team-logo" onerror="this.style.display='none'">`
+        : `<div class="vp-team-logo-ph">${homeInitial}</div>`}
+      <div class="vp-team-info">
+        <span class="vp-team-name">${escapeHtml(p.home_team)}</span>
+        ${p.home_form ? `<div class="vp-form">${buildFormDots(p.home_form, 5)}</div>` : ''}
       </div>
-      ${scoreHtml}
     </div>
-    ${probHtml}
-    <div class="pred-tip-col">
-      <span class="tip-badge ${tipCls}">${escapeHtml(tipText)}</span>
-      ${p.market && !isLocked ? `<span class="tip-market">${escapeHtml(p.market)}</span>` : ''}
+    <div class="vp-center">
+      ${centerTop}
+      <div class="vp-odds-tips">
+        ${oddVal ? `<div class="vp-odds-pill"><span class="vp-odds-label">ODDS</span><span class="vp-odds-val">${oddVal}</span></div>` : ''}
+        ${isLocked
+          ? `<div class="vp-locked-pill">🔒 VIP</div>`
+          : `<div class="vp-tips-pill">${escapeHtml(tipText)}</div>`}
+      </div>
     </div>
-    <div class="pred-odd-col">${oddVal || '—'}</div>
+    <div class="vp-team vp-away">
+      <div class="vp-team-info vp-away-info">
+        <span class="vp-team-name">${escapeHtml(p.away_team)}</span>
+        ${p.away_form ? `<div class="vp-form">${buildFormDots(p.away_form, 5)}</div>` : ''}
+      </div>
+      ${p.away_team_logo
+        ? `<img src="${escapeHtml(p.away_team_logo)}" alt="" loading="lazy" class="vp-team-logo" onerror="this.style.display='none'">`
+        : `<div class="vp-team-logo-ph">${awayInitial}</div>`}
+    </div>
   </a>`;
 }
 
@@ -804,7 +821,7 @@ async function loadPredictions(params = {}, container, append = false) {
   const qs = new URLSearchParams({ date: 'today', limit: 20, ...params }).toString();
 
   if (!append) {
-    container.innerHTML = `<div class="pred-list">${`<div class="pred-row-skeleton skeleton"></div>`.repeat(6)}</div>`;
+    container.innerHTML = `<div class="pred-list-grouped">${`<div class="pred-row-skeleton skeleton" style="height:70px;border-radius:8px;margin-bottom:8px"></div>`.repeat(6)}</div>`;
   }
 
   try {
@@ -818,18 +835,30 @@ async function loadPredictions(params = {}, container, append = false) {
       return pagination;
     }
 
-    const rows = preds.map(p => buildPredictionRow(p, isVip)).join('');
-    const header = `<div class="pred-list-header"><span></span><span></span><span>Match</span><span>Prob</span><span>Tips</span><span>Odd</span></div>`;
+    // Group predictions by league
+    const groups = {};
+    preds.forEach(p => {
+      const key = p.league_name || 'Other';
+      if (!groups[key]) groups[key] = { logo: p.league_logo || '', country: p.country || '', preds: [] };
+      groups[key].preds.push(p);
+    });
+    const rows = Object.entries(groups).map(([name, g]) => {
+      const countryPart = g.country ? `<span style="margin-right:2px;opacity:.7">${escapeHtml(g.country)}:</span>` : '';
+      return `<div class="league-group">
+        <div class="league-group-header">
+          ${g.logo ? `<img src="${escapeHtml(g.logo)}" alt="">` : '<span class="material-icons-round" style="font-size:14px">emoji_events</span>'}
+          <span>${countryPart}${escapeHtml(name)}</span>
+        </div>
+        ${g.preds.map(p => buildPredictionRow(p, isVip)).join('')}
+      </div>`;
+    }).join('');
 
     if (append) {
-      let list = container.querySelector('.pred-list');
-      if (!list) { list = document.createElement('div'); list.className = 'pred-list'; container.appendChild(list); }
-      const before = list.children.length;
+      let list = container.querySelector('.pred-list-grouped');
+      if (!list) { list = document.createElement('div'); list.className = 'pred-list-grouped'; container.appendChild(list); }
       list.insertAdjacentHTML('beforeend', rows);
-      applyRowStagger(list, before);
     } else {
-      container.innerHTML = `<div class="pred-list">${header}${rows}</div>`;
-      applyRowStagger(container.querySelector('.pred-list'), 0);
+      container.innerHTML = `<div class="pred-list-grouped">${rows}</div>`;
     }
     return pagination;
   } catch (err) {
@@ -1433,4 +1462,146 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   });
+}
+
+// ── League tabs config ─────────────────────────────────
+const LEAGUE_TABS = [
+  { id: 39, name: 'EPL', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+  { id: 140, name: 'La Liga', flag: '🇪🇸' },
+  { id: 78, name: 'Bundesliga', flag: '🇩🇪' },
+  { id: 135, name: 'Serie A', flag: '🇮🇹' },
+  { id: 61, name: 'Ligue 1', flag: '🇫🇷' },
+];
+
+// ── League Table Widget ────────────────────────────────
+async function renderLeagueTableWidget(container) {
+  if (!container) return;
+  container.innerHTML = `
+    <div class="lw-league-tabs">
+      ${LEAGUE_TABS.map((l, i) => `<button class="lw-tab${i===0?' active':''}" data-league="${l.id}">${l.flag} ${l.name}</button>`).join('')}
+    </div>
+    <div class="lw-table-wrap"><div class="skeleton" style="height:200px;border-radius:8px"></div></div>`;
+  container.querySelectorAll('.lw-tab').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      container.querySelectorAll('.lw-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      await _loadStandingsTable(container, parseInt(btn.dataset.league));
+    });
+  });
+  await _loadStandingsTable(container, LEAGUE_TABS[0].id);
+}
+
+async function _loadStandingsTable(container, leagueId) {
+  const wrap = container.querySelector('.lw-table-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="skeleton" style="height:200px;border-radius:8px"></div>';
+  try {
+    const r = await fetch(`/api/standings?league=${leagueId}`);
+    const data = await r.json();
+    if (!data.success || !data.data?.standings?.length) {
+      wrap.innerHTML = '<p style="font-size:12px;color:var(--text-soft);padding:12px 0">No standings available</p>';
+      return;
+    }
+    const top10 = data.data.standings.slice(0, 10);
+    wrap.innerHTML = `<div style="overflow-x:auto">
+      <table class="lw-table">
+        <thead><tr><th>#</th><th>Team</th><th>MP</th><th>W</th><th>D</th><th>L</th><th>Pts</th></tr></thead>
+        <tbody>${top10.map(t => `<tr>
+          <td class="lw-rank">${t.rank}</td>
+          <td><div class="lw-team-cell">
+            ${t.logo ? `<img src="${escapeHtml(t.logo)}" alt="" loading="lazy">` : ''}
+            <span>${escapeHtml(t.team)}</span>
+          </div></td>
+          <td>${t.played}</td>
+          <td style="color:#22c55e">${t.won}</td>
+          <td>${t.drawn}</td>
+          <td style="color:#ef4444">${t.lost}</td>
+          <td class="lw-pts">${t.points}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>`;
+  } catch {
+    wrap.innerHTML = '<p style="font-size:12px;color:var(--text-soft);padding:12px 0">Could not load standings</p>';
+  }
+}
+
+// ── Top Scorers Widget ─────────────────────────────────
+async function renderTopScorersWidget(container) {
+  if (!container) return;
+  container.innerHTML = `
+    <div class="lw-league-tabs">
+      ${LEAGUE_TABS.map((l, i) => `<button class="lw-tab ts-tab${i===0?' active':''}" data-league="${l.id}">${l.flag} ${l.name}</button>`).join('')}
+    </div>
+    <div class="ts-table-wrap"><div class="skeleton" style="height:160px;border-radius:8px"></div></div>`;
+  container.querySelectorAll('.ts-tab').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      container.querySelectorAll('.ts-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      await _loadTopScorers(container, parseInt(btn.dataset.league));
+    });
+  });
+  await _loadTopScorers(container, LEAGUE_TABS[0].id);
+}
+
+async function _loadTopScorers(container, leagueId) {
+  const wrap = container.querySelector('.ts-table-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="skeleton" style="height:160px;border-radius:8px"></div>';
+  try {
+    const r = await fetch(`/api/topscorers?league=${leagueId}`);
+    const data = await r.json();
+    if (!data.success || !data.data?.players?.length) {
+      wrap.innerHTML = '<p style="font-size:12px;color:var(--text-soft);padding:12px 0">No data available</p>';
+      return;
+    }
+    wrap.innerHTML = `<table class="ts-table">
+      <thead><tr><th>#</th><th>Player</th><th>MP</th><th>⚽</th></tr></thead>
+      <tbody>${data.data.players.map((p, i) => `<tr>
+        <td>${i+1}</td>
+        <td><div class="ts-player">
+          <span class="ts-player-name">${escapeHtml(p.name)}</span>
+          <span class="ts-player-team">${escapeHtml(p.team)}</span>
+        </div></td>
+        <td class="ts-matches">${p.matches}</td>
+        <td class="ts-goals">${p.goals}</td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+  } catch {
+    wrap.innerHTML = '<p style="font-size:12px;color:var(--text-soft);padding:12px 0">Could not load top scorers</p>';
+  }
+}
+
+// ── Upcoming Picks ─────────────────────────────────────
+async function loadUpcomingPicks(container) {
+  if (!container) return;
+  container.innerHTML = `<div class="pred-list-grouped">${`<div class="pred-row-skeleton skeleton" style="height:70px;border-radius:8px;margin-bottom:8px"></div>`.repeat(4)}</div>`;
+  try {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().slice(0, 10);
+    const r = await fetch(`/api/predictions?date=${tomorrowStr}&limit=8`);
+    const data = await r.json();
+    const preds = data.data?.predictions || [];
+    if (!preds.length) { container.closest('section')?.style && (container.closest('section').style.display = 'none'); return; }
+    const user = getUser();
+    const isVip = user?.role === 'vip' || user?.role === 'admin';
+    const groups = {};
+    preds.forEach(p => {
+      const key = p.league_name || 'Other';
+      if (!groups[key]) groups[key] = { logo: p.league_logo || '', country: p.country || '', preds: [] };
+      groups[key].preds.push(p);
+    });
+    const html = Object.entries(groups).map(([name, g]) => {
+      const countryPart = g.country ? `<span style="margin-right:2px;opacity:.7">${escapeHtml(g.country)}:</span>` : '';
+      return `<div class="league-group">
+        <div class="league-group-header">
+          ${g.logo ? `<img src="${escapeHtml(g.logo)}" alt="">` : '<span class="material-icons-round" style="font-size:14px">emoji_events</span>'}
+          <span>${countryPart}${escapeHtml(name)}</span>
+        </div>
+        ${g.preds.map(p => buildPredictionRow(p, isVip)).join('')}
+      </div>`;
+    }).join('');
+    container.innerHTML = `<div class="pred-list-grouped">${html}</div>`;
+  } catch {
+    container.closest('section')?.style && (container.closest('section').style.display = 'none');
+  }
 }
