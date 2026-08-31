@@ -171,20 +171,16 @@ async function autoPredictFixtures() {
     `SELECT
        p.id, p.home_team, p.away_team, p.match_date,
        p.api_fixture_id, p.league_id, l.api_league_id,
-       COALESCE(tsh.home_goals_scored_avg,   tsh.goals_scored_avg)   AS db_home_scored,
-       COALESCE(tsh.home_goals_conceded_avg, tsh.goals_conceded_avg) AS db_home_conceded,
-       tsh.home_form                                                  AS db_home_form,
-       COALESCE(tsa.away_goals_scored_avg,   tsa.goals_scored_avg)   AS db_away_scored,
-       COALESCE(tsa.away_goals_conceded_avg, tsa.goals_conceded_avg) AS db_away_conceded,
-       tsa.away_form                                                  AS db_away_form
+       tsh.goals_scored_avg   AS db_home_scored,
+       tsh.goals_conceded_avg AS db_home_conceded,
+       tsa.goals_scored_avg   AS db_away_scored,
+       tsa.goals_conceded_avg AS db_away_conceded
      FROM predictions p
      LEFT JOIN leagues l ON l.id = p.league_id
      LEFT JOIN team_statistics tsh
        ON tsh.team_name = p.home_team AND tsh.league_id = p.league_id
-      AND tsh.season = (SELECT MAX(t.season) FROM team_statistics t WHERE t.team_name = p.home_team AND t.league_id = p.league_id)
      LEFT JOIN team_statistics tsa
        ON tsa.team_name = p.away_team AND tsa.league_id = p.league_id
-      AND tsa.season = (SELECT MAX(t.season) FROM team_statistics t WHERE t.team_name = p.away_team AND t.league_id = p.league_id)
      WHERE p.published_at IS NULL
        AND p.result = 'pending'
        AND DATE(p.match_date) IN (CURDATE(), CURDATE()+1)
@@ -205,8 +201,8 @@ async function autoPredictFixtures() {
         awayGoalsAvg         = parseFloat(fx.db_away_scored)   || 1.1;
         homeGoalsConcededAvg = parseFloat(fx.db_home_conceded) || 1.2;
         awayGoalsConcededAvg = parseFloat(fx.db_away_conceded) || 1.3;
-        homeForm             = (fx.db_home_form || '').slice(-10) || null;
-        awayForm             = (fx.db_away_form || '').slice(-10) || null;
+        homeForm             = null;
+        awayForm             = null;
       } else {
         // Fallback: fetch from API for teams not yet in our DB
         const statsResp = await trackedGet('/fixtures', { id: fx.api_fixture_id });
