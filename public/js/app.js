@@ -740,7 +740,10 @@ async function injectAdSense() {
 }
 
 // ── Page Init ─────────────────────────────────────────────────────────────────
+let _initPageDone = false;
 async function initPage() {
+  if (_initPageDone) return;
+  _initPageDone = true;
   await injectHeader();
   await injectFooter();
   injectAdSense();
@@ -1598,6 +1601,7 @@ async function _loadTopScorers(container, leagueId) {
 // ── Upcoming Picks ─────────────────────────────────────
 async function loadUpcomingPicks(container) {
   if (!container) return;
+  const sectionWrap = document.getElementById('upcoming-section-wrap') || container.closest('[id]');
   container.innerHTML = `<div class="pred-list-grouped">${`<div class="pred-row-skeleton skeleton" style="height:70px;border-radius:8px;margin-bottom:8px"></div>`.repeat(4)}</div>`;
   try {
     const tomorrow = new Date();
@@ -1606,7 +1610,7 @@ async function loadUpcomingPicks(container) {
     const r = await fetch(`/api/predictions?date=${tomorrowStr}&limit=8`);
     const data = await r.json();
     const preds = data.data?.predictions || [];
-    if (!preds.length) { container.closest('section')?.style && (container.closest('section').style.display = 'none'); return; }
+    if (!preds.length) { if (sectionWrap) sectionWrap.style.display = 'none'; return; }
     const user = getUser();
     const isVip = user?.role === 'vip' || user?.role === 'admin';
     const groups = {};
@@ -1627,6 +1631,6 @@ async function loadUpcomingPicks(container) {
     }).join('');
     container.innerHTML = `<div class="pred-list-grouped">${html}</div>`;
   } catch {
-    container.closest('section')?.style && (container.closest('section').style.display = 'none');
+    if (sectionWrap) sectionWrap.style.display = 'none';
   }
 }
