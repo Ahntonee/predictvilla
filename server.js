@@ -30,13 +30,14 @@ app.use(helmet({
       connectSrc: ["'self'"],
       frameSrc: ["'none'"],
       objectSrc: ["'none'"],
+      upgradeInsecureRequests: null, // disabled — site runs on HTTP behind nginx
     },
   },
   crossOriginEmbedderPolicy: false,
 }));
 
 app.use(cors({
-  origin: isProd ? process.env.SITE_URL : true,
+  origin: true,
   credentials: true,
 }));
 
