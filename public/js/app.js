@@ -827,11 +827,36 @@ async function loadPredictions(params = {}, container, append = false) {
   try {
     const r = await fetch(`/api/predictions?${qs}`);
     const data = await r.json();
-    const preds = data.data?.predictions || [];
-    const pagination = data.data?.pagination || {};
+    let preds = data.data?.predictions || [];
+    let pagination = data.data?.pagination || {};
+    let upcomingBanner = '';
+
+    // Today is empty — try tomorrow, then day-after, for a 3-day window
+    if (!preds.length && !append && (params.date === 'today' || !params.date)) {
+      for (const fallbackDate of ['tomorrow', 2, 3]) {
+        const dateParam = typeof fallbackDate === 'number'
+          ? new Date(Date.now() + fallbackDate * 86400000).toISOString().slice(0, 10)
+          : fallbackDate;
+        const fqs = new URLSearchParams({ date: 'today', limit: 20, ...params, date: dateParam }).toString();
+        const r2 = await fetch(`/api/predictions?${fqs}`);
+        const d2 = await r2.json();
+        const next = d2.data?.predictions || [];
+        if (next.length) {
+          preds = next;
+          pagination = d2.data?.pagination || {};
+          const label = fallbackDate === 'tomorrow' ? 'Tomorrow' : `${fallbackDate} days away`;
+          upcomingBanner = `<div class="upcoming-notice"><span class="material-icons-round" style="font-size:16px;vertical-align:middle">event</span> No predictions today — showing <strong>${label}'s picks</strong></div>`;
+          break;
+        }
+      }
+    }
 
     if (!preds.length && !append) {
-      container.innerHTML = `<div class="empty-state"><div class="empty-icon"><span class="material-icons-round" style="font-size:48px">sports_soccer</span></div><h3>No predictions yet</h3><p>Check back soon for today's tips</p></div>`;
+      container.innerHTML = `<div class="empty-state">
+        <div class="empty-icon"><span class="material-icons-round" style="font-size:48px;color:var(--primary)">sports_soccer</span></div>
+        <h3>No predictions yet</h3>
+        <p>Predictions are published daily. Check back soon or <a href="/predictions.html" style="color:var(--primary)">view all picks →</a></p>
+      </div>`;
       return pagination;
     }
 
@@ -858,7 +883,7 @@ async function loadPredictions(params = {}, container, append = false) {
       if (!list) { list = document.createElement('div'); list.className = 'pred-list-grouped'; container.appendChild(list); }
       list.insertAdjacentHTML('beforeend', rows);
     } else {
-      container.innerHTML = `<div class="pred-list-grouped">${rows}</div>`;
+      container.innerHTML = `${upcomingBanner}<div class="pred-list-grouped">${rows}</div>`;
     }
     return pagination;
   } catch (err) {

@@ -752,7 +752,18 @@ select.form-control { cursor: pointer; }
 .empty-state { text-align: center; padding: 48px 24px; color: var(--text-soft); }
 .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
 .empty-state h3 { font-size: 18px; margin-bottom: 8px; color: var(--text); }
-.empty-state p { font-size: 14px; }
+.empty-state p { font-size: 14px; color: var(--text-soft); }
+
+/* ── Upcoming Notice Banner ── */
+.upcoming-notice {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 14px; margin-bottom: 12px; border-radius: 8px;
+  background: rgba(160, 208, 0, 0.1); border: 1px solid rgba(160, 208, 0, 0.25);
+  font-size: 13px; color: var(--text-soft);
+}
+[data-theme="dark"] .upcoming-notice {
+  background: rgba(160, 208, 0, 0.08); border-color: rgba(160, 208, 0, 0.2);
+}
 
 /* ── Leaderboard ── */
 .leaderboard-row { display: grid; align-items: center; padding: 12px 16px; border-radius: var(--radius); }
@@ -2893,7 +2904,7 @@ img, video, iframe, embed, object, canvas, svg { max-width: 100%; height: auto; 
   border-radius: 20px; padding: 4px 12px;
   font-size: 11px; font-weight: 700; white-space: nowrap;
 }
-[data-theme="light"] .vp-tips-pill { color: #0d1600; }
+[data-theme="light"] .vp-tips-pill { color: #fff; }
 .vp-locked-pill {
   background: rgba(255,71,87,0.15); color: #ff4757;
   border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 700;
