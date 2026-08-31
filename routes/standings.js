@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const axios = require('axios');
+const quota = require('../services/apiQuota');
 
 const API_KEY = process.env.API_FOOTBALL_KEY;
 const API_BASE = 'https://v3.football.api-sports.io';
@@ -16,10 +17,10 @@ async function apiFetch(path) {
   if (_cache.has(path) && Date.now() - _cache.get(path).ts < CACHE_TTL) {
     return _cache.get(path).data;
   }
+  quota.checkAndIncrement(`standings:${path}`);
   const { data } = await axios.get(`${API_BASE}${path}`, {
     headers: {
-      'x-rapidapi-key': API_KEY,
-      'x-rapidapi-host': 'v3.football.api-sports.io',
+      'x-apisports-key': API_KEY,
     },
     timeout: 10000,
   });

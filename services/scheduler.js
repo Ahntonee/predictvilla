@@ -1,5 +1,6 @@
 const cron = require('node-cron');
 const { syncFixtures, syncResults, syncLiveScores, autoPredictFixtures } = require('./apiFootball');
+const apiQuota = require('./apiQuota');
 const { syncOddsForTodayFixtures } = require('./oddsApi');
 const { runForAllToday, runDailySpecials } = require('./intelligence');
 const { settleBets } = require('./tokens');
@@ -89,10 +90,11 @@ function startScheduler() {
     } catch (e) { console.error('[Scheduler] stats refresh error:', e.message); }
   });
 
-  // 23:55 — reset odds API daily counter so midnight run starts with full quota
+  // 23:55 — reset both API daily counters so midnight run starts with full quota
   cron.schedule('55 23 * * *', async () => {
     try {
       await pool.query(`UPDATE site_settings SET setting_value='0' WHERE setting_key='odds_api_calls_today'`);
+      apiQuota.reset();
     } catch {}
   });
 

@@ -1,6 +1,7 @@
 const axios = require('axios');
 const { pool } = require('../config/db');
 const { generatePredictionSlug } = require('../utils/helpers');
+const quota = require('./apiQuota');
 
 const BASE = process.env.API_FOOTBALL_BASE_URL || 'https://v3.football.api-sports.io';
 const KEY = process.env.API_FOOTBALL_KEY;
@@ -19,6 +20,12 @@ const api = axios.create({
   headers: { 'x-apisports-key': KEY },
   timeout: 15000,
 });
+
+// All external API calls go through here — enforces the 2500/day cap
+async function trackedGet(endpoint, params) {
+  quota.checkAndIncrement(endpoint);
+  return api.get(endpoint, { params });
+}
 
 async function getLeagueIds() {
   const [rows] = await pool.query('SELECT api_league_id FROM leagues WHERE is_active = 1 AND api_league_id IS NOT NULL');
@@ -41,7 +48,7 @@ async function syncFixtures(daysAhead = 0) {
   // Single API call for the whole date — vastly more efficient than one call per league
   let fixtures = [];
   try {
-    const resp = await api.get('/fixtures', { params: { date: dateStr }, timeout: 20000 });
+    const resp = await trackedGet('/fixtures', { date: dateStr, timezone: 'UTC' });
     fixtures = resp.data?.response || [];
   } catch (err) {
     console.error('[ApiFootball] syncFixtures fetch error:', err.message);
@@ -82,64 +89,72 @@ async function syncFixtures(daysAhead = 0) {
   return synced;
 }
 
+const FINISHED_STATUSES = new Set(['FT', 'AET', 'PEN', 'AWD', 'WO']);
+
 async function syncResults() {
   if (!KEY) return 0;
   const [pending] = await pool.query(
-    `SELECT id, api_fixture_id FROM predictions
+    `SELECT id, api_fixture_id, DATE_FORMAT(match_date, '%Y-%m-%d') AS match_day
+     FROM predictions
      WHERE result = 'pending' AND api_fixture_id IS NOT NULL AND match_date < NOW() - INTERVAL 2 HOUR`
   );
+  if (!pending.length) return 0;
+
+  // Group by date — 1 API call per date instead of 1 per prediction
+  const byDate = new Map();
+  for (const p of pending) {
+    if (!byDate.has(p.match_day)) byDate.set(p.match_day, []);
+    byDate.get(p.match_day).push(p);
+  }
 
   let updated = 0;
-  for (const pred of pending) {
+  for (const [date, preds] of byDate) {
     try {
-      const resp = await api.get('/fixtures', { params: { id: pred.api_fixture_id } });
-      const f = resp.data?.response?.[0];
-      if (!f) continue;
+      const resp = await trackedGet('/fixtures', { date, timezone: 'UTC' });
+      const fixtures = resp.data?.response || [];
+      const fixtureMap = new Map(fixtures.map(f => [f.fixture.id, f]));
 
-      const status = f.fixture.status.short;
-      const finished = ['FT', 'AET', 'PEN', 'AWD', 'WO'].includes(status);
-      if (!finished) continue;
-
-      const hScore = f.goals.home;
-      const aScore = f.goals.away;
-      await pool.query(
-        `UPDATE predictions SET home_score = ?, away_score = ? WHERE id = ?`,
-        [hScore, aScore, pred.id]
-      );
-      updated++;
+      for (const pred of preds) {
+        const f = fixtureMap.get(pred.api_fixture_id);
+        if (!f) continue;
+        const status = f.fixture.status.short;
+        if (!FINISHED_STATUSES.has(status)) continue;
+        await pool.query(
+          `UPDATE predictions SET home_score=?, away_score=? WHERE id=?`,
+          [f.goals.home, f.goals.away, pred.id]
+        );
+        updated++;
+      }
     } catch (err) {
-      console.error(`[ApiFootball] syncResults fixture ${pred.api_fixture_id}:`, err.message);
+      console.error(`[ApiFootball] syncResults ${date}:`, err.message);
     }
   }
+
   await pool.query(
     `INSERT INTO site_settings (setting_key, setting_value) VALUES ('last_sync_results', NOW())
      ON DUPLICATE KEY UPDATE setting_value = NOW()`
   );
-  console.log(`[ApiFootball] Updated ${updated} results`);
+  console.log(`[ApiFootball] Updated ${updated} results via ${byDate.size} API call(s) (was ${pending.length})`);
   return updated;
 }
 
 async function getTeamStats(teamId, leagueId) {
   try {
-    const resp = await api.get('/teams/statistics', {
-      params: { team: teamId, league: leagueId, season: SEASON }
-    });
+    const resp = await trackedGet('/teams/statistics', { team: teamId, league: leagueId, season: SEASON });
     return resp.data?.response || null;
   } catch { return null; }
 }
 
 async function getH2H(home, away) {
   try {
-    const resp = await api.get('/fixtures/headtohead', {
-      params: { h2h: `${home}-${away}`, last: 10 }
-    });
+    const resp = await trackedGet('/fixtures/headtohead', { h2h: `${home}-${away}`, last: 10 });
     return resp.data?.response || [];
   } catch { return []; }
 }
 
 async function getFixtureOdds(fixtureId) {
   try {
-    const resp = await api.get('/odds', { params: { fixture: fixtureId } });
+    const resp = await trackedGet('/odds', { fixture: fixtureId });
     return resp.data?.response?.[0] || null;
   } catch { return null; }
 }
@@ -194,7 +209,7 @@ async function autoPredictFixtures() {
         awayForm             = (fx.db_away_form || '').slice(-10) || null;
       } else {
         // Fallback: fetch from API for teams not yet in our DB
-        const statsResp = await api.get('/fixtures', { params: { id: fx.api_fixture_id } });
+        const statsResp = await trackedGet('/fixtures', { id: fx.api_fixture_id });
         const fxData    = statsResp.data?.response?.[0];
         if (!fxData) continue;
 
@@ -239,7 +254,6 @@ async function autoPredictFixtures() {
 
 // Live status codes from API-Football
 const LIVE_STATUSES = new Set(['1H', 'HT', '2H', 'ET', 'BT', 'P', 'INT', 'LIVE']);
-const FINISHED_STATUSES = new Set(['FT', 'AET', 'PEN', 'AWD', 'WO']);
 
 /**
  * Fetches live + in-play scores for today's pending predictions.
@@ -263,7 +277,7 @@ async function syncLiveScores() {
   const today = new Date().toISOString().slice(0, 10);
   let fixtures;
   try {
-    const resp = await api.get('/fixtures', { params: { date: today, timezone: 'UTC' } });
+    const resp = await trackedGet('/fixtures', { date: today, timezone: 'UTC' });
     fixtures = resp.data?.response || [];
   } catch (err) {
     console.error('[ApiFootball] syncLiveScores fetch error:', err.message);

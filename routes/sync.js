@@ -9,6 +9,7 @@ const { logUntracked, recalculateStats, autoAdjustMarketWeights } = require('../
 const { syncAllTeamStats, syncCornerStats, syncH2HForUpcoming, runFullHistoricalSeed } = require('../services/historicalData');
 const { refreshTeamStatistics, refreshLeagueStatistics, refreshMarketStats } = require('../services/statistics');
 const { gradeFinished } = require('../services/scheduler');
+const apiQuota = require('../services/apiQuota');
 const { pool } = require('../config/db');
 
 router.use(authenticate, requireAdmin);
@@ -116,9 +117,14 @@ router.get('/status', asyncHandler(async (req, res) => {
 router.get('/api-status', asyncHandler(async (req, res) => {
   const KEY = process.env.API_FOOTBALL_KEY;
   const BASE = process.env.API_FOOTBALL_BASE_URL || 'https://v3.football.api-sports.io';
-  if (!KEY) return successResponse(res, { requests: { current: 0, limit_day: 0 } });
-  const r = await axios.get(`${BASE}/status`, { headers: { 'x-apisports-key': KEY }, timeout: 8000 });
-  return successResponse(res, r.data.response || {});
+  const local = { calls_today: apiQuota.getToday(), daily_limit: apiQuota.getLimit() };
+  if (!KEY) return successResponse(res, { local, requests: { current: 0, limit_day: 0 } });
+  try {
+    const r = await axios.get(`${BASE}/status`, { headers: { 'x-apisports-key': KEY }, timeout: 8000 });
+    return successResponse(res, { local, ...(r.data.response || {}) });
+  } catch {
+    return successResponse(res, { local });
+  }
 }));
 
 // Sync all leagues from API-Football
