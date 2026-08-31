@@ -257,10 +257,8 @@ async function runForAllToday() {
      LEFT JOIN leagues l ON l.id = p.league_id
      LEFT JOIN team_statistics tsh
        ON tsh.team_name = p.home_team AND tsh.league_id = p.league_id
-      AND tsh.season = (SELECT MAX(t.season) FROM team_statistics t WHERE t.team_name = p.home_team AND t.league_id = p.league_id)
      LEFT JOIN team_statistics tsa
        ON tsa.team_name = p.away_team AND tsa.league_id = p.league_id
-      AND tsa.season = (SELECT MAX(t.season) FROM team_statistics t WHERE t.team_name = p.away_team AND t.league_id = p.league_id)
      WHERE DATE(p.match_date) IN (CURDATE(), CURDATE()+1)
        AND p.result = 'pending'
        AND p.published_at IS NULL
