@@ -1494,11 +1494,11 @@ if ('serviceWorker' in navigator) {
 
 // ── League tabs config ─────────────────────────────────
 const LEAGUE_TABS = [
-  { id: 39, name: 'EPL', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
-  { id: 140, name: 'La Liga', flag: '🇪🇸' },
-  { id: 78, name: 'Bundesliga', flag: '🇩🇪' },
-  { id: 135, name: 'Serie A', flag: '🇮🇹' },
-  { id: 61, name: 'Ligue 1', flag: '🇫🇷' },
+  { id: 39,  name: 'England',  flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+  { id: 140, name: 'Spain',    flag: '🇪🇸' },
+  { id: 78,  name: 'Germany',  flag: '🇩🇪' },
+  { id: 135, name: 'Italy',    flag: '🇮🇹' },
+  { id: 61,  name: 'France',   flag: '🇫🇷' },
 ];
 
 // ── League Table Widget ────────────────────────────────

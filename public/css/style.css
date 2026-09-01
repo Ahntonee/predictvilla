@@ -1309,20 +1309,20 @@ select.form-control { cursor: pointer; }
   top: 80px;
 }
 .sidebar-widget {
-  background: #141d00;
-  border: 1px solid rgba(255,255,255,0.07);
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px;
 }
 .sidebar-widget-title {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: .06em;
-  color: rgba(255,255,255,0.4);
+  letter-spacing: .08em;
+  color: var(--text-soft);
   margin-bottom: 12px;
   padding-bottom: 8px;
-  border-bottom: 1px solid rgba(255,255,255,0.07);
+  border-bottom: 1px solid var(--border);
 }
 .sidebar-stats-list { display: flex; flex-direction: column; gap: 10px; }
 .ss-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-soft); }
@@ -2115,12 +2115,12 @@ body.has-sidebar { padding-top: calc(var(--topbar-h) + env(safe-area-inset-top))
   padding: 8px 12px;
   font-size: 12.5px;
   font-weight: 500;
-  color: #fff;
+  color: var(--text);
   text-decoration: none;
   border-radius: 6px;
   transition: all 0.15s;
 }
-.league-item:hover { background: rgba(255,255,255,0.08); color: #ffd000; }
+.league-item:hover { background: var(--card-2); color: var(--primary); }
 
 /* Page hero dark (same as default — kept for specificity if needed) */
 [data-theme="dark"] .page-hero {
@@ -2936,7 +2936,9 @@ img, video, iframe, embed, object, canvas, svg { max-width: 100%; height: auto; 
   cursor: pointer; background: var(--bg-2); border: 1px solid var(--border);
   color: var(--text-soft); transition: all .2s; white-space: nowrap;
 }
-.lw-tab.active { background: var(--primary); color: #0d1600; border-color: var(--primary); }
+.lw-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+[data-theme="dark"] .lw-tab.active,
+:root:not([data-theme="light"]) .lw-tab.active { color: #0d1600; }
 .lw-table { width: 100%; border-collapse: collapse; font-size: 11px; }
 .lw-table th { padding: 3px 4px; text-align: center; color: var(--text-soft); font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: .3px; }
 .lw-table th:nth-child(2) { text-align: left; }
