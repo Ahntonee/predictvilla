@@ -244,7 +244,7 @@ exports.create = asyncHandler(async (req, res) => {
      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'manual', ?)`,
     [slug, league_id || null, sanitiseText(home_team), sanitiseText(away_team),
      home_team_logo || null, away_team_logo || null, match_date, sanitiseText(tip),
-     market || '1X2', category || 'Free', odds || null, confidence_score || null,
+     market || '1X2', (category || 'free').toLowerCase(), odds || null, confidence_score || null,
      analysis ? sanitiseText(analysis) : null,
      is_vip ? 1 : 0, is_banker ? 1 : 0, is_featured ? 1 : 0,
      home_form || null, away_form || null, h2h_summary || null,

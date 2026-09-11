@@ -9,3 +9,5 @@ predictvilla-task-checklist.md
 staketruth-build-prompt.md
 staketruth-task-checklist.md
 ecosystem.config.js
+.claude/
+*.stackdump

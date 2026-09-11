@@ -38,8 +38,8 @@ const validatePrediction = [
   body('away_team').trim().notEmpty().withMessage('Away team is required'),
   body('match_date').notEmpty().withMessage('Match date is required').isISO8601(),
   body('tip').trim().notEmpty().withMessage('Tip is required'),
-  body('market').isIn(['1X2', 'Over/Under', 'BTTS', 'Double Chance', 'Draw No Bet', 'Correct Score', 'Accumulator']),
-  body('category').isIn(['Free', 'VIP', 'Banker', 'Daily Special', 'Accumulator']),
+  body('market').optional().trim(),
+  body('category').optional().trim(),
   handleValidation,
 ];
 

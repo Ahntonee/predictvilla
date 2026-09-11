@@ -1,4 +1,4 @@
-﻿require('dotenv').config();
+require('dotenv').config();
 const { pool } = require('./db');
 const bcrypt = require('bcryptjs');
 
@@ -59,9 +59,11 @@ async function migrate() {
       away_team_logo VARCHAR(500),
       match_date DATETIME NOT NULL,
       tip VARCHAR(255) NOT NULL,
-      market ENUM('1X2','Over/Under','BTTS','Draw No Bet','Correct Score','Accumulator') DEFAULT '1X2',
-      category ENUM('all','free','over_1_5','over_2_5','over_3_5','under_1_5','under_2_5','under_3_5','gg','home_win','away_win','draw','vip','banker') DEFAULT 'free',
+      market VARCHAR(30) NOT NULL DEFAULT '1X2',
+      category VARCHAR(30) NOT NULL DEFAULT 'free',
       odds DECIMAL(6,2),
+      fixture_status VARCHAR(10) NULL DEFAULT NULL,
+      elapsed_minutes TINYINT NULL DEFAULT NULL,
       confidence_score INT,
       intelligence_score INT,
       analysis TEXT,
@@ -273,6 +275,15 @@ async function migrate() {
       over_1_5_count INT DEFAULT 0,
       over_2_5_count INT DEFAULT 0,
       over_3_5_count INT DEFAULT 0,
+      home_goals_scored_avg DECIMAL(5,2) NULL,
+      away_goals_scored_avg DECIMAL(5,2) NULL,
+      home_goals_conceded_avg DECIMAL(5,2) NULL,
+      away_goals_conceded_avg DECIMAL(5,2) NULL,
+      home_form VARCHAR(20) NULL,
+      away_form VARCHAR(20) NULL,
+      corners_avg DECIMAL(5,2) NULL,
+      home_corners_avg DECIMAL(5,2) NULL,
+      away_corners_avg DECIMAL(5,2) NULL,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       UNIQUE KEY uq_team_league_season (api_team_id, api_league_id, season)
     )`,
@@ -321,12 +332,66 @@ async function migrate() {
       INDEX idx_viewed_at (viewed_at),
       INDEX idx_country (country)
     )`,
+
+    `CREATE TABLE IF NOT EXISTS pending_registrations (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      email VARCHAR(255) UNIQUE NOT NULL,
+      name VARCHAR(100) NOT NULL,
+      password_hash VARCHAR(255) NOT NULL,
+      country VARCHAR(100),
+      token VARCHAR(6) NOT NULL,
+      expires_at DATETIME NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+
+    `CREATE TABLE IF NOT EXISTS h2h_history (
+      id              INT AUTO_INCREMENT PRIMARY KEY,
+      home_api_id     INT          NOT NULL,
+      away_api_id     INT          NOT NULL,
+      fixture_api_id  INT          NOT NULL,
+      match_date      DATETIME     NOT NULL,
+      home_team       VARCHAR(100) NULL,
+      away_team       VARCHAR(100) NULL,
+      home_score      TINYINT      NULL,
+      away_score      TINYINT      NULL,
+      league_api_id   INT          NULL,
+      season          VARCHAR(10)  NULL,
+      created_at      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_fixture (fixture_api_id),
+      INDEX idx_pair (home_api_id, away_api_id)
+    )`,
   ];
 
   for (const sql of tables) {
     await db.query(sql);
   }
   console.log('[Migrate] All tables created/verified');
+
+  // Idempotent column updates for existing databases
+  const alterStatements = [
+    `ALTER TABLE predictions MODIFY COLUMN category VARCHAR(30) NOT NULL DEFAULT 'free'`,
+    `ALTER TABLE predictions MODIFY COLUMN market VARCHAR(30) NOT NULL DEFAULT '1X2'`,
+    `ALTER TABLE predictions ADD COLUMN fixture_status VARCHAR(10) NULL DEFAULT NULL`,
+    `ALTER TABLE predictions ADD COLUMN elapsed_minutes TINYINT NULL DEFAULT NULL`,
+    `ALTER TABLE team_statistics ADD COLUMN home_goals_scored_avg DECIMAL(5,2) NULL`,
+    `ALTER TABLE team_statistics ADD COLUMN away_goals_scored_avg DECIMAL(5,2) NULL`,
+    `ALTER TABLE team_statistics ADD COLUMN home_goals_conceded_avg DECIMAL(5,2) NULL`,
+    `ALTER TABLE team_statistics ADD COLUMN away_goals_conceded_avg DECIMAL(5,2) NULL`,
+    `ALTER TABLE team_statistics ADD COLUMN home_form VARCHAR(20) NULL`,
+    `ALTER TABLE team_statistics ADD COLUMN away_form VARCHAR(20) NULL`,
+    `ALTER TABLE team_statistics ADD COLUMN corners_avg DECIMAL(5,2) NULL`,
+    `ALTER TABLE team_statistics ADD COLUMN home_corners_avg DECIMAL(5,2) NULL`,
+    `ALTER TABLE team_statistics ADD COLUMN away_corners_avg DECIMAL(5,2) NULL`,
+  ];
+  for (const sql of alterStatements) {
+    try {
+      await db.query(sql);
+    } catch (e) {
+      if (e.code !== 'ER_DUP_FIELDNAME') {
+        // Skip duplicate column errors cleanly
+      }
+    }
+  }
 
   // Seed admin user
   const adminHash = await bcrypt.hash('Admin@OL!', 12);

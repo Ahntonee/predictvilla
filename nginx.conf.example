@@ -1,4 +1,4 @@
-﻿# Predictvilla — Nginx configuration example
+# Predictvilla — Nginx configuration example
 # Copy to /etc/nginx/sites-available/predictvilla and symlink to sites-enabled
 # Replace predictvilla.com with your actual domain
 
@@ -52,6 +52,14 @@ server {
 
     root /var/www/predictvilla/public;
     index index.html;
+
+    # PWA Manifest (explicitly allowed before json blocking rule)
+    location = /manifest.json {
+        access_log off;
+        expires 7d;
+        add_header Content-Type "application/manifest+json";
+        try_files $uri =404;
+    }
 
     # Block sensitive files
     location ~ /\.(env|git|htaccess|htpasswd) { deny all; return 404; }

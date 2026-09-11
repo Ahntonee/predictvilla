@@ -22,7 +22,7 @@ function fuzzyTeamMatch(name1, name2) {
 }
 
 async function getLiveOddsForFixture(homeTeam, awayTeam, commenceDate) {
-  if (!KEY) return null;
+  if (!KEY || KEY.includes('YOUR_ODDS_API')) return null;
   const calls = await getCallsToday();
   if (calls >= 16) return null; // stay under 500/month free tier
 
@@ -80,6 +80,7 @@ async function getLiveOddsForFixture(homeTeam, awayTeam, commenceDate) {
 }
 
 async function syncOddsForTodayFixtures() {
+  if (!KEY || KEY.includes('YOUR_ODDS_API')) return 0;
   const [predictions] = await pool.query(
     `SELECT id, home_team, away_team, match_date FROM predictions
      WHERE DATE(match_date) = CURDATE() AND result = 'pending' ORDER BY match_date`
