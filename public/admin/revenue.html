@@ -78,19 +78,21 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function loadSummary() {
-  const d = await api('/analytics/revenue');
+  const d = await api('/admin/analytics/revenue/overview');
   const s = d.data || {};
+  const monthRevenue = Number(s.thisMonth?.revenue || 0);
+  const totalRevenue = Number(s.allTime?.revenue || 0);
   document.getElementById('rev-stats').innerHTML = [
-    { icon:'payments', val:'₦'+(s.total_revenue||0).toLocaleString(), label:'Total Revenue' },
-    { icon:'today', val:'₦'+(s.month_revenue||0).toLocaleString(), label:'This Month' },
-    { icon:'workspace_premium', val:s.active_subs||0, label:'Active Subscribers' },
-    { icon:'trending_down', val:(s.churn_rate||0)+'%', label:'Churn Rate' },
+    { icon:'payments', val:'₦'+totalRevenue.toLocaleString(), label:'Total Revenue' },
+    { icon:'today', val:'₦'+monthRevenue.toLocaleString(), label:'This Month' },
+    { icon:'workspace_premium', val:s.activeSubscribers || 0, label:'Active Subscribers' },
+    { icon:'trending_down', val:'—', label:'Churn Rate' },
   ].map(i=>`<div class="admin-stat"><div style="font-size:20px"><span class="material-icons-round" style="font-size:20px">${i.icon}</span></div><div class="sv">${i.val}</div><div class="sl">${i.label}</div></div>`).join('');
 }
 
 async function loadByMonth() {
-  const d = await api('/analytics/revenue/by-month');
-  const rows = d.data?.rows || [];
+  const d = await api('/admin/analytics/revenue/by-month');
+  const rows = d.data?.data || [];
   if (revChart) revChart.destroy();
   const ctx = document.getElementById('rev-chart').getContext('2d');
   revChart = new Chart(ctx, {
@@ -101,20 +103,20 @@ async function loadByMonth() {
 }
 
 async function loadGrowth() {
-  const d = await api('/analytics/revenue/growth');
-  const rows = d.data?.rows || [];
+  const d = await api('/admin/analytics/revenue/by-month');
+  const rows = d.data?.data || [];
   if (growthChart) growthChart.destroy();
   const ctx = document.getElementById('growth-chart').getContext('2d');
   growthChart = new Chart(ctx, {
     type: 'line',
-    data: { labels:rows.map(r=>r.month), datasets:[{ label:'New Subs', data:rows.map(r=>r.new_subs||0), borderColor:'#00f5a1', backgroundColor:'rgba(0,245,161,0.08)', tension:0.4, fill:true }] },
+    data: { labels:[...new Set(rows.map(r=>r.month))], datasets:[{ label:'New Subs', data:[...new Set(rows.map(r=>r.month))].map(month=>rows.filter(r=>r.month===month).reduce((total,r)=>total+Number(r.count||0),0)), borderColor:'#00f5a1', backgroundColor:'rgba(0,245,161,0.08)', tension:0.4, fill:true }] },
     options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{ticks:{color:'rgba(241,254,195,0.6)'}}, x:{ticks:{color:'rgba(241,254,195,0.6)',font:{size:11}}} } }
   });
 }
 
 async function loadPlans() {
-  const d = await api('/analytics/revenue/plans');
-  const rows = d.data?.rows || [];
+  const d = await api('/admin/analytics/revenue/plans');
+  const rows = d.data?.plans || [];
   if (planChart) planChart.destroy();
   if (!rows.length) return;
   const ctx = document.getElementById('plan-chart').getContext('2d');
@@ -126,13 +128,13 @@ async function loadPlans() {
 }
 
 async function loadChurn() {
-  const d = await api('/analytics/revenue/churn');
-  const rows = d.data?.rows || [];
+  const d = await api('/admin/analytics/revenue/churn');
+  const rows = d.data?.data || [];
   if (churnChart) churnChart.destroy();
   const ctx = document.getElementById('churn-chart').getContext('2d');
   churnChart = new Chart(ctx, {
     type: 'line',
-    data: { labels:rows.map(r=>r.month), datasets:[{ label:'Churn %', data:rows.map(r=>r.churn_rate||0), borderColor:'#ff4757', backgroundColor:'rgba(255,71,87,0.08)', tension:0.4, fill:true }] },
+    data: { labels:rows.map(r=>r.month), datasets:[{ label:'Churn %', data:rows.map(r=>r.total ? (Number(r.churned || 0) / Number(r.total) * 100) : 0), borderColor:'#ff4757', backgroundColor:'rgba(255,71,87,0.08)', tension:0.4, fill:true }] },
     options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{min:0,ticks:{color:'rgba(241,254,195,0.6)',callback:v=>v+'%'}}, x:{ticks:{color:'rgba(241,254,195,0.6)',font:{size:11}}} } }
   });
 }
