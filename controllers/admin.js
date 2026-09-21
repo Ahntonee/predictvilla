@@ -54,6 +54,15 @@ exports.grantVip = asyncHandler(async (req, res) => {
   return successResponse(res, null, 'VIP granted');
 });
 
+exports.updateUserRole = asyncHandler(async (req, res) => {
+  const allowedRoles = new Set(['user', 'vip']);
+  const { role } = req.body;
+  if (!allowedRoles.has(role)) return errorResponse(res, 'Invalid user role', 400);
+  const [result] = await pool.query('UPDATE users SET role=? WHERE id=?', [role, req.params.id]);
+  if (!result.affectedRows) return errorResponse(res, 'User not found', 404);
+  return successResponse(res, null, `User role updated to ${role}`);
+});
+
 exports.getLeaderboard = asyncHandler(async (req, res) => {
   const { period = '30d', group_by = 'market', sort_by = 'win_rate' } = req.query;
   const days = period === '7d' ? 7 : period === '90d' ? 90 : 30;
@@ -71,7 +80,7 @@ exports.getLeaderboard = asyncHandler(async (req, res) => {
      ORDER BY win_rate DESC LIMIT 50`,
     [days]
   );
-  return successResponse(res, { leaderboard: rows });
+  return successResponse(res, { leaderboard: rows.map(row => ({ ...row, won: row.correct })) });
 });
 
 exports.getSettings = asyncHandler(async (req, res) => {

@@ -249,7 +249,7 @@ function accDot(pct) {
 }
 
 async function loadAccuracy() {
-  const d = await api('/analytics/intel/accuracy-tracker');
+  const d = await api('/admin/analytics/intel/accuracy-tracker');
   if (!d.success) return;
   const { overall, byMarket, byBand, byTip } = d.data;
 
@@ -305,7 +305,7 @@ async function loadLeagueSub() {
   const market = document.getElementById('ls-market-filter').value;
   const params = new URLSearchParams();
   if (market) params.set('market', market);
-  const d = await api('/analytics/intel/league-submarket?' + params);
+  const d = await api('/admin/analytics/intel/league-submarket?' + params);
   rawLeagueSub = d.data?.rows || [];
   renderLeagueSub(rawLeagueSub);
 }
@@ -345,7 +345,7 @@ async function loadTeams() {
   const params = new URLSearchParams();
   if (market) params.set('market', market);
   if (tip)    params.set('tip', tip);
-  const d = await api('/analytics/intel/team-consistency?' + params);
+  const d = await api('/admin/analytics/intel/team-consistency?' + params);
   rawTeams = d.data?.teams || [];
   filterTeams();
 }
@@ -369,7 +369,7 @@ function filterTeams() {
 
 // ── Calibration ──
 async function loadCalibration() {
-  const d = await api('/analytics/intel/calibration');
+  const d = await api('/admin/analytics/intel/calibration');
   rawCal = d.data?.rows || [];
   filterCalibration();
 }

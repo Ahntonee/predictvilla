@@ -11,6 +11,7 @@ router.get('/users', ctrl.listUsers);
 router.get('/users/:id', ctrl.getUser);
 router.put('/users/:id/ban', ctrl.banUser);
 router.put('/users/:id/unban', ctrl.unbanUser);
+router.put('/users/:id/role', ctrl.updateUserRole);
 router.post('/users/:id/grant-vip', ctrl.grantVip);
 router.get('/leaderboard', ctrl.getLeaderboard);
 router.get('/settings', ctrl.getSettings);

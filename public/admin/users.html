@@ -137,7 +137,7 @@ async function toggleBan(id, isBanned, fromModal = false) {
 }
 
 async function grantVip(id, grant) {
-  const d = await api(`/admin/users/${id}/role`, {method:'PUT', body:JSON.stringify({role:grant?'vip':'free'})});
+  const d = await api(`/admin/users/${id}/role`, {method:'PUT', body:JSON.stringify({role:grant?'vip':'user'})});
   if (d.success) { showToast(grant?'VIP granted':'VIP revoked','success'); loadUsers(currentPage); closeUser(); }
   else showToast(d.message,'error');
 }
