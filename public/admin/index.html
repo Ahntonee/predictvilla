@@ -41,7 +41,10 @@ body{display:flex;align-items:center;justify-content:center;min-height:100vh;bac
 <script>
 (function(){
   const t = localStorage.getItem('ol_admin');
-  if (t) try { const p = JSON.parse(atob(t.split('.')[1])); if (p.exp*1000 > Date.now() && (p.role==='admin'||p.role==='super_admin')) location.href='/admin/dashboard.html'; } catch{}
+  if (t) try {
+    const p = JSON.parse(t);
+    if ((p.role === 'admin' || p.role === 'super_admin') && p.id) location.href='/admin/dashboard.html';
+  } catch {}
 })();
 
 async function doLogin() {

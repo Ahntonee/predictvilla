@@ -24,7 +24,7 @@ exports.setTelegramInvited = asyncHandler(async (req, res) => {
 });
 
 exports.getTelegramLink = asyncHandler(async (req, res) => {
-  if (req.user.role !== 'vip' && req.user.role !== 'admin') {
+  if (req.user.role !== 'vip' && req.user.role !== 'admin' && req.user.role !== 'super_admin') {
     return errorResponse(res, 'VIP access required', 403);
   }
   const link = process.env.TELEGRAM_VIP_INVITE_LINK;

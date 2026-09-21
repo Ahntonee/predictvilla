@@ -2,12 +2,11 @@ const axios = require('axios');
 const { pool } = require('../config/db');
 const { successResponse, errorResponse, asyncHandler } = require('../utils/helpers');
 const { sendVipWelcomeEmail, sendExpiryReminderEmail } = require('../utils/email');
-
-const DURATIONS = { monthly: 30, quarterly: 90, annual: 365 };
+const { getSubscriptionPlan } = require('../config/subscriptionPlans');
 
 exports.getStatus = asyncHandler(async (req, res) => {
   const [rows] = await pool.query(
-    "SELECT plan, status, expires_at FROM subscriptions WHERE user_id=? AND status='active' ORDER BY expires_at DESC LIMIT 1",
+    "SELECT plan, tier, status, amount, currency, expires_at FROM subscriptions WHERE user_id=? AND status='active' ORDER BY expires_at DESC LIMIT 1",
     [req.user.id]
   );
   return successResponse(res, { subscription: rows[0] || null });
@@ -16,7 +15,9 @@ exports.getStatus = asyncHandler(async (req, res) => {
 exports.paystackVerify = asyncHandler(async (req, res) => {
   const { reference, plan } = req.body;
   if (!reference || !plan) return errorResponse(res, 'reference and plan required', 400);
-  if (!DURATIONS[plan]) return errorResponse(res, 'Invalid plan', 400);
+  const requestedCurrency = req.body.currency === 'USD' ? 'USD' : 'NGN';
+  const selectedPlan = getSubscriptionPlan(plan, requestedCurrency);
+  if (!selectedPlan) return errorResponse(res, 'Invalid subscription plan', 400);
 
   try {
     const response = await axios.get(
@@ -26,16 +27,19 @@ exports.paystackVerify = asyncHandler(async (req, res) => {
     const txn = response.data.data;
     if (txn.status !== 'success') return errorResponse(res, 'Payment not successful', 400);
 
-    const expiresAt = new Date(Date.now() + DURATIONS[plan] * 24 * 60 * 60 * 1000);
+    if (txn.currency !== selectedPlan.currency || Number(txn.amount) !== selectedPlan.amount * 100) {
+      return errorResponse(res, 'Payment amount or currency does not match the selected plan', 400);
+    }
+    const expiresAt = new Date(Date.now() + selectedPlan.days * 24 * 60 * 60 * 1000);
     await pool.query(
-      `INSERT INTO subscriptions (user_id, plan, status, provider, paystack_reference, amount, currency, expires_at)
-       VALUES (?,?,'active','paystack',?,?,?,?)`,
-      [req.user.id, plan, reference, txn.amount / 100, txn.currency, expiresAt]
+      `INSERT INTO subscriptions (user_id, plan, tier, status, provider, paystack_reference, amount, currency, expires_at)
+       VALUES (?,?,?,'active','paystack',?,?,?,?)`,
+      [req.user.id, plan, selectedPlan.tier, reference, txn.amount / 100, txn.currency, expiresAt]
     );
     await pool.query("UPDATE users SET role='vip', updated_at=NOW() WHERE id=?", [req.user.id]);
 
     const telegramLink = process.env.TELEGRAM_VIP_INVITE_LINK;
-    try { await sendVipWelcomeEmail({ ...req.user, plan, telegramLink }); } catch {}
+    try { await sendVipWelcomeEmail({ ...req.user, plan: selectedPlan.tier, telegramLink }); } catch {}
 
     return successResponse(res, { expiresAt }, 'VIP subscription activated!');
   } catch (err) {
@@ -55,14 +59,23 @@ exports.cancel = asyncHandler(async (req, res) => {
 
 // Admin
 exports.adminGrant = asyncHandler(async (req, res) => {
-  const { user_id, plan, days } = req.body;
-  const dur = days ? parseInt(days) : (DURATIONS[plan] || 30);
+  const { user_id, email, plan, days } = req.body;
+  const selectedPlan = getSubscriptionPlan(plan || 'minimum_monthly');
+  if (!selectedPlan) return errorResponse(res, 'Invalid subscription plan', 400);
+  let userId = user_id;
+  if (!userId && email) {
+    const [users] = await pool.query('SELECT id FROM users WHERE email=? LIMIT 1', [email]);
+    if (!users.length) return errorResponse(res, 'User not found', 404);
+    userId = users[0].id;
+  }
+  if (!userId) return errorResponse(res, 'user_id or email required', 400);
+  const dur = days ? parseInt(days) : selectedPlan.days;
   const expiresAt = new Date(Date.now() + dur * 24 * 60 * 60 * 1000);
   await pool.query(
-    `INSERT INTO subscriptions (user_id, plan, status, provider, expires_at) VALUES (?,?,'active','manual',?)`,
-    [user_id, plan || 'monthly', expiresAt]
+    `INSERT INTO subscriptions (user_id, plan, tier, status, provider, expires_at) VALUES (?,?,?,'active','manual',?)`,
+    [userId, selectedPlan.id, selectedPlan.tier, expiresAt]
   );
-  await pool.query("UPDATE users SET role='vip' WHERE id=?", [user_id]);
+  await pool.query("UPDATE users SET role='vip' WHERE id=?", [userId]);
   return successResponse(res, null, 'VIP granted');
 });
 

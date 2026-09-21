@@ -2,17 +2,15 @@ const router = require('express').Router();
 const ctrl = require('../controllers/subscriptions');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { successResponse } = require('../utils/helpers');
+const { SUBSCRIPTION_PLANS } = require('../config/subscriptionPlans');
 
 // Public: plan prices (read from env so admin can change without code deploy)
 router.get('/plans', (req, res) => {
-  const currency = process.env.PAYSTACK_PLAN_CURRENCY || 'NGN';
+  const plans = Object.values(SUBSCRIPTION_PLANS);
   return successResponse(res, {
-    currency,
-    plans: [
-      { id: 'monthly',   label: 'Monthly',   amount: parseInt(process.env.PAYSTACK_PLAN_MONTHLY_AMOUNT)   || 7500,  period: '1 month',   savings: null },
-      { id: 'quarterly', label: 'Quarterly', amount: parseInt(process.env.PAYSTACK_PLAN_QUARTERLY_AMOUNT) || 19500, period: '3 months',  savings: '13%' },
-      { id: 'annual',    label: 'Annual',    amount: parseInt(process.env.PAYSTACK_PLAN_ANNUAL_AMOUNT)    || 59900, period: '12 months', savings: '33%' },
-    ],
+    plans: plans.map(({ id, tier, label, period, days, amount, usdAmount, benefits }) => ({
+      id, tier, label, period, days, amount, usdAmount, currency: 'NGN', benefits,
+    })),
   });
 });
 
@@ -24,5 +22,14 @@ router.get('/admin', authenticate, requireAdmin, ctrl.adminList);
 router.put('/admin/:id/extend', authenticate, requireAdmin, ctrl.adminExtend);
 router.put('/admin/:id/cancel', authenticate, requireAdmin, ctrl.adminCancel);
 router.post('/admin/:id/notify-expiry', authenticate, requireAdmin, ctrl.adminNotifyExpiry);
+
+// Admin dashboard clients use /api/admin/subscriptions. These aliases keep
+// that public contract aligned with the existing subscriptions mount.
+router.post('/', authenticate, requireAdmin, ctrl.adminGrant);
+router.post('/grant', authenticate, requireAdmin, ctrl.adminGrant);
+router.get('/', authenticate, requireAdmin, ctrl.adminList);
+router.put('/:id/extend', authenticate, requireAdmin, ctrl.adminExtend);
+router.put('/:id/cancel', authenticate, requireAdmin, ctrl.adminCancel);
+router.post('/:id/notify-expiry', authenticate, requireAdmin, ctrl.adminNotifyExpiry);
 
 module.exports = router;

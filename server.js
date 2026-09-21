@@ -98,6 +98,7 @@ app.use('/api/admin/intelligence', require('./routes/intelligence'));
 app.use('/api/blog', require('./routes/blog'));
 app.use('/api/admin/blog', require('./routes/blog'));
 app.use('/api/subscriptions', require('./routes/subscriptions'));
+app.use('/api/admin/subscriptions', require('./routes/subscriptions'));
 app.use('/api/webhooks', require('./routes/webhooks'));
 app.use('/api/comments', require('./routes/comments'));
 app.use('/api/users', require('./routes/users'));

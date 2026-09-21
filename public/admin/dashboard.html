@@ -90,13 +90,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadStats() {
   const d = await api('/admin/stats');
   const s = d.data || {};
+  const predictions = s.predictions || {};
+  const users = s.users || {};
+  const subscribers = s.subscribers || {};
+  const revenue = s.revenue || {};
   const items = [
-    { icon:'sports_soccer', val:s.total_predictions||0, label:'Total Predictions', color:'' },
-    { icon:'today', val:s.today_predictions||0, label:"Today's Tips", color:'' },
-    { icon:'gps_fixed', val:(s.win_rate||0)+'%', label:'Win Rate (30d)', color:'var(--primary)' },
-    { icon:'group', val:s.total_users||0, label:'Total Users', color:'' },
-    { icon:'workspace_premium', val:s.vip_users||0, label:'VIP Subscribers', color:'var(--accent)' },
-    { icon:'payments', val:'₦'+(s.revenue_month||0).toLocaleString(), label:'Revenue This Month', color:'var(--primary)' },
+    { icon:'sports_soccer', val:predictions.total||0, label:'Total Predictions', color:'' },
+    { icon:'today', val:predictions.today||0, label:"Today's Tips", color:'' },
+    { icon:'gps_fixed', val:(s.winRate||0)+'%', label:'Win Rate (30d)', color:'var(--primary)' },
+    { icon:'group', val:users.total||0, label:'Total Users', color:'' },
+    { icon:'workspace_premium', val:subscribers.active||0, label:'VIP Subscribers', color:'var(--accent)' },
+    { icon:'payments', val:'₦'+Number(revenue.thisMonth||0).toLocaleString(), label:'Revenue This Month', color:'var(--primary)' },
   ];
   document.getElementById('stat-grid').innerHTML = items.map(i=>`
     <div class="admin-stat">
@@ -136,7 +140,7 @@ async function loadRecentUsers() {
 }
 
 async function loadSysStatus() {
-  const d = await api('/intelligence/status');
+  const d = await api('/admin/intelligence/status');
   const s = d.data || {};
   document.getElementById('sys-status').innerHTML = `
     <div class="flex" style="flex-wrap:wrap;gap:12px;font-size:13px">

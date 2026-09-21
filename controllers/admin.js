@@ -1,5 +1,6 @@
 const { pool } = require('../config/db');
 const { successResponse, errorResponse, asyncHandler, parsePagination } = require('../utils/helpers');
+const { getSubscriptionPlan } = require('../config/subscriptionPlans');
 
 exports.listUsers = asyncHandler(async (req, res) => {
   const { page, limit, offset } = parsePagination(req.query);
@@ -41,11 +42,13 @@ exports.unbanUser = asyncHandler(async (req, res) => {
 
 exports.grantVip = asyncHandler(async (req, res) => {
   const { plan, days } = req.body;
-  const dur = parseInt(days) || 30;
+  const selectedPlan = getSubscriptionPlan(plan || 'minimum_monthly');
+  if (!selectedPlan) return errorResponse(res, 'Invalid subscription plan', 400);
+  const dur = parseInt(days) || selectedPlan.days;
   const expiresAt = new Date(Date.now() + dur * 24 * 60 * 60 * 1000);
   await pool.query(
-    "INSERT INTO subscriptions (user_id, plan, status, provider, expires_at) VALUES (?,'monthly','active','manual',?)",
-    [req.params.id, expiresAt]
+    "INSERT INTO subscriptions (user_id, plan, tier, status, provider, expires_at) VALUES (?,?,?,'active','manual',?)",
+    [req.params.id, selectedPlan.id, selectedPlan.tier, expiresAt]
   );
   await pool.query("UPDATE users SET role='vip' WHERE id=?", [req.params.id]);
   return successResponse(res, null, 'VIP granted');

@@ -32,7 +32,7 @@
   <div class="search-bar mb-2">
     <input type="text" class="form-control" style="max-width:220px" placeholder="Search email/name…" id="s-search">
     <select class="form-control" style="max-width:140px" id="s-plan">
-      <option value="">All Plans</option><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="annual">Annual</option>
+      <option value="">All Tiers</option><option value="minimum_monthly">Minimum Monthly</option><option value="minimum_biweekly">Minimum Biweekly</option><option value="standard_monthly">Standard Monthly</option><option value="standard_biweekly">Standard Biweekly</option><option value="diamond_monthly">Diamond Monthly</option><option value="diamond_biweekly">Diamond Biweekly</option>
     </select>
     <select class="form-control" style="max-width:130px" id="s-status">
       <option value="">All Status</option><option value="active">Active</option><option value="expired">Expired</option><option value="cancelled">Cancelled</option>
@@ -55,7 +55,7 @@
     <div class="modal-body">
       <div class="form-group"><label class="form-label">User Email *</label><input type="email" class="form-control" id="g-email" placeholder="user@email.com"></div>
       <div class="form-group"><label class="form-label">Plan</label>
-        <select class="form-control" id="g-plan"><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="annual">Annual</option></select>
+        <select class="form-control" id="g-plan"><option value="minimum_monthly">Minimum Monthly</option><option value="minimum_biweekly">Minimum Biweekly</option><option value="standard_monthly">Standard Monthly</option><option value="standard_biweekly">Standard Biweekly</option><option value="diamond_monthly">Diamond Monthly</option><option value="diamond_biweekly">Diamond Biweekly</option></select>
       </div>
       <div class="form-group"><label class="form-label">Duration (days)</label><input type="number" class="form-control" id="g-days" value="30" min="1"></div>
       <div class="form-group"><label class="form-label">Notes (optional)</label><input type="text" class="form-control" id="g-notes" placeholder="e.g. Complimentary access"></div>
@@ -108,10 +108,12 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadStats() {
   const d = await api('/admin/stats');
   const s = d.data || {};
+  const subscribers = s.subscribers || {};
+  const revenue = s.revenue || {};
   document.getElementById('sub-stats').innerHTML = [
-    { icon:'workspace_premium', val:s.vip_users||0, label:'Active VIPs' },
-    { icon:'today', val:s.new_subs_month||0, label:'New This Month' },
-    { icon:'payments', val:'₦'+(s.revenue_month||0).toLocaleString(), label:'Revenue This Month' },
+    { icon:'workspace_premium', val:subscribers.active||0, label:'Active VIPs' },
+    { icon:'today', val:s.newThisMonth||0, label:'New This Month' },
+    { icon:'payments', val:'₦'+Number(revenue.thisMonth||0).toLocaleString(), label:'Revenue This Month' },
     { icon:'trending_down', val:(s.churn_rate||0)+'%', label:'Churn Rate' },
   ].map(i=>`<div class="admin-stat"><div style="font-size:20px"><span class="material-icons-round" style="font-size:20px">${i.icon}</span></div><div class="sv">${i.val}</div><div class="sl">${i.label}</div></div>`).join('');
 }

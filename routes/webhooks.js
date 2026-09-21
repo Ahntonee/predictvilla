@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const { pool } = require('../config/db');
 const { sendVipWelcomeEmail } = require('../utils/email');
 const { awardTokens, REWARDS } = require('../services/tokens');
+const { getSubscriptionPlan } = require('../config/subscriptionPlans');
 
 router.post('/paystack', async (req, res) => {
   const sig = req.headers['x-paystack-signature'];
@@ -20,13 +21,14 @@ router.post('/paystack', async (req, res) => {
       const plan = metadata?.plan;
       const userId = metadata?.user_id;
       if (userId && plan) {
-        const DURATIONS = { monthly: 30, quarterly: 90, annual: 365 };
-        const dur = DURATIONS[plan] || 30;
+        const selectedPlan = getSubscriptionPlan(plan, currency === 'USD' ? 'USD' : 'NGN');
+        if (!selectedPlan) return res.status(400).json({ message: 'Invalid subscription plan' });
+        const dur = selectedPlan.days;
         const expiresAt = new Date(Date.now() + dur * 24 * 60 * 60 * 1000);
         const [result] = await pool.query(
-          `INSERT IGNORE INTO subscriptions (user_id, plan, status, provider, paystack_reference, amount, currency, expires_at)
-           VALUES (?,?,'active','paystack',?,?,?,?)`,
-          [userId, plan, reference, amount / 100, currency, expiresAt]
+          `INSERT IGNORE INTO subscriptions (user_id, plan, tier, status, provider, paystack_reference, amount, currency, expires_at)
+           VALUES (?,?,?,'active','paystack',?,?,?,?)`,
+          [userId, plan, selectedPlan.tier, reference, amount / 100, currency, expiresAt]
         );
         await pool.query("UPDATE users SET role='vip' WHERE id=?", [userId]);
 
@@ -35,7 +37,7 @@ router.post('/paystack', async (req, res) => {
           const [[user]] = await pool.query('SELECT name, email FROM users WHERE id=?', [userId]);
           if (user) {
             const telegramLink = process.env.TELEGRAM_VIP_INVITE_LINK;
-            try { await sendVipWelcomeEmail({ name: user.name, email: user.email, plan, telegramLink }); } catch {}
+            try { await sendVipWelcomeEmail({ name: user.name, email: user.email, plan: selectedPlan.tier, telegramLink }); } catch {}
           }
           try { await awardTokens(userId, REWARDS.VIP_UPGRADE, `VIP upgrade bonus — ${plan} plan`); } catch {}
         }
