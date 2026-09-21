@@ -3,9 +3,11 @@ const jwt = require('jsonwebtoken');
 const COOKIE_NAME = 'ol_token';
 
 function isSecureRequest(req) {
-  if (process.env.COOKIE_SECURE === 'true') return true;
+  const forwardedProto = req?.headers?.['x-forwarded-proto'];
+  if (req?.secure === false || forwardedProto === 'http') return false;
   if (process.env.COOKIE_SECURE === 'false') return false;
-  return req?.secure === true || req?.headers?.['x-forwarded-proto'] === 'https';
+  if (process.env.COOKIE_SECURE === 'true') return req?.secure === true || forwardedProto === 'https';
+  return req?.secure === true || forwardedProto === 'https';
 }
 
 function generateToken(payload) {
