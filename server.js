@@ -17,6 +17,7 @@ const { startScheduler } = require('./services/scheduler');
 const app = express();
 const isProd = process.env.NODE_ENV === 'production';
 const PORT = process.env.PORT || 3000;
+app.set('trust proxy', 1);
 
 // ─── Security ──────────────────────────────────────────────────────────────
 app.use(helmet({

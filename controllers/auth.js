@@ -73,7 +73,7 @@ exports.verifyRegistration = asyncHandler(async (req, res) => {
 
   const user = { id: result.insertId, name: reg.name, email: reg.email, role: 'user' };
   const jwtToken = generateToken({ id: user.id, role: user.role });
-  setTokenCookie(res, jwtToken);
+  setTokenCookie(res, jwtToken, req);
 
   try { await sendWelcomeEmail(user); } catch {}
   try { await awardTokens(result.insertId, REWARDS.SIGNUP, 'Welcome bonus — account created'); } catch {}
@@ -94,13 +94,13 @@ exports.login = asyncHandler(async (req, res) => {
   if (!match) return errorResponse(res, 'Invalid email or password', 401);
 
   const jwtToken = generateToken({ id: user.id, role: user.role });
-  setTokenCookie(res, jwtToken);
+  setTokenCookie(res, jwtToken, req);
 
   return successResponse(res, { user: { id: user.id, name: user.name, email: user.email, role: user.role } }, 'Login successful');
 });
 
 exports.logout = asyncHandler(async (req, res) => {
-  clearTokenCookie(res);
+  clearTokenCookie(res, req);
   return successResponse(res, null, 'Logged out');
 });
 
