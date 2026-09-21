@@ -173,10 +173,11 @@ async function load() {
   const market = document.getElementById('lb-market').value;
   const league = document.getElementById('lb-league').value;
   const days = document.getElementById('lb-period').value;
-  const params = new URLSearchParams({ ...(market && { market }), ...(league && { league_id: league }), ...(days && { days }) });
+  const period = days ? `${days}d` : '30d';
+  const params = new URLSearchParams({ ...(market && { market }), ...(league && { league_id: league }), period });
   try {
     const d = await api(`/admin/leaderboard?${params}`);
-    const rows = d.data?.rows || [];
+    const rows = d.data?.leaderboard || [];
 
     document.getElementById('row-count').textContent = `${rows.length} entries`;
 
@@ -238,7 +239,7 @@ async function load() {
 
 async function loadTrend() {
   try {
-    const d = await api('/analytics/accuracy-trend');
+    const d = await api('/admin/analytics/intel/accuracy-trend');
     const rows = d.data?.rows || [];
     const trendEmpty = document.getElementById('trend-empty');
     const trendCanvas = document.getElementById('trend-chart');

@@ -124,6 +124,20 @@ exports.accuracyTracker = asyncHandler(async (req, res) => {
   return successResponse(res, { overall, byMarket, byBand, byTip });
 });
 
+exports.accuracyTrend = asyncHandler(async (req, res) => {
+  const [rows] = await pool.query(`
+    SELECT DATE(logged_at) as date,
+           COUNT(*) as count,
+           SUM(is_correct) as correct,
+           ROUND(SUM(is_correct) / NULLIF(COUNT(*), 0) * 100, 2) as win_rate
+    FROM prediction_accuracy_log
+    WHERE logged_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+    GROUP BY DATE(logged_at)
+    ORDER BY date
+  `);
+  return successResponse(res, { rows });
+});
+
 exports.leagueSubmarket = asyncHandler(async (req, res) => {
   const market = req.query.market || '';
   let where = ['pal.is_correct IS NOT NULL'];
