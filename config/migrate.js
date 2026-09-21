@@ -135,7 +135,8 @@ async function migrate() {
     `CREATE TABLE IF NOT EXISTS subscriptions (
       id INT PRIMARY KEY AUTO_INCREMENT,
       user_id INT NOT NULL,
-      plan ENUM('monthly','quarterly','annual') NOT NULL,
+      plan VARCHAR(50) NOT NULL,
+      tier VARCHAR(20) NOT NULL DEFAULT 'minimum',
       status ENUM('active','cancelled','expired','trialing') DEFAULT 'active',
       provider ENUM('paystack','manual') DEFAULT 'paystack',
       provider_subscription_id VARCHAR(255),
@@ -370,6 +371,8 @@ async function migrate() {
   // Idempotent column updates for existing databases
   const alterStatements = [
     `ALTER TABLE predictions MODIFY COLUMN category VARCHAR(30) NOT NULL DEFAULT 'free'`,
+    `ALTER TABLE subscriptions MODIFY COLUMN plan VARCHAR(50) NOT NULL`,
+    `ALTER TABLE subscriptions ADD COLUMN tier VARCHAR(20) NOT NULL DEFAULT 'minimum'`,
     `ALTER TABLE predictions MODIFY COLUMN market VARCHAR(30) NOT NULL DEFAULT '1X2'`,
     `ALTER TABLE predictions ADD COLUMN fixture_status VARCHAR(10) NULL DEFAULT NULL`,
     `ALTER TABLE predictions ADD COLUMN elapsed_minutes TINYINT NULL DEFAULT NULL`,

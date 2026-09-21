@@ -80,8 +80,14 @@ exports.remove = asyncHandler(async (req, res) => {
 });
 
 exports.publish = asyncHandler(async (req, res) => {
-  await pool.query('UPDATE blog_posts SET is_published=1, published_at=NOW() WHERE id=?', [req.params.id]);
-  return successResponse(res, null, 'Published');
+  const isPublished = req.body?.is_published !== undefined
+    ? Boolean(Number(req.body.is_published))
+    : true;
+  await pool.query(
+    'UPDATE blog_posts SET is_published=?, published_at=? WHERE id=?',
+    [isPublished ? 1 : 0, isPublished ? new Date() : null, req.params.id]
+  );
+  return successResponse(res, null, isPublished ? 'Published' : 'Unpublished');
 });
 
 exports.uploadImage = asyncHandler(async (req, res) => {

@@ -23,7 +23,7 @@ async function authenticate(req, res, next) {
 
 function requireAdmin(req, res, next) {
   if (!req.user) return errorResponse(res, 'Authentication required', 401);
-  if (req.user.role !== 'admin') return errorResponse(res, 'Admin access required', 403);
+  if (req.user.role !== 'admin' && req.user.role !== 'super_admin') return errorResponse(res, 'Admin access required', 403);
   next();
 }
 

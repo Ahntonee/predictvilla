@@ -2,7 +2,7 @@ const { pool } = require('../config/db');
 const { successResponse, errorResponse, asyncHandler, parsePagination, paginate, generatePredictionSlug, sanitiseText } = require('../utils/helpers');
 
 function redactVip(pred, user) {
-  if (pred.is_vip && (!user || (user.role !== 'vip' && user.role !== 'admin'))) {
+  if (pred.is_vip && (!user || (user.role !== 'vip' && user.role !== 'admin' && user.role !== 'super_admin'))) {
     return { ...pred, tip: '🔒 VIP Pick', analysis: null, odds: null, intelligence_score: null, bookies_available: null };
   }
   return pred;
@@ -11,7 +11,7 @@ function redactVip(pred, user) {
 exports.list = asyncHandler(async (req, res) => {
   const { page, limit, offset } = parsePagination(req.query);
   const { date, league_id, category, market, vip, result, search } = req.query;
-  const isAdmin = req.user?.role === 'admin';
+  const isAdmin = req.user?.role === 'admin' || req.user?.role === 'super_admin';
   const adminView = isAdmin && req.query.admin_view === '1';
 
   let where = [];

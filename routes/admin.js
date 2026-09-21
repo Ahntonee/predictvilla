@@ -5,6 +5,8 @@ const { authenticate, requireAdmin } = require('../middleware/auth');
 router.use(authenticate, requireAdmin);
 
 router.get('/dashboard', ctrl.getDashboardStats);
+// Keep the endpoint used by existing admin clients while dashboard is the canonical name.
+router.get('/stats', ctrl.getDashboardStats);
 router.get('/users', ctrl.listUsers);
 router.get('/users/:id', ctrl.getUser);
 router.put('/users/:id/ban', ctrl.banUser);

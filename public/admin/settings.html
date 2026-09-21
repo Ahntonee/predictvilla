@@ -65,12 +65,9 @@
   <!-- Pricing -->
   <div id="tab-pricing" style="display:none">
     <div class="admin-card">
-      <h3 style="font-size:15px;margin-bottom:8px">VIP Pricing (₦)</h3>
-      <p class="text-soft mb-3" style="font-size:13px">These amounts are passed to Paystack. Update after saving your Paystack plans.</p>
+      <h3 style="font-size:15px;margin-bottom:8px">Subscription Tiers</h3>
+      <p class="text-soft mb-3" style="font-size:13px">Prices are defined by the Minimum, Standard and Diamond plans on the pricing page: ₦10,000/₦5,000, ₦15,000/₦7,500 and ₦25,000/₦12,500 monthly/biweekly. International biweekly pricing is $15 for each tier.</p>
       <div class="grid-2">
-        <div class="form-group"><label class="form-label">Monthly Price (₦)</label><input type="number" class="form-control" id="pr-monthly" placeholder="7500"></div>
-        <div class="form-group"><label class="form-label">Quarterly Price (₦)</label><input type="number" class="form-control" id="pr-quarterly" placeholder="19500"></div>
-        <div class="form-group"><label class="form-label">Annual Price (₦)</label><input type="number" class="form-control" id="pr-annual" placeholder="59900"></div>
         <div class="form-group"><label class="form-label">Paystack Public Key</label><input type="text" class="form-control" id="pr-pubkey" placeholder="pk_live_xxxxxxxx"></div>
       </div>
       <button class="btn btn-primary" id="save-pricing-btn">Save Pricing</button>
@@ -127,9 +124,6 @@ async function loadSettings() {
   document.getElementById('ov-total').value = s.override_total_predictions || '';
   document.getElementById('ov-vipwinrate').value = s.override_vip_win_rate || '';
   document.getElementById('ov-leagues').value = s.override_leagues_covered || '';
-  document.getElementById('pr-monthly').value = s.price_monthly || 7500;
-  document.getElementById('pr-quarterly').value = s.price_quarterly || 19500;
-  document.getElementById('pr-annual').value = s.price_annual || 59900;
   document.getElementById('pr-pubkey').value = s.paystack_public_key || '';
   document.getElementById('tg-link').value = s.telegram_invite_link || '';
   document.getElementById('tg-chat').value = s.telegram_chat_id || '';
@@ -181,9 +175,6 @@ async function saveOverrides() {
 
 async function savePricing() {
   const body = {
-    price_monthly: parseInt(document.getElementById('pr-monthly').value)||7500,
-    price_quarterly: parseInt(document.getElementById('pr-quarterly').value)||19500,
-    price_annual: parseInt(document.getElementById('pr-annual').value)||59900,
     paystack_public_key: document.getElementById('pr-pubkey').value.trim(),
   };
   const d = await api('/admin/settings', {method:'PUT', body:JSON.stringify(body)});
