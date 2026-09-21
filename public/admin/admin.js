@@ -94,9 +94,24 @@
   };
 
   window.api = async function (path, opts = {}) {
-    const r = await fetch(`/api${path}`, { credentials: 'include', headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) }, ...opts });
-    const data = await r.json();
-    if (!r.ok && r.status === 401) { localStorage.removeItem('ol_admin'); location.href = '/admin/index.html'; }
+    let r;
+    let data;
+    try {
+      r = await fetch(`/api${path}`, { credentials: 'include', headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) }, ...opts });
+      const contentType = r.headers.get('content-type') || '';
+      data = contentType.includes('application/json') ? await r.json() : { success: false, message: await r.text() };
+    } catch (err) {
+      showToast('Request failed. Check your connection and try again.', 'error');
+      throw err;
+    }
+    if (!r.ok) {
+      if (r.status === 401) {
+        localStorage.removeItem('ol_admin');
+        location.href = '/admin/index.html';
+      } else {
+        showToast(data.message || `Request failed (${r.status})`, 'error');
+      }
+    }
     return data;
   };
 

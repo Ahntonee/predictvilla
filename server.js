@@ -848,6 +848,11 @@ app.post('/api/predictions/:id/vote', async (req, res) => {
 app.use(express.static(path.join(__dirname, 'public'), {
   maxAge: isProd ? '1y' : 0,
   etag: true,
+  setHeaders: (res, filePath) => {
+    if (path.dirname(filePath).split(path.sep).includes('admin')) {
+      res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+    }
+  },
 }));
 
 // ─── Admin path guard ─────────────────────────────────────────────────────────
