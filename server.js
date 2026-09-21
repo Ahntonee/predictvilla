@@ -55,6 +55,8 @@ app.use('/api/webhooks/paystack', express.raw({ type: 'application/json' }));
 
 // Large body limit for admin blog/pages uploads
 app.use('/api/admin/blog', express.json({ limit: '10mb' }));
+app.use('/api/admin/sponsored-posts', express.json({ limit: '10mb' }));
+app.use('/api/sponsored-posts', express.json({ limit: '10mb' }));
 app.use('/api/admin/pages', express.json({ limit: '10mb' }));
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
@@ -113,6 +115,7 @@ app.use('/api/tokens', require('./routes/tokens'));
 app.use('/api/backlinks', require('./routes/backlinks'));
 app.use('/api/ads', require('./routes/ads'));
 app.use('/api/admin/seo-pages', require('./routes/seoPages'));
+app.use('/api/sponsored-posts', require('./routes/sponsoredPosts'));
 app.use('/api', require('./routes/standings'));
 
 // Public config (safe keys only — never expose secrets)
@@ -304,6 +307,7 @@ app.get('/sitemap.xml', async (req, res) => {
   const [posts] = await pool.query('SELECT slug, updated_at FROM blog_posts WHERE is_published=1 ORDER BY updated_at DESC LIMIT 200');
   const [activeLeagues] = await pool.query('SELECT name FROM leagues WHERE is_active = 1');
   const [seoArticles] = await pool.query('SELECT slug, updated_at FROM seo_article_pages WHERE is_published=1 ORDER BY updated_at DESC LIMIT 200').catch(() => [[]]);
+  const [sponsoredPosts] = await pool.query('SELECT slug, updated_at FROM sponsored_posts WHERE is_published=1 ORDER BY updated_at DESC LIMIT 200').catch(() => [[]]);
 
   const today = new Date().toISOString();
   const staticPriorities = {
@@ -324,6 +328,7 @@ app.get('/sitemap.xml', async (req, res) => {
     ...preds.map(p => `<url><loc>${base}/prediction/${p.slug}</loc><lastmod>${new Date(p.updated_at).toISOString()}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority><image:image><image:loc>${base}/images/logo.png</image:loc><image:title>${esc(p.home_team)} vs ${esc(p.away_team)}</image:title></image:image></url>`),
     ...posts.map(p => `<url><loc>${base}/blog/${p.slug}</loc><lastmod>${new Date(p.updated_at).toISOString()}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>`),
     ...seoArticles.map(p => `<url><loc>${base}/tips/${p.slug}</loc><lastmod>${new Date(p.updated_at).toISOString()}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`),
+    ...sponsoredPosts.map(p => `<url><loc>${base}/sponsored/${p.slug}</loc><lastmod>${new Date(p.updated_at).toISOString()}</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>`),
   ];
   const xml = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">${urls.join('')}</urlset>`;
   sitemapCache = { xml, at: Date.now() };
@@ -698,6 +703,9 @@ app.get('/blog/:slug', async (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'blog-post.html'));
   }
 });
+app.get('/sponsored/:slug', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'sponsored-post.html'));
+});
 app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'public', 'terms.html')));
 app.get('/privacy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'privacy.html')));
 app.get('/contact', (req, res) => res.sendFile(path.join(__dirname, 'public', 'contact.html')));
@@ -847,7 +855,7 @@ const ALLOWED_ADMIN = [
   'categories.html','leaderboard.html','blog.html','subscriptions.html',
   'users.html','leagues.html','sync.html','analytics.html','revenue.html',
   'seo.html','pages.html','settings.html','prediction-stats.html',
-  'game-browser.html','backlinks.html','ads.html','seo-pages.html',
+  'game-browser.html','backlinks.html','ads.html','seo-pages.html','sponsored-posts.html',
 ];
 app.get('/admin/:file', (req, res, next) => {
   if (!ALLOWED_ADMIN.includes(req.params.file)) return res.status(403).json({ message: 'Forbidden' });

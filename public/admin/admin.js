@@ -34,6 +34,7 @@
       { href: 'revenue.html', icon: 'payments', label: 'Revenue' },
       { href: 'seo.html', icon: 'manage_search', label: 'SEO' },
       { href: 'seo-pages.html', icon: 'article', label: 'SEO Pages' },
+      { href: 'sponsored-posts.html', icon: 'campaign', label: 'Sponsored Posts' },
       { href: 'backlinks.html', icon: 'link', label: 'Textlinks' },
       { href: 'ads.html', icon: 'campaign', label: 'Ads' },
       { href: 'pages.html', icon: 'web', label: 'Pages' },

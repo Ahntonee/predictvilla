@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sponsored Posts — OL Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css"><link rel="stylesheet" href="admin.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+<script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+<style>
+.EasyMDEContainer .editor-toolbar { background:#111;border:1px solid rgba(255,255,255,.08);border-bottom:0;border-radius:8px 8px 0 0; }
+.EasyMDEContainer .editor-toolbar button { color:#e8f4f8!important; }
+.EasyMDEContainer .CodeMirror { min-height:260px;background:#0d1a26;color:silver;border:1px solid rgba(173,223,241,.14);border-radius:0 0 8px 8px; }
+</style>
+</head>
+<body>
+<div id="admin-sidebar"></div><div id="admin-topbar"></div>
+<main id="admin-main">
+  <div class="flex-between mb-3">
+    <h1 class="admin-section-title mb-0"><span class="material-icons-round">campaign</span> Sponsored Posts</h1>
+    <button class="btn btn-primary btn-sm" id="new-btn"><span class="material-icons-round">add</span> New Sponsored Post</button>
+  </div>
+  <div id="list-view">
+    <div class="search-bar mb-2">
+      <input class="form-control" style="max-width:260px" id="search" placeholder="Search sponsored posts…">
+      <select class="form-control" style="max-width:140px" id="status"><option value="">All</option><option value="1">Published</option><option value="0">Draft</option></select>
+    </div>
+    <div class="admin-card" style="padding:0;overflow-x:auto">
+      <table class="data-table"><thead><tr><th>Title</th><th>Sponsor</th><th>Disclosure</th><th>Status</th><th>Updated</th><th>Actions</th></tr></thead>
+      <tbody id="posts-body"><tr><td colspan="6" class="empty-cell">Loading…</td></tr></tbody></table>
+    </div>
+  </div>
+  <div id="editor-view" style="display:none">
+    <div class="flex-between mb-3">
+      <h2 class="admin-section-title mb-0"><span class="material-icons-round">edit</span> <span id="editor-title">New Sponsored Post</span></h2>
+      <button class="btn btn-ghost btn-sm" id="back-btn">← Back</button>
+    </div>
+    <div class="admin-card">
+      <input type="hidden" id="edit-id">
+      <div class="grid-2">
+        <div class="form-group"><label class="form-label">Title *</label><input class="form-control" id="title" placeholder="Sponsored article title"></div>
+        <div class="form-group"><label class="form-label">Sponsor name *</label><input class="form-control" id="sponsor" placeholder="Brand or advertiser"></div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group"><label class="form-label">Slug</label><input class="form-control" id="slug" placeholder="sponsored-article-slug" style="font-family:monospace"></div>
+        <div class="form-group"><label class="form-label">Sponsor URL</label><input type="url" class="form-control" id="sponsor-url" placeholder="https://example.com"></div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group"><label class="form-label">Disclosure label</label><input class="form-control" id="disclosure" value="Sponsored content"></div>
+        <div class="form-group"><label class="form-label">Excerpt</label><input class="form-control" id="excerpt" placeholder="Short description"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Featured image URL</label><input type="url" class="form-control" id="image" placeholder="https://…"></div>
+      <div class="form-group"><label class="form-label">Article content *</label><textarea id="content"></textarea></div>
+      <div class="grid-2">
+        <div class="form-group"><label class="form-label">Meta title</label><input class="form-control" id="meta-title"></div>
+        <div class="form-group"><label class="form-label">Meta description</label><input class="form-control" id="meta-description"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Keywords</label><input class="form-control" id="keywords" placeholder="comma, separated, keywords"></div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:18px"><input type="checkbox" id="published"> Publish immediately</label>
+      <button class="btn btn-primary" id="save-btn">Save Sponsored Post</button>
+    </div>
+  </div>
+</main>
+<script src="admin.js"></script>
+<script>
+injectAdminShell('sponsored-posts.html');
+let editor = null, timer;
+const $ = id => document.getElementById(id);
+function slugify(v) { return String(v || '').toLowerCase().trim().replace(/[^a-z0-9\s-]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,''); }
+function showEditor(post) {
+  $('list-view').style.display = 'none'; $('editor-view').style.display = 'block';
+  $('editor-title').textContent = post ? 'Edit Sponsored Post' : 'New Sponsored Post';
+  $('edit-id').value = post?.id || ''; $('title').value = post?.title || ''; $('sponsor').value = post?.sponsor_name || '';
+  $('slug').value = post?.slug || ''; $('sponsor-url').value = post?.sponsor_url || ''; $('disclosure').value = post?.disclosure || 'Sponsored content';
+  $('excerpt').value = post?.excerpt || ''; $('image').value = post?.featured_image || ''; $('meta-title').value = post?.meta_title || '';
+  $('meta-description').value = post?.meta_description || ''; $('keywords').value = post?.keywords || ''; $('published').checked = !!post?.is_published;
+  if (editor) editor.toTextArea();
+  editor = new EasyMDE({ element: $('content'), initialValue: post?.content || '', spellChecker: false, autofocus: false });
+}
+function hideEditor() { if (editor) { editor.toTextArea(); editor = null; } $('editor-view').style.display='none'; $('list-view').style.display='block'; loadPosts(); }
+async function loadPosts() {
+  const params = new URLSearchParams({ admin:'1', ...( $('search').value && { search:$('search').value }), ...( $('status').value !== '' && { published:$('status').value }) });
+  const d = await api(`/sponsored-posts/admin?${params}`), posts = d.data?.posts || [];
+  $('posts-body').innerHTML = posts.length ? posts.map(p => `<tr><td><strong>${escHtml(p.title)}</strong><br><a class="text-muted" target="_blank" href="/sponsored/${escHtml(p.slug)}">/sponsored/${escHtml(p.slug)}</a></td><td>${escHtml(p.sponsor_name)}</td><td>${escHtml(p.disclosure || 'Sponsored content')}</td><td><button class="btn btn-sm ${p.is_published?'btn-primary':'btn-ghost'}" onclick="togglePost(${p.id},${p.is_published})">${p.is_published?'Published':'Draft'}</button></td><td>${fmtDate(p.updated_at)}</td><td><button class="btn btn-sm btn-ghost" onclick="editPost(${p.id})">Edit</button><button class="btn btn-sm btn-danger" onclick="deletePost(${p.id})">Delete</button></td></tr>`).join('') : '<tr><td colspan="6" class="empty-cell">No sponsored posts yet.</td></tr>';
+}
+async function editPost(id) { const d = await api(`/sponsored-posts/admin/${id}`); if (d.data?.post) showEditor(d.data.post); }
+async function savePost() {
+  const body = { title:$('title').value.trim(), slug:$('slug').value.trim() || slugify($('title').value), sponsor_name:$('sponsor').value.trim(), sponsor_url:$('sponsor-url').value.trim() || null, disclosure:$('disclosure').value.trim() || 'Sponsored content', excerpt:$('excerpt').value.trim(), content:editor ? editor.value() : '', featured_image:$('image').value.trim() || null, meta_title:$('meta-title').value.trim(), meta_description:$('meta-description').value.trim(), keywords:$('keywords').value.trim(), is_published:$('published').checked ? 1 : 0 };
+  if (!body.title || !body.sponsor_name || !body.content.trim()) { showToast('Title, sponsor name and content are required','error'); return; }
+  const id = $('edit-id').value, d = await api(id ? `/sponsored-posts/admin/${id}` : '/sponsored-posts/admin', { method:id?'PUT':'POST', body:JSON.stringify(body) });
+  if (d.success) { showToast('Sponsored post saved','success'); hideEditor(); } else showToast(d.message || 'Could not save post','error');
+}
+async function togglePost(id, current) { const d=await api(`/sponsored-posts/admin/${id}/publish`,{method:'PUT',body:JSON.stringify({is_published:current?0:1})}); if(d.success) loadPosts(); else showToast(d.message,'error'); }
+async function deletePost(id) { if(!confirm('Delete this sponsored post?')) return; const d=await api(`/sponsored-posts/admin/${id}`,{method:'DELETE'}); if(d.success) loadPosts(); else showToast(d.message,'error'); }
+$('new-btn').onclick=()=>showEditor(); $('back-btn').onclick=hideEditor; $('save-btn').onclick=savePost; $('title').oninput=()=>{if(!$('edit-id').value)$('slug').value=slugify($('title').value)}; $('search').oninput=()=>{clearTimeout(timer);timer=setTimeout(loadPosts,350)}; $('status').onchange=loadPosts; loadPosts();
+</script>
+</body>
+</html>

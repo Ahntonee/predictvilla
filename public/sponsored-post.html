@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sponsored Article — Predictvilla</title>
+<meta name="description" content="Sponsored article on Predictvilla.">
+<link rel="stylesheet" href="/css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Jura:wght@400;500;600;700&family=Exo+2:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/marked@4/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+</head>
+<body><div id="header-placeholder"></div>
+<main><section><div class="container" style="max-width:800px">
+  <div class="mb-3" style="font-size:13px;color:var(--text-soft)"><a href="/">Home</a> › <a href="/blog.html">Articles</a> › <span id="crumb">Sponsored</span></div>
+  <div id="post"><div class="skeleton" style="height:420px;border-radius:14px"></div></div>
+</div></section></main><div id="footer-placeholder"></div>
+<script src="/js/app.js"></script>
+<script>
+const slug = location.pathname.split('/').filter(Boolean).pop();
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const r = await fetch(`/api/sponsored-posts/${encodeURIComponent(slug)}`); if (!r.ok) throw new Error();
+    const post = (await r.json()).data.post;
+    const description = post.meta_description || post.excerpt || '';
+    document.title = `${post.meta_title || post.title} — Predictvilla`;
+    document.querySelector('meta[name="description"]').content = description;
+    document.getElementById('crumb').textContent = post.title;
+    const image = post.featured_image ? `<img src="${escapeHtml(post.featured_image)}" alt="${escapeHtml(post.title)}" style="width:100%;max-height:400px;object-fit:cover;border-radius:14px;margin-bottom:24px">` : '';
+    const sponsor = post.sponsor_url ? `<a href="${escapeHtml(post.sponsor_url)}" rel="sponsored noopener" target="_blank">${escapeHtml(post.sponsor_name)}</a>` : escapeHtml(post.sponsor_name);
+    document.getElementById('post').innerHTML = `${image}<div class="alert alert-info mb-3"><span class="material-icons-round" style="font-size:16px;vertical-align:middle">campaign</span> ${escapeHtml(post.disclosure || 'Sponsored content')} by ${sponsor}</div><h1 class="section-title">${escapeHtml(post.title)}</h1>${post.excerpt ? `<p class="text-soft mb-3">${escapeHtml(post.excerpt)}</p>` : ''}<div class="article-content">${DOMPurify.sanitize(marked.parse(post.content || ''))}</div>`;
+  } catch { document.getElementById('post').innerHTML='<div class="empty-state"><h3>Sponsored article not found</h3><a class="btn btn-outline mt-2" href="/blog.html">Back to articles</a></div>'; }
+});
+</script></body></html>

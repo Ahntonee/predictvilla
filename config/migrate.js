@@ -169,6 +169,25 @@ async function migrate() {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )`,
 
+    `CREATE TABLE IF NOT EXISTS sponsored_posts (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      slug VARCHAR(500) UNIQUE NOT NULL,
+      title VARCHAR(500) NOT NULL,
+      sponsor_name VARCHAR(255) NOT NULL,
+      sponsor_url VARCHAR(500),
+      disclosure VARCHAR(255) DEFAULT 'Sponsored content',
+      excerpt TEXT,
+      content LONGTEXT,
+      featured_image LONGTEXT,
+      meta_title VARCHAR(255),
+      meta_description TEXT,
+      keywords TEXT,
+      is_published TINYINT(1) DEFAULT 0,
+      published_at DATETIME,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )`,
+
     `CREATE TABLE IF NOT EXISTS seo_settings (
       id INT PRIMARY KEY AUTO_INCREMENT,
       page_key VARCHAR(100) UNIQUE NOT NULL,
