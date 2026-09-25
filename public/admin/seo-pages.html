@@ -29,7 +29,7 @@
   <div id="list-view">
     <div class="flex-between mb-3">
       <h1 class="admin-section-title mb-0"><span class="material-icons-round">article</span> SEO Article Pages</h1>
-      <button class="btn btn-primary btn-sm" onclick="showEditor()">
+      <button type="button" class="btn btn-primary btn-sm" id="new-seo-page-btn">
         <span class="material-icons-round">add</span> New SEO Page
       </button>
     </div>
@@ -176,6 +176,7 @@ let htmlMode = false;
 
 document.addEventListener('DOMContentLoaded', () => {
   loadPages();
+  document.getElementById('new-seo-page-btn').addEventListener('click', () => showEditor());
   document.getElementById('f-slug').addEventListener('input', updateSlugPreview);
   document.getElementById('f-desc').addEventListener('input', () => {
     const l = document.getElementById('f-desc').value.length;

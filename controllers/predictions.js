@@ -10,7 +10,7 @@ function redactVip(pred, user) {
 
 exports.list = asyncHandler(async (req, res) => {
   const { page, limit, offset } = parsePagination(req.query);
-  const { date, league_id, category, market, vip, result, search } = req.query;
+  const { date, league_id, category, market, tip, vip, result, search } = req.query;
   const isAdmin = req.user?.role === 'admin';
   const adminView = isAdmin && req.query.admin_view === '1';
 
@@ -42,6 +42,7 @@ exports.list = asyncHandler(async (req, res) => {
     }
   }
   if (market) { where.push('market = ?'); params.push(market); }
+  if (tip) { where.push('tip = ?'); params.push(tip); }
   if (vip === '1') { where.push('is_vip = 1'); }
 
   // Admin view tabs

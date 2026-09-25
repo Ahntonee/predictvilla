@@ -434,7 +434,7 @@ async function seedHistoricalFixtures(leagueApiId, dbLeagueId, season) {
  *   • h2h_history       — every match result for every pair of teams
  *   • team_statistics   — real home/away goal averages per team per season
  */
-async function runFullHistoricalSeed(seasons) {
+async function runFullHistoricalSeed(seasons, leagueApiIds) {
   if (!KEY) return { error: 'No API key configured' };
 
   // Default: current season + previous season
@@ -445,9 +445,13 @@ async function runFullHistoricalSeed(seasons) {
     seasons = [String(current - 1), String(current)];
   }
 
-  const [leagues] = await pool.query(
-    'SELECT id, api_league_id, name FROM leagues WHERE is_active=1 AND api_league_id IS NOT NULL'
-  );
+  const selectedIds = Array.isArray(leagueApiIds)
+    ? leagueApiIds.map(Number).filter(Number.isInteger)
+    : [];
+  const leagueSql = selectedIds.length
+    ? `SELECT id, api_league_id, name FROM leagues WHERE api_league_id IN (${selectedIds.map(() => '?').join(',')})`
+    : 'SELECT id, api_league_id, name FROM leagues WHERE is_active=1 AND api_league_id IS NOT NULL';
+  const [leagues] = await pool.query(leagueSql, selectedIds);
 
   const totals = { seasons: seasons.length, leaguesProcessed: 0, fixtures: 0, teams: 0, errors: 0 };
 

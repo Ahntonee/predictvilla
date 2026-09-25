@@ -91,14 +91,23 @@ router.post('/adjust-weights', asyncHandler(async (req, res) => {
 // The actual work logs to console and updates site_settings when done.
 router.post('/seed-historical', asyncHandler(async (req, res) => {
   const seasons = req.body?.seasons || null;
+  const leagues = Array.isArray(req.body?.leagues)
+    ? req.body.leagues.map(Number).filter(Number.isInteger)
+    : null;
+  if (Array.isArray(seasons) && !seasons.length) {
+    return res.status(400).json({ success: false, message: 'Select at least one season to backfill' });
+  }
+  if (Array.isArray(leagues) && !leagues.length) {
+    return res.status(400).json({ success: false, message: 'Select at least one league to backfill' });
+  }
   // Don't await — runs in background so the HTTP request doesn't time out
   setImmediate(() => {
-    runFullHistoricalSeed(seasons).catch(err =>
+    runFullHistoricalSeed(seasons, leagues).catch(err =>
       console.error('[SeedHistorical] background error:', err.message)
     );
   });
   const desc = seasons ? seasons.join(', ') : 'current + previous season';
-  return successResponse(res, { status: 'started', seasons: desc },
+  return successResponse(res, { status: 'started', seasons: desc, leagues: leagues?.length || 'all active' },
     `Historical seed started in background (${desc}). Check server logs for progress.`);
 }));
 

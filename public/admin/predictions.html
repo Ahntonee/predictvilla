@@ -51,6 +51,9 @@
       <option value="">All Categories</option>
       <option>Free</option><option>VIP</option><option>Banker</option>
     </select>
+    <select class="form-control" style="max-width:190px" id="f-tip-filter">
+      <option value="">All Tips</option>
+    </select>
     <select class="form-control" style="max-width:130px" id="f-pub">
       <option value="">All</option><option value="1">Published</option><option value="0">Draft</option>
     </select>
@@ -193,6 +196,9 @@ document.addEventListener('DOMContentLoaded', () => {
   loadPreds(1);
   updateTipOptions();
 
+  const tipFilter = document.getElementById('f-tip-filter');
+  [...new Set(Object.values(MARKET_TIPS).flat())].forEach(tip => tipFilter.appendChild(new Option(tip, tip)));
+
   document.getElementById('add-pred-btn').addEventListener('click', () => openModal());
   document.getElementById('modal-close-btn').addEventListener('click', closeModal);
   document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
@@ -207,6 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('f-search').addEventListener('input', () => { clearTimeout(debTimer); debTimer = setTimeout(() => loadPreds(1), 400); });
   document.getElementById('f-cat').addEventListener('change', () => loadPreds(1));
+  document.getElementById('f-tip-filter').addEventListener('change', () => loadPreds(1));
   document.getElementById('f-pub').addEventListener('change', () => loadPreds(1));
   document.getElementById('f-date').addEventListener('change', () => loadPreds(1));
 });
@@ -235,6 +242,7 @@ async function loadPreds(page = 1) {
   const search = document.getElementById('f-search').value;
   const cat = document.getElementById('f-cat').value;
   const pub = document.getElementById('f-pub').value;
+  const tip = document.getElementById('f-tip-filter').value;
   const date = document.getElementById('f-date').value;
 
   const isQueue = currentView === 'queue';
@@ -243,6 +251,7 @@ async function loadPreds(page = 1) {
     ...(isQueue ? { is_published: '0' } : { view: currentView }),
     ...(search && { search }),
     ...(cat && { category: cat }),
+    ...(tip && { tip }),
     ...(!isQueue && pub !== '' && { is_published: pub }),
     ...(date && { date }),
   });
@@ -265,6 +274,7 @@ async function loadPreds(page = 1) {
   const tbody = document.getElementById('preds-body');
 
   tbody.innerHTML = preds.length ? preds.map(p => {
+    const past = isPast(p.match_date);
     const needsResult = currentView === 'finished' && (!p.result || p.result === 'pending') && p.home_score == null;
     const isQueueRow = isQueue;
     const rowClass = needsResult ? 'needs-result' : (isQueueRow ? 'queue-row' : '');

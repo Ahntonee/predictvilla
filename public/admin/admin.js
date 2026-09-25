@@ -84,6 +84,8 @@
   window.showToast = function (msg, type = 'info') {
     let tc = document.getElementById('toast-container');
     if (!tc) { tc = document.createElement('div'); tc.id = 'toast-container'; tc.className = 'toast-container'; document.body.appendChild(tc); }
+    const lastToast = tc.lastElementChild;
+    if (lastToast?.textContent === String(msg) && lastToast.classList.contains(`toast-${type}`)) return;
     const t = document.createElement('div');
     t.className = `toast toast-${type}`;
     t.textContent = msg;
@@ -93,10 +95,36 @@
   };
 
   window.api = async function (path, opts = {}) {
-    const r = await fetch(`/api${path}`, { credentials: 'include', headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) }, ...opts });
-    const data = await r.json();
-    if (!r.ok && r.status === 401) { localStorage.removeItem('ol_admin'); location.href = '/admin/index.html'; }
-    return data;
+    const { silent = false, ...fetchOpts } = opts;
+    try {
+      const r = await fetch(`/api${path}`, {
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', ...(fetchOpts.headers || {}) },
+        ...fetchOpts,
+      });
+      const contentType = r.headers.get('content-type') || '';
+      const data = contentType.includes('application/json')
+        ? await r.json()
+        : { success: false, message: (await r.text()) || `Request failed (${r.status})` };
+
+      if (!r.ok) {
+        if (r.status === 401) {
+          localStorage.removeItem('ol_admin');
+          location.href = '/admin/index.html';
+        }
+        const message = data.message || `Request failed (${r.status})`;
+        if (!silent) showToast(message, 'error');
+        return { ...data, success: false, status: r.status };
+      }
+      return data;
+    } catch (err) {
+      const message = err instanceof SyntaxError
+        ? 'The server returned an invalid response.'
+        : 'Could not reach the server. Check your connection and try again.';
+      console.error(`[Admin API] ${path}:`, err);
+      if (!silent) showToast(message, 'error');
+      return { success: false, message, error: err.message };
+    }
   };
 
   window.confirm2 = function (msg) { return window.confirm(msg); };

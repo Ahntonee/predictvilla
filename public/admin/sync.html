@@ -498,8 +498,13 @@ const ENDPOINTS = {
   'grade':            () => api('/sync/scores', { method: 'POST' }),
 };
 
-async function runSync(type) {
-  const btn = event?.currentTarget;
+async function runSync(type, clickedButton) {
+  const btn = clickedButton || (document.activeElement?.tagName === 'BUTTON' ? document.activeElement : null);
+  if (!ENDPOINTS[type]) {
+    log(`[ERR] Unknown sync action: ${type}`, 'err');
+    showToast('This sync action is not configured.', 'error');
+    return;
+  }
   if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
   log(`Starting ${type}…`);
   try {

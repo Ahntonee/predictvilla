@@ -863,9 +863,10 @@ app.use((req, res) => {
 
 // ─── Global error handler ─────────────────────────────────────────────────────
 app.use((err, req, res, next) => {
-  console.error('[Error]', err.message, err.stack?.split('\n')[1]);
-  const msg = isProd ? 'An error occurred.' : err.message;
-  res.status(err.status || 500).json({ success: false, message: msg });
+  const errorId = crypto.randomBytes(4).toString('hex');
+  console.error(`[Error ${errorId}] ${req.method} ${req.originalUrl}`, err.message, err.stack?.split('\n')[1]);
+  const msg = isProd ? `An error occurred. Reference: ${errorId}` : err.message;
+  res.status(err.status || 500).json({ success: false, message: msg, errorId });
 });
 
 // ─── Start ────────────────────────────────────────────────────────────────────
