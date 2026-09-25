@@ -95,6 +95,7 @@ app.use('/api/leagues', require('./routes/leagues'));
 app.use('/api/admin/leagues', require('./routes/leagues'));
 app.use('/api/statistics', require('./routes/statistics'));
 app.use('/api/admin/intelligence', require('./routes/intelligence'));
+app.use('/api/intelligence', require('./routes/intelligence'));
 app.use('/api/blog', require('./routes/blog'));
 app.use('/api/admin/blog', require('./routes/blog'));
 app.use('/api/subscriptions', require('./routes/subscriptions'));
@@ -104,6 +105,7 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/admin/seo', require('./routes/seo'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/admin/analytics', require('./routes/analytics'));
+app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/admin/revenue', require('./routes/analytics'));
 app.use('/api/pages', require('./routes/pages'));
 app.use('/api/admin/pages', require('./routes/pages'));
@@ -451,6 +453,7 @@ const MARKET_PAGES = {
     keywords: 'over 2.5 predictions, over 2.5 goals today, over 2.5 tips, football goals predictions',
     label: 'Over 2.5 Goals',
     api: 'Over/Under',
+    tip: 'Over 2.5 Goals',
     intro: 'Browse today\'s over 2.5 goals predictions, scored by our AI Intelligence Engine across major football leagues. Each pick includes odds, market confidence and form data to help you decide.',
   },
   'btts': {
@@ -501,6 +504,17 @@ const MARKET_PAGES = {
     api: 'Draw No Bet',
     intro: 'Draw No Bet predictions for today\'s fixtures — get your stake back if the match ends level. Each tip is scored by our Intelligence Engine for form, value and market reliability.',
   },
+  'over-15': { title:'Over 1.5 Goals Predictions Today | Predictvilla', description:'Daily over 1.5 goals football predictions.', keywords:'over 1.5 goals predictions', label:'Over 1.5 Goals', api:'Over/Under', tip:'Over 1.5 Goals', intro:'Today\'s Over 1.5 Goals selections generated from scoring form and expected-goals data.' },
+  'over-35': { title:'Over 3.5 Goals Predictions Today | Predictvilla', description:'Daily over 3.5 goals football predictions.', keywords:'over 3.5 goals predictions', label:'Over 3.5 Goals', api:'Over/Under', tip:'Over 3.5 Goals', intro:'Today\'s Over 3.5 Goals selections for higher-scoring fixtures.' },
+  'under-15': { title:'Under 1.5 Goals Predictions Today | Predictvilla', description:'Daily under 1.5 goals football predictions.', keywords:'under 1.5 goals predictions', label:'Under 1.5 Goals', api:'Over/Under', tip:'Under 1.5 Goals', intro:'Today\'s Under 1.5 Goals selections based on defensive and scoring trends.' },
+  'under-25': { title:'Under 2.5 Goals Predictions Today | Predictvilla', description:'Daily under 2.5 goals football predictions.', keywords:'under 2.5 goals predictions', label:'Under 2.5 Goals', api:'Over/Under', tip:'Under 2.5 Goals', intro:'Today\'s Under 2.5 Goals selections based on defensive and scoring trends.' },
+  'under-35': { title:'Under 3.5 Goals Predictions Today | Predictvilla', description:'Daily under 3.5 goals football predictions.', keywords:'under 3.5 goals predictions', label:'Under 3.5 Goals', api:'Over/Under', tip:'Under 3.5 Goals', intro:'Today\'s Under 3.5 Goals selections based on expected match totals.' },
+  'home-win': { title:'Home Win Predictions Today | Predictvilla', description:'Daily home win football predictions.', keywords:'home win predictions', label:'Home Win', api:'1X2', tip:'Home Win', intro:'Today\'s strongest home-win selections based on form, venue and opponent data.' },
+  'draw': { title:'Draw Predictions Today | Predictvilla', description:'Daily football draw predictions.', keywords:'draw predictions today', label:'Draw', api:'1X2', tip:'Draw', intro:'Today\'s draw selections based on closely matched team profiles.' },
+  'away-win': { title:'Away Win Predictions Today | Predictvilla', description:'Daily away win football predictions.', keywords:'away win predictions', label:'Away Win', api:'1X2', tip:'Away Win', intro:'Today\'s strongest away-win selections based on form and matchup data.' },
+  'btts-yes': { title:'BTTS Yes Predictions Today | Predictvilla', description:'Both teams to score yes predictions.', keywords:'BTTS yes predictions', label:'BTTS Yes', api:'BTTS', tip:'BTTS Yes', intro:'Fixtures where both teams are projected to score.' },
+  'btts-no': { title:'BTTS No Predictions Today | Predictvilla', description:'Both teams to score no predictions.', keywords:'BTTS no predictions', label:'BTTS No', api:'BTTS', tip:'BTTS No', intro:'Fixtures where at least one team is projected not to score.' },
+  'corners': { title:'Corners Predictions Today | Predictvilla', description:'Daily football corners predictions.', keywords:'corners predictions today', label:'Corners', api:'Corners', intro:'Corners predictions derived from home and away corner averages.' },
 };
 
 let _marketTemplate = null;
@@ -521,6 +535,7 @@ app.get('/predictions/:market', async (req, res) => {
     .replace(/__MARKET_SLUG__/g,  req.params.market)
     .replace(/__MARKET_LABEL__/g, meta.label)
     .replace(/__MARKET_API__/g,   meta.api)
+    .replace(/__TIP_API__/g,      meta.tip || '')
     .replace(/__MARKET_INTRO__/g, meta.intro);
   html = await injectStaticShell(html, req.path);
   res.send(html);

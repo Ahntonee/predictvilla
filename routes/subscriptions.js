@@ -21,6 +21,7 @@ router.post('/paystack/verify', authenticate, ctrl.paystackVerify);
 router.post('/cancel', authenticate, ctrl.cancel);
 router.post('/admin/grant', authenticate, requireAdmin, ctrl.adminGrant);
 router.get('/admin', authenticate, requireAdmin, ctrl.adminList);
+router.get('/admin/export', authenticate, requireAdmin, ctrl.adminExport);
 router.put('/admin/:id/extend', authenticate, requireAdmin, ctrl.adminExtend);
 router.put('/admin/:id/cancel', authenticate, requireAdmin, ctrl.adminCancel);
 router.post('/admin/:id/notify-expiry', authenticate, requireAdmin, ctrl.adminNotifyExpiry);

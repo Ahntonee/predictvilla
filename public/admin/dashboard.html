@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function loadStats() {
-  const d = await api('/admin/stats');
+  const d = await api('/admin/dashboard');
   const s = d.data || {};
   const items = [
     { icon:'sports_soccer', val:s.total_predictions||0, label:'Total Predictions', color:'' },
@@ -107,7 +107,7 @@ async function loadStats() {
 }
 
 async function loadRecentPreds() {
-  const d = await api('/predictions?limit=10');
+  const d = await api('/predictions?limit=10&admin_view=1');
   const preds = d.data?.predictions || [];
   document.getElementById('recent-preds').innerHTML = preds.length
     ? preds.map(p=>`<tr>
@@ -117,7 +117,7 @@ async function loadRecentPreds() {
         <td>${p.confidence_score||'—'}</td>
         <td>${fmtDate(p.match_date)}</td>
         <td><span class="badge badge-${p.result||'pending'}">${(p.result||'pending').toUpperCase()}</span></td>
-        <td>${p.is_published?'<span class="material-icons-round" style="color:var(--primary);font-size:16px">check_circle</span>':'<span class="material-icons-round" style="font-size:16px;opacity:.4">radio_button_unchecked</span>'}</td>
+        <td>${p.published_at?'<span class="material-icons-round" style="color:var(--primary);font-size:16px">check_circle</span>':'<span class="material-icons-round" style="font-size:16px;opacity:.4">radio_button_unchecked</span>'}</td>
       </tr>`).join('')
     : '<tr><td colspan="7" class="empty-cell">No predictions yet</td></tr>';
 }
@@ -136,13 +136,13 @@ async function loadRecentUsers() {
 }
 
 async function loadSysStatus() {
-  const d = await api('/intelligence/status');
+  const d = await api('/admin/intelligence/status');
   const s = d.data || {};
   document.getElementById('sys-status').innerHTML = `
     <div class="flex" style="flex-wrap:wrap;gap:12px;font-size:13px">
-      <span><span class="material-icons-round" style="font-size:16px">psychology</span> Engine: <strong style="color:${s.enabled?'var(--primary)':'var(--danger)'}">${s.enabled?'ON':'OFF'}</strong></span>
-      <span><span class="material-icons-round" style="font-size:16px">analytics</span> Weights: <strong>${s.weightsLoaded?'Loaded':'—'}</strong></span>
-      <span><span class="material-icons-round" style="font-size:16px">content_paste</span> Queue: <strong>${s.pendingQueue||0}</strong></span>
+      <span><span class="material-icons-round" style="font-size:16px">psychology</span> Engine: <strong style="color:var(--primary)">ON</strong></span>
+      <span><span class="material-icons-round" style="font-size:16px">auto_awesome</span> Generated today: <strong>${s.todayGenerated||0}</strong></span>
+      <span><span class="material-icons-round" style="font-size:16px">content_paste</span> Queue: <strong>${s.queueCount||0}</strong></span>
       <span><span class="material-icons-round" style="font-size:16px">today</span> Last sync: <strong>${s.lastSync?fmtDateTime(s.lastSync):'Never'}</strong></span>
     </div>`;
 }

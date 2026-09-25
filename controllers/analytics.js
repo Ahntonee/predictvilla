@@ -78,6 +78,27 @@ exports.revenueByMonth = asyncHandler(async (req, res) => {
   return successResponse(res, { data: rows });
 });
 
+exports.revenueGrowth = asyncHandler(async (req, res) => {
+  const [rows] = await pool.query(
+    `SELECT DATE_FORMAT(created_at,'%Y-%m') AS month, COUNT(*) AS new_subs
+     FROM subscriptions WHERE created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+     GROUP BY month ORDER BY month`
+  );
+  return successResponse(res, { rows });
+});
+
+exports.accuracyTrend = asyncHandler(async (req, res) => {
+  const [rows] = await pool.query(
+    `SELECT DATE(recorded_at) AS date, COUNT(*) AS count,
+            COALESCE(SUM(is_correct),0) AS correct,
+            ROUND(COALESCE(SUM(is_correct),0) / NULLIF(COUNT(*),0) * 100, 1) AS win_rate
+     FROM intelligence_outcomes
+     WHERE recorded_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND is_correct IS NOT NULL
+     GROUP BY DATE(recorded_at) ORDER BY date`
+  );
+  return successResponse(res, { rows });
+});
+
 exports.revenuePlans = asyncHandler(async (req, res) => {
   const [rows] = await pool.query(
     "SELECT plan, COUNT(*) as count, SUM(amount) as revenue FROM subscriptions GROUP BY plan"

@@ -2,6 +2,7 @@ const axios = require('axios');
 const { pool } = require('../config/db');
 const { generatePredictionSlug } = require('../utils/helpers');
 const quota = require('./apiQuota');
+const { storeResponse } = require('./apiFootballArchive');
 
 const BASE = process.env.API_FOOTBALL_BASE_URL || 'https://v3.football.api-sports.io';
 const KEY = process.env.API_FOOTBALL_KEY;
@@ -24,7 +25,10 @@ const api = axios.create({
 // All external API calls go through here — enforces the 2500/day cap
 async function trackedGet(endpoint, params) {
   quota.checkAndIncrement(endpoint);
-  return api.get(endpoint, { params });
+  const response = await api.get(endpoint, { params });
+  await storeResponse(endpoint.replace(/^\//, ''), params, response.data?.response)
+    .catch(err => console.error(`[ApiFootball] archive ${endpoint}:`, err.message));
+  return response;
 }
 
 async function getLeagueIds() {
@@ -39,9 +43,11 @@ async function syncFixtures(daysAhead = 0) {
   date.setDate(date.getDate() + daysAhead);
   const dateStr = date.toISOString().split('T')[0];
 
-  // Build a set of our active api_league_ids for fast lookup
+  // Keep every competition returned for the selected day. Admins can decide
+  // what to publish later; limiting ingestion to pre-activated leagues made
+  // valid fixtures disappear before the prediction engine could see them.
   const [dbLeagues] = await pool.query(
-    'SELECT id, api_league_id FROM leagues WHERE is_active=1 AND api_league_id IS NOT NULL'
+    'SELECT id, api_league_id FROM leagues WHERE api_league_id IS NOT NULL'
   );
   const leagueMap = new Map(dbLeagues.map(l => [l.api_league_id, l.id]));
 
@@ -60,9 +66,20 @@ async function syncFixtures(daysAhead = 0) {
     throw error;
   }
 
-  // Filter to only leagues we track
+  // Add newly encountered competitions so their fixtures have a valid FK.
+  for (const f of fixtures) {
+    if (!f.league?.id || leagueMap.has(f.league.id)) continue;
+    await pool.query(
+      `INSERT INTO leagues (api_league_id, name, country, logo_url, is_active)
+       VALUES (?, ?, ?, ?, 0)
+       ON DUPLICATE KEY UPDATE name=VALUES(name), country=VALUES(country), logo_url=VALUES(logo_url)`,
+      [f.league.id, f.league.name || `League ${f.league.id}`, f.league.country || '', f.league.logo || '']
+    );
+    const [[league]] = await pool.query('SELECT id FROM leagues WHERE api_league_id=?', [f.league.id]);
+    if (league) leagueMap.set(f.league.id, league.id);
+  }
   const relevant = fixtures.filter(f => leagueMap.has(f.league.id));
-  console.log(`[ApiFootball] ${fixtures.length} total fixtures on ${dateStr}, ${relevant.length} in tracked leagues`);
+  console.log(`[ApiFootball] ${fixtures.length} total fixtures on ${dateStr}, ${relevant.length} ready for prediction storage`);
 
   let synced = 0;
   for (const f of relevant) {
@@ -75,10 +92,14 @@ async function syncFixtures(daysAhead = 0) {
       const slug = generatePredictionSlug(homeTeam, awayTeam, matchDate);
 
       const [insertResult] = await pool.query(
-        `INSERT IGNORE INTO predictions
-           (slug, league_id, home_team, away_team, home_team_logo, away_team_logo, match_date, tip, market, category, source, api_fixture_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'TBD', '1X2', 'free', 'auto_sync', ?)`,
-        [slug, dbLeagueId, homeTeam, awayTeam, teams.home.logo, teams.away.logo, matchDate, fixture.id]
+        `INSERT INTO predictions
+           (slug, league_id, home_team, away_team, home_team_logo, away_team_logo, match_date, tip, market, category, source, api_fixture_id, home_api_team_id, away_api_team_id, fixture_status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'TBD', '1X2', 'free', 'auto_sync', ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE league_id=VALUES(league_id), home_team_logo=VALUES(home_team_logo),
+           away_team_logo=VALUES(away_team_logo), match_date=VALUES(match_date),
+           api_fixture_id=VALUES(api_fixture_id), home_api_team_id=VALUES(home_api_team_id),
+           away_api_team_id=VALUES(away_api_team_id), fixture_status=VALUES(fixture_status)`,
+        [slug, dbLeagueId, homeTeam, awayTeam, teams.home.logo, teams.away.logo, matchDate, fixture.id, teams.home.id, teams.away.id, fixture.status?.short || 'NS']
       );
       synced += insertResult.affectedRows ? 1 : 0;
     } catch (err) {
@@ -183,7 +204,7 @@ async function autoPredictFixtures(options = {}) {
   const [fixtures] = await pool.query(
     `SELECT
        p.id, p.home_team, p.away_team, p.match_date,
-       p.api_fixture_id, p.league_id, l.api_league_id,
+       p.api_fixture_id, p.league_id, p.home_api_team_id, p.away_api_team_id, l.api_league_id,
        COALESCE(tsh.home_goals_scored_avg,   tsh.goals_scored_avg)   AS db_home_scored,
        COALESCE(tsh.home_goals_conceded_avg, tsh.goals_conceded_avg) AS db_home_conceded,
        tsh.home_form                                                  AS db_home_form,
@@ -210,6 +231,8 @@ async function autoPredictFixtures(options = {}) {
     try {
       let homeGoalsAvg, awayGoalsAvg, homeGoalsConcededAvg, awayGoalsConcededAvg;
       let homeForm, awayForm;
+      let homeId = fx.home_api_team_id;
+      let awayId = fx.away_api_team_id;
 
       if (fx.db_home_scored !== null && fx.db_away_scored !== null) {
         // Use pre-fetched DB data — no API call needed
@@ -225,8 +248,8 @@ async function autoPredictFixtures(options = {}) {
         const fxData    = statsResp.data?.response?.[0];
         if (!fxData) continue;
 
-        const homeId = fxData.teams.home.id;
-        const awayId = fxData.teams.away.id;
+        homeId = fxData.teams.home.id;
+        awayId = fxData.teams.away.id;
 
         const [homeStats, awayStats] = await Promise.all([
           getTeamStats(homeId, fx.api_league_id),
@@ -241,6 +264,31 @@ async function autoPredictFixtures(options = {}) {
         awayForm             = awayStats?.form?.slice(-10) || null;
       }
 
+      let h2hSummary = null;
+      let homeInjuries = 0;
+      let awayInjuries = 0;
+      if (homeId && awayId) {
+        const [h2h, injuriesResponse] = await Promise.all([
+          getH2H(homeId, awayId),
+          trackedGet('/injuries', { fixture: fx.api_fixture_id }).catch(() => ({ data: { response: [] } })),
+        ]);
+        const recent = h2h.slice(0, 10);
+        let homeWins = 0, awayWins = 0, draws = 0;
+        for (const match of recent) {
+          const homeIsHome = match.teams?.home?.id === homeId;
+          const homeGoals = homeIsHome ? match.goals?.home : match.goals?.away;
+          const awayGoals = homeIsHome ? match.goals?.away : match.goals?.home;
+          if (homeGoals > awayGoals) homeWins++;
+          else if (homeGoals < awayGoals) awayWins++;
+          else draws++;
+        }
+        if (recent.length) h2hSummary = `RH${homeWins}RA${awayWins}RD${draws}`;
+        for (const injury of injuriesResponse.data?.response || []) {
+          if (injury.team?.id === homeId) homeInjuries++;
+          if (injury.team?.id === awayId) awayInjuries++;
+        }
+      }
+
       generated.push({
         id: fx.id,
         homeGoalsAvg, awayGoalsAvg, homeGoalsConcededAvg, awayGoalsConcededAvg,
@@ -251,11 +299,13 @@ async function autoPredictFixtures(options = {}) {
         `UPDATE predictions
          SET home_goals_avg=?, away_goals_avg=?,
              home_goals_conceded_avg=?, away_goals_conceded_avg=?,
-             home_form=?, away_form=?
+             home_form=?, away_form=?, h2h_summary=?, home_api_team_id=?, away_api_team_id=?,
+             home_injuries_count=?, away_injuries_count=?, api_data_updated_at=NOW()
          WHERE id=?`,
         [homeGoalsAvg, awayGoalsAvg,
          homeGoalsConcededAvg, awayGoalsConcededAvg,
-         homeForm, awayForm, fx.id]
+         homeForm, awayForm, h2hSummary, homeId, awayId,
+         homeInjuries, awayInjuries, fx.id]
       );
     } catch (err) {
       console.error(`[ApiFootball] autoPredictFixtures ${fx.id}:`, err.message);

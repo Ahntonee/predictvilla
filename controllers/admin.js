@@ -3,11 +3,12 @@ const { successResponse, errorResponse, asyncHandler, parsePagination } = requir
 
 exports.listUsers = asyncHandler(async (req, res) => {
   const { page, limit, offset } = parsePagination(req.query);
-  const { role, country, status } = req.query;
+  const { role, country, status, search } = req.query;
   let where = [];
   const params = [];
   if (role) { where.push('role=?'); params.push(role); }
   if (country) { where.push('country=?'); params.push(country); }
+  if (search) { where.push('(name LIKE ? OR email LIKE ?)'); params.push(`%${search}%`, `%${search}%`); }
   if (status === 'banned') where.push('is_banned=1');
   else if (status === 'active') where.push('is_banned=0');
   const whereStr = where.length ? 'WHERE ' + where.join(' AND ') : '';
@@ -51,6 +52,13 @@ exports.grantVip = asyncHandler(async (req, res) => {
   return successResponse(res, null, 'VIP granted');
 });
 
+exports.setUserRole = asyncHandler(async (req, res) => {
+  const role = req.body?.role;
+  if (!['user', 'vip', 'admin'].includes(role)) return errorResponse(res, 'Invalid role', 400);
+  await pool.query('UPDATE users SET role=? WHERE id=?', [role, req.params.id]);
+  return successResponse(res, null, 'User role updated');
+});
+
 exports.getLeaderboard = asyncHandler(async (req, res) => {
   const { period = '30d', group_by = 'market', sort_by = 'win_rate' } = req.query;
   const days = period === '7d' ? 7 : period === '90d' ? 90 : 30;
@@ -85,6 +93,33 @@ exports.updateSetting = asyncHandler(async (req, res) => {
     [req.params.key, value, value]
   );
   return successResponse(res, null, 'Setting updated');
+});
+
+exports.updateSettings = asyncHandler(async (req, res) => {
+  const entries = Object.entries(req.body || {});
+  if (!entries.length) return errorResponse(res, 'No settings supplied', 400);
+  for (const [key, value] of entries) {
+    if (!/^[a-z0-9_]+$/i.test(key)) continue;
+    await pool.query(
+      `INSERT INTO site_settings (setting_key, setting_value) VALUES (?,?)
+       ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value)`,
+      [key, value === null || value === undefined ? '' : String(value)]
+    );
+  }
+  return successResponse(res, null, 'Settings updated');
+});
+
+exports.testTelegram = asyncHandler(async (req, res) => {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const [[setting]] = await pool.query("SELECT setting_value FROM site_settings WHERE setting_key='telegram_chat_id'");
+  const chatId = setting?.setting_value || process.env.TELEGRAM_CHAT_ID;
+  if (!token || !chatId) return errorResponse(res, 'Telegram bot token and chat ID must be configured', 400);
+  const axios = require('axios');
+  await axios.post(`https://api.telegram.org/bot${token}/sendMessage`, {
+    chat_id: chatId,
+    text: 'Predictvilla admin test message — Telegram integration is working.',
+  }, { timeout: 10000 });
+  return successResponse(res, null, 'Telegram test message sent');
 });
 
 exports.getSeoSettings = asyncHandler(async (req, res) => {

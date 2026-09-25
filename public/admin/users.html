@@ -131,7 +131,7 @@ function closeUser() { document.getElementById('user-modal').classList.remove('o
 
 async function toggleBan(id, isBanned, fromModal = false) {
   if (!isBanned && !confirm('Ban this user?')) return;
-  const d = await api(`/admin/users/${id}/ban`, {method:'PUT', body:JSON.stringify({is_banned:isBanned?0:1})});
+  const d = await api(`/admin/users/${id}/${isBanned ? 'unban' : 'ban'}`, {method:'PUT'});
   if (d.success) { showToast(isBanned?'Unbanned':'Banned','info'); loadUsers(currentPage); if (fromModal) closeUser(); }
   else showToast(d.message,'error');
 }

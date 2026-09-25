@@ -18,6 +18,22 @@ exports.list = asyncHandler(async (req, res) => {
   return successResponse(res, { leagues: rows });
 });
 
+exports.listAdmin = asyncHandler(async (req, res) => {
+  const page = Math.max(parseInt(req.query.page) || 1, 1);
+  const limit = Math.min(Math.max(parseInt(req.query.limit) || 30, 1), 100);
+  const where = [], params = [];
+  if (req.query.search) { where.push('(name LIKE ? OR country LIKE ?)'); params.push(`%${req.query.search}%`, `%${req.query.search}%`); }
+  if (req.query.continent) { where.push('continent=?'); params.push(req.query.continent); }
+  if (req.query.is_active !== undefined && req.query.is_active !== '') { where.push('is_active=?'); params.push(req.query.is_active === '1' ? 1 : 0); }
+  const clause = where.length ? `WHERE ${where.join(' AND ')}` : '';
+  const [[count]] = await pool.query(`SELECT COUNT(*) AS total FROM leagues ${clause}`, params);
+  const [rows] = await pool.query(
+    `SELECT * FROM leagues ${clause} ORDER BY is_popular DESC, continent, name LIMIT ? OFFSET ?`,
+    [...params, limit, (page - 1) * limit]
+  );
+  return successResponse(res, { leagues: rows, total: count.total });
+});
+
 exports.getOne = asyncHandler(async (req, res) => {
   const [rows] = await pool.query('SELECT * FROM leagues WHERE id=?', [req.params.id]);
   if (!rows.length) return errorResponse(res, 'League not found', 404);
@@ -34,11 +50,16 @@ exports.create = asyncHandler(async (req, res) => {
 });
 
 exports.update = asyncHandler(async (req, res) => {
-  const { name, country, continent, logo_url, is_active, is_popular } = req.body;
-  await pool.query(
-    'UPDATE leagues SET name=?, country=?, continent=?, logo_url=?, is_active=?, is_popular=? WHERE id=?',
-    [name, country, continent, logo_url, is_active ? 1 : 0, is_popular ? 1 : 0, req.params.id]
-  );
+  const fields = ['api_league_id','name','country','continent','logo_url','is_active','is_popular'];
+  const updates = [], params = [];
+  for (const field of fields) {
+    if (req.body[field] === undefined) continue;
+    updates.push(`${field}=?`);
+    params.push(['is_active','is_popular'].includes(field) ? (req.body[field] ? 1 : 0) : req.body[field]);
+  }
+  if (!updates.length) return errorResponse(res, 'No fields to update', 400);
+  params.push(req.params.id);
+  await pool.query(`UPDATE leagues SET ${updates.join(',')} WHERE id=?`, params);
   return successResponse(res, null, 'League updated');
 });
 

@@ -81,16 +81,16 @@ async function loadSummary() {
   const d = await api('/analytics/revenue');
   const s = d.data || {};
   document.getElementById('rev-stats').innerHTML = [
-    { icon:'payments', val:'₦'+(s.total_revenue||0).toLocaleString(), label:'Total Revenue' },
-    { icon:'today', val:'₦'+(s.month_revenue||0).toLocaleString(), label:'This Month' },
-    { icon:'workspace_premium', val:s.active_subs||0, label:'Active Subscribers' },
-    { icon:'trending_down', val:(s.churn_rate||0)+'%', label:'Churn Rate' },
+    { icon:'payments', val:'₦'+Number(s.allTime?.revenue||0).toLocaleString(), label:'Total Revenue' },
+    { icon:'today', val:'₦'+Number(s.thisMonth?.revenue||0).toLocaleString(), label:'This Month' },
+    { icon:'workspace_premium', val:s.activeSubscribers||0, label:'Active Subscribers' },
+    { icon:'trending_up', val:'₦'+Number(s.avgLtv||0).toLocaleString(), label:'Average LTV' },
   ].map(i=>`<div class="admin-stat"><div style="font-size:20px"><span class="material-icons-round" style="font-size:20px">${i.icon}</span></div><div class="sv">${i.val}</div><div class="sl">${i.label}</div></div>`).join('');
 }
 
 async function loadByMonth() {
   const d = await api('/analytics/revenue/by-month');
-  const rows = d.data?.rows || [];
+  const rows = d.data?.data || [];
   if (revChart) revChart.destroy();
   const ctx = document.getElementById('rev-chart').getContext('2d');
   revChart = new Chart(ctx, {
@@ -102,7 +102,7 @@ async function loadByMonth() {
 
 async function loadGrowth() {
   const d = await api('/analytics/revenue/growth');
-  const rows = d.data?.rows || [];
+  const rows = d.data?.plans || [];
   if (growthChart) growthChart.destroy();
   const ctx = document.getElementById('growth-chart').getContext('2d');
   growthChart = new Chart(ctx, {
@@ -114,7 +114,7 @@ async function loadGrowth() {
 
 async function loadPlans() {
   const d = await api('/analytics/revenue/plans');
-  const rows = d.data?.rows || [];
+  const rows = (d.data?.data || []).map(r => ({ ...r, churn_rate: r.total ? Math.round(r.churned / r.total * 1000) / 10 : 0 }));
   if (planChart) planChart.destroy();
   if (!rows.length) return;
   const ctx = document.getElementById('plan-chart').getContext('2d');

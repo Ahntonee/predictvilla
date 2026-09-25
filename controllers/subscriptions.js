@@ -109,3 +109,17 @@ exports.adminNotifyExpiry = asyncHandler(async (req, res) => {
   await sendExpiryReminderEmail(rows[0]);
   return successResponse(res, null, 'Reminder sent');
 });
+
+exports.adminExport = asyncHandler(async (req, res) => {
+  const [rows] = await pool.query(
+    `SELECT s.id, u.name, u.email, s.plan, s.status, s.amount, s.provider,
+            s.created_at, s.expires_at
+     FROM subscriptions s JOIN users u ON u.id=s.user_id ORDER BY s.created_at DESC`
+  );
+  const escape = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
+  const headers = ['id','name','email','plan','status','amount','provider','created_at','expires_at'];
+  const csv = [headers.join(','), ...rows.map(row => headers.map(key => escape(row[key])).join(','))].join('\n');
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="subscriptions.csv"');
+  res.send(csv);
+});

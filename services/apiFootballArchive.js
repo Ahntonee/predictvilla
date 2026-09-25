@@ -40,6 +40,28 @@ function externalId(item) {
   return found === undefined ? null : String(found);
 }
 
+async function storeResponse(endpoint, rawParams, rawResponse) {
+  if (!ENDPOINT_SET.has(endpoint)) return { received: 0, inserted: 0 };
+  const params = cleanParams(rawParams);
+  const records = Array.isArray(rawResponse)
+    ? rawResponse
+    : rawResponse === undefined || rawResponse === null ? [] : [rawResponse];
+  let inserted = 0;
+  for (const item of records) {
+    const payload = JSON.stringify(item);
+    const hash = crypto.createHash('sha256').update(payload).digest('hex');
+    const [result] = await pool.query(
+      `INSERT INTO api_football_records
+         (endpoint, external_id, request_params, payload, content_hash)
+       VALUES (?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE last_seen_at=NOW(), request_params=VALUES(request_params)`,
+      [endpoint, externalId(item), JSON.stringify(params), payload, hash]
+    );
+    if (result.affectedRows === 1) inserted++;
+  }
+  return { received: records.length, inserted };
+}
+
 async function archiveEndpoint(endpoint, rawParams = {}, requestedMaxPages = 10) {
   assertEndpoint(endpoint);
   if (!KEY) throw Object.assign(new Error('API_FOOTBALL_KEY is not configured'), { status: 503 });
@@ -77,18 +99,8 @@ async function archiveEndpoint(endpoint, rawParams = {}, requestedMaxPages = 10)
       pagesFetched++;
       recordsReceived += records.length;
 
-      for (const item of records) {
-        const payload = JSON.stringify(item);
-        const hash = crypto.createHash('sha256').update(payload).digest('hex');
-        const [result] = await pool.query(
-          `INSERT INTO api_football_records
-             (endpoint, external_id, request_params, payload, content_hash)
-           VALUES (?, ?, ?, ?, ?)
-           ON DUPLICATE KEY UPDATE last_seen_at=NOW(), request_params=VALUES(request_params)`,
-          [endpoint, externalId(item), JSON.stringify(params), payload, hash]
-        );
-        if (result.affectedRows === 1) recordsInserted++;
-      }
+      const stored = await storeResponse(endpoint, params, records);
+      recordsInserted += stored.inserted;
       page++;
     } while (page <= totalPages && pagesFetched < maxPages);
 
@@ -108,4 +120,4 @@ async function archiveEndpoint(endpoint, rawParams = {}, requestedMaxPages = 10)
   }
 }
 
-module.exports = { ENDPOINTS, archiveEndpoint };
+module.exports = { ENDPOINTS, archiveEndpoint, storeResponse };

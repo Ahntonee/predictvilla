@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function loadStats() {
-  const d = await api('/admin/stats');
+  const d = await api('/admin/dashboard');
   const s = d.data || {};
   document.getElementById('sub-stats').innerHTML = [
     { icon:'workspace_premium', val:s.vip_users||0, label:'Active VIPs' },
@@ -122,7 +122,7 @@ async function loadSubs(page = 1) {
   const plan = document.getElementById('s-plan').value;
   const status = document.getElementById('s-status').value;
   const params = new URLSearchParams({ page, limit: 20, ...(search&&{search}), ...(plan&&{plan}), ...(status&&{status}) });
-  const d = await api(`/admin/subscriptions?${params}`);
+  const d = await api(`/subscriptions/admin?${params}`);
   const subs = d.data?.subscriptions || [];
   document.getElementById('subs-body').innerHTML = subs.length
     ? subs.map(s => `<tr>
@@ -155,7 +155,10 @@ function closeGrant() { document.getElementById('grant-modal').classList.remove(
 async function grantVip() {
   const body = { email: document.getElementById('g-email').value.trim(), plan: document.getElementById('g-plan').value, days: parseInt(document.getElementById('g-days').value), notes: document.getElementById('g-notes').value };
   if (!body.email) { showToast('Email required','error'); return; }
-  const d = await api('/admin/subscriptions/grant', {method:'POST', body:JSON.stringify(body)});
+  const users = await api(`/admin/users?limit=1&search=${encodeURIComponent(body.email)}`);
+  const user = users.data?.users?.find(u => u.email.toLowerCase() === body.email.toLowerCase());
+  if (!user) return showToast('No user found with that email', 'error');
+  const d = await api('/subscriptions/admin/grant', {method:'POST', body:JSON.stringify({user_id:user.id, plan:body.plan, days:body.days})});
   if (d.success) { closeGrant(); showToast('VIP granted!','success'); loadSubs(currentPage); }
   else showToast(d.message,'error');
 }
@@ -166,26 +169,26 @@ function closeExtend() { document.getElementById('extend-modal').classList.remov
 async function doExtend() {
   const id = document.getElementById('ext-id').value;
   const days = parseInt(document.getElementById('ext-days').value);
-  const d = await api(`/admin/subscriptions/${id}/extend`, {method:'PUT', body:JSON.stringify({days})});
+  const d = await api(`/subscriptions/admin/${id}/extend`, {method:'PUT', body:JSON.stringify({days})});
   if (d.success) { closeExtend(); showToast('Extended!','success'); loadSubs(currentPage); }
   else showToast(d.message,'error');
 }
 
 async function cancelSub(id) {
   if (!confirm('Cancel this subscription?')) return;
-  const d = await api(`/admin/subscriptions/${id}/cancel`, {method:'PUT'});
+  const d = await api(`/subscriptions/admin/${id}/cancel`, {method:'PUT'});
   if (d.success) { showToast('Cancelled','info'); loadSubs(currentPage); }
   else showToast(d.message,'error');
 }
 
 async function notifyUser(id) {
-  const d = await api(`/admin/subscriptions/${id}/notify`, {method:'POST'});
+  const d = await api(`/subscriptions/admin/${id}/notify-expiry`, {method:'POST'});
   if (d.success) showToast('Notification sent','success');
   else showToast(d.message,'error');
 }
 
 async function exportCsv() {
-  const r = await fetch('/api/admin/subscriptions/export', {credentials:'include'});
+  const r = await fetch('/api/subscriptions/admin/export', {credentials:'include'});
   const blob = await r.blob();
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'subscriptions.csv'; a.click();
 }

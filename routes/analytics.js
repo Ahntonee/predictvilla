@@ -10,9 +10,12 @@ router.get('/countries', ctrl.countries);
 router.get('/devices', ctrl.devices);
 router.get('/referrers', ctrl.referrers);
 router.get('/revenue/overview', ctrl.revenueOverview);
+router.get('/revenue', ctrl.revenueOverview);
 router.get('/revenue/by-month', ctrl.revenueByMonth);
+router.get('/revenue/growth', ctrl.revenueGrowth);
 router.get('/revenue/plans', ctrl.revenuePlans);
 router.get('/revenue/churn', ctrl.revenueChurn);
+router.get('/accuracy-trend', ctrl.accuracyTrend);
 
 // Prediction intelligence analytics
 router.get('/intel/league-stats',       ctrl.leagueStats);

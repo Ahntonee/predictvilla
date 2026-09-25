@@ -437,13 +437,13 @@ async function injectHeader() {
   ];
   const catLinks = [
     ['/predictions.html', 'tips_and_updates', 'All Tips'],
-    ['/predictions.html?cat=over_2_5', 'trending_up', 'Over 2.5'],
-    ['/predictions.html?cat=gg', 'sync_alt', 'BTTS'],
-    ['/predictions.html?cat=home_win', 'home', 'Home Win'],
-    ['/predictions.html?cat=draw', 'remove', 'Draw'],
-    ['/predictions.html?cat=away_win', 'flight_takeoff', 'Away Win'],
-    ['/predictions.html?cat=under_2_5', 'trending_down', 'Under 2.5'],
-    ['/predictions.html?cat=over_1_5', 'add_circle_outline', 'Over 1.5'],
+    ['/predictions/over-25', 'trending_up', 'Over 2.5'],
+    ['/predictions/btts', 'sync_alt', 'BTTS'],
+    ['/predictions/home-win', 'home', 'Home Win'],
+    ['/predictions/draw', 'remove', 'Draw'],
+    ['/predictions/away-win', 'flight_takeoff', 'Away Win'],
+    ['/predictions/under-25', 'trending_down', 'Under 2.5'],
+    ['/predictions/over-15', 'add_circle_outline', 'Over 1.5'],
   ];
 
   const sidebarAuthHtml = user

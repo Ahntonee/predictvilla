@@ -151,7 +151,7 @@ function selectBestMarket(probs, bookOdds, matrix, cornerData) {
   return best || candidates.slice().sort((a, b) => b.prob - a.prob)[0];
 }
 
-function generateAnalysis({ homeTeam, awayTeam, homeForm, awayForm, probs, selected, confidence, bookmakers, homeGoalsAvg, awayGoalsAvg }) {
+function generateAnalysis({ homeTeam, awayTeam, homeForm, awayForm, probs, selected, confidence, bookmakers, homeGoalsAvg, awayGoalsAvg, homeInjuriesCount, awayInjuriesCount }) {
   const bookStr = bookmakers?.length ? `Live odds available on ${bookmakers.slice(0, 3).join(', ')}.` : '';
   const marketNote = {
     'Double Chance': `Double Chance covers two outcomes — lower odds but higher security.`,
@@ -164,6 +164,7 @@ function generateAnalysis({ homeTeam, awayTeam, homeForm, awayForm, probs, selec
     `${awayTeam} form: ${awayForm || 'N/A'}. Expected goals — home: ${parseFloat(homeGoalsAvg || 1.3).toFixed(2)}, away: ${parseFloat(awayGoalsAvg || 1.1).toFixed(2)}.`,
     `Poisson model: Home ${(probs.homeWin * 100).toFixed(0)}% / Draw ${(probs.draw * 100).toFixed(0)}% / Away ${(probs.awayWin * 100).toFixed(0)}%.`,
     `Over 2.5: ${(probs.over25 * 100).toFixed(0)}%. BTTS: ${(probs.bttsYes * 100).toFixed(0)}%.`,
+    `Reported unavailable players — ${homeTeam}: ${homeInjuriesCount || 0}, ${awayTeam}: ${awayInjuriesCount || 0}.`,
     marketNote,
     `Selected: ${selected.tip}. Confidence: ${confidence}/100. ${bookStr}`,
   ].filter(Boolean).join(' ');
@@ -195,16 +196,22 @@ async function runForFixture(fixtureData, options = {}) {
     { homeCornerAvg, awayCornerAvg }
   );
 
-  const confidence = await calculateConfidence({
+  let confidence = await calculateConfidence({
     market:  selected.market,
     category: selected.category,
     tip:     selected.tip,
     homeForm, awayForm,
+    h2hSummary: fixtureData.h2hSummary,
     homeGoalsAvg, awayGoalsAvg,
     homeGoalsConcededAvg, awayGoalsConcededAvg,
     odds:    selected.odds,
     leagueId: dbLeagueId,
   });
+
+  // Missing players reduce certainty. Cap the adjustment so injuries inform
+  // the model without overwhelming form, goals, H2H, odds and league quality.
+  const unavailable = Number(fixtureData.homeInjuriesCount || 0) + Number(fixtureData.awayInjuriesCount || 0);
+  confidence = clamp(confidence - Math.min(8, unavailable), 1, 99);
 
   const minConf = parseInt(process.env.INTELLIGENCE_MIN_CONFIDENCE) || 60;
   console.log(`[Intelligence] ${homeTeam} vs ${awayTeam} → ${selected.tip} (${selected.market}) conf=${confidence} min=${minConf} lh=${lh.toFixed(2)} la=${la.toFixed(2)}`);
@@ -214,6 +221,8 @@ async function runForFixture(fixtureData, options = {}) {
     homeTeam, awayTeam, homeForm, awayForm,
     probs, selected, confidence, bookmakers,
     homeGoalsAvg, awayGoalsAvg,
+    homeInjuriesCount: fixtureData.homeInjuriesCount,
+    awayInjuriesCount: fixtureData.awayInjuriesCount,
   });
 
   const autoThreshold = Math.min(Math.max(parseInt(options.minConfidence) || 68, 1), 99);
@@ -261,6 +270,9 @@ async function runForAllToday(options = {}) {
        p.away_goals_avg      AS awayGoalsAvg,
        p.home_goals_conceded_avg AS homeGoalsConcededAvg,
        p.away_goals_conceded_avg AS awayGoalsConcededAvg,
+       p.h2h_summary         AS h2hSummary,
+       p.home_injuries_count AS homeInjuriesCount,
+       p.away_injuries_count AS awayInjuriesCount,
        p.league_id           AS dbLeagueId,
        l.api_league_id       AS leagueId,
        tsh.home_corners_avg  AS homeCornerAvg,

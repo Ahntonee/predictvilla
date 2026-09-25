@@ -94,8 +94,8 @@ async function loadLeagues(page = 1) {
   const search = document.getElementById('l-search').value;
   const continent = document.getElementById('l-continent').value;
   const enabled = document.getElementById('l-enabled').value;
-  const params = new URLSearchParams({ page, limit: 30, ...(search&&{search}), ...(continent&&{continent}), ...(enabled!==''&&{is_enabled:enabled}) });
-  const d = await api(`/leagues/list?${params}`);
+  const params = new URLSearchParams({ page, limit: 30, ...(search&&{search}), ...(continent&&{continent}), ...(enabled!==''&&{is_active:enabled}) });
+  const d = await api(`/leagues/admin?${params}`);
   const leagues = d.data?.leagues || [];
   document.getElementById('leagues-body').innerHTML = leagues.length
     ? leagues.map(l => `<tr>
@@ -103,9 +103,9 @@ async function loadLeagues(page = 1) {
         <td>${escHtml(l.country||'—')}</td>
         <td>${escHtml(l.continent||'—')}</td>
         <td>${l.tier||1}</td>
-        <td>${l.api_football_id||'—'}</td>
+        <td>${l.api_league_id||'—'}</td>
         <td><button class="btn btn-sm ${l.is_popular?'btn-primary':'btn-ghost'}" data-pop-id="${l.id}" data-pop-cur="${l.is_popular}">${l.is_popular?'<span class="material-icons-round" style="font-size:15px">star</span> Yes':'<span class="material-icons-round" style="font-size:15px">star_border</span> No'}</button></td>
-        <td><button class="btn btn-sm ${l.is_enabled?'btn-primary':'btn-ghost'}" data-en-id="${l.id}" data-en-cur="${l.is_enabled}">${l.is_enabled?'ON':'OFF'}</button></td>
+        <td><button class="btn btn-sm ${l.is_active?'btn-primary':'btn-ghost'}" data-en-id="${l.id}" data-en-cur="${l.is_active}">${l.is_active?'ON':'OFF'}</button></td>
         <td>
           <div class="flex gap-2">
             <button class="btn btn-sm btn-ghost" data-edit-id="${l.id}"><span class="material-icons-round">edit</span></button>
@@ -131,10 +131,10 @@ function openModal(l = null) {
   document.getElementById('l-country').value = l?.country || '';
   document.getElementById('l-cont').value = l?.continent || 'Europe';
   document.getElementById('l-tier').value = l?.tier || 1;
-  document.getElementById('l-api-id').value = l?.api_football_id || '';
-  document.getElementById('l-logo').value = l?.logo || '';
+  document.getElementById('l-api-id').value = l?.api_league_id || '';
+  document.getElementById('l-logo').value = l?.logo_url || '';
   document.getElementById('l-popular').checked = !!l?.is_popular;
-  document.getElementById('l-enabled-chk').checked = l ? !!l.is_enabled : true;
+  document.getElementById('l-enabled-chk').checked = l ? !!l.is_active : true;
 }
 function closeModal() { document.getElementById('league-modal').classList.remove('open'); }
 
@@ -150,28 +150,28 @@ async function saveLeague() {
     country: document.getElementById('l-country').value.trim(),
     continent: document.getElementById('l-cont').value,
     tier: parseInt(document.getElementById('l-tier').value)||1,
-    api_football_id: parseInt(document.getElementById('l-api-id').value)||null,
-    logo: document.getElementById('l-logo').value.trim()||null,
+    api_league_id: parseInt(document.getElementById('l-api-id').value)||null,
+    logo_url: document.getElementById('l-logo').value.trim()||null,
     is_popular: document.getElementById('l-popular').checked?1:0,
-    is_enabled: document.getElementById('l-enabled-chk').checked?1:0,
+    is_active: document.getElementById('l-enabled-chk').checked?1:0,
   };
   if (!body.name) { showToast('League name required','error'); return; }
-  const d = id ? await api(`/leagues/${id}`,{method:'PUT',body:JSON.stringify(body)}) : await api('/leagues',{method:'POST',body:JSON.stringify(body)});
+  const d = id ? await api(`/leagues/admin/${id}`,{method:'PUT',body:JSON.stringify(body)}) : await api('/leagues/admin',{method:'POST',body:JSON.stringify(body)});
   if (d.success) { closeModal(); showToast('Saved!','success'); loadLeagues(currentPage); }
   else showToast(d.message,'error');
 }
 
 async function togglePop(id, cur) {
-  await api(`/leagues/${id}`, {method:'PUT', body:JSON.stringify({is_popular:cur?0:1})});
+  await api(`/leagues/admin/${id}`, {method:'PUT', body:JSON.stringify({is_popular:cur?0:1})});
   loadLeagues(currentPage);
 }
 async function toggleEnable(id, cur) {
-  await api(`/leagues/${id}`, {method:'PUT', body:JSON.stringify({is_enabled:cur?0:1})});
+  await api(`/leagues/admin/${id}`, {method:'PUT', body:JSON.stringify({is_active:cur?0:1})});
   loadLeagues(currentPage);
 }
 async function deleteLeague(id) {
   if (!confirm('Delete this league?')) return;
-  const d = await api(`/leagues/${id}`,{method:'DELETE'});
+  const d = await api(`/leagues/admin/${id}`,{method:'DELETE'});
   if (d.success) { showToast('Deleted','info'); loadLeagues(currentPage); }
   else showToast(d.message,'error');
 }
