@@ -1730,7 +1730,7 @@ body.has-sidebar { padding-top: calc(var(--topbar-h) + env(safe-area-inset-top))
 }
 .snav-link:hover { color: #fff; background: rgba(255,255,255,0.06); }
 .snav-link.active { color: #fff; background: rgba(160,208,0,0.08); border-left-color: #a0d000; }
-.snav-link .material-icons-round { font-size: 17px; color: rgba(255,255,255,0.35); flex-shrink: 0; }
+.snav-link .material-icons-round { width:17px; min-width:17px; overflow:hidden; font-size:17px; line-height:1; text-align:center; color:rgba(255,255,255,0.35); flex-shrink:0; }
 .snav-link:hover .material-icons-round { color: #fff; }
 .snav-link.active .material-icons-round { color: #a0d000; }
 .snav-link.vip-snav { color: #ffd000; }
