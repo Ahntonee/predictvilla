@@ -11,6 +11,8 @@ body{font-family:'Inter',sans-serif;background:var(--deep-onyx,#0d1600);color:va
 #admin-topbar{position:fixed;top:0;left:var(--sidebar-w);right:0;height:52px;background:#0d1600;border-bottom:1px solid rgba(172,255,52,0.10);display:flex;align-items:center;gap:14px;padding:0 20px;z-index:99}
 .admin-menu-toggle{display:none;background:none;border:none;color:var(--text-primary);font-size:20px;cursor:pointer;padding:4px}
 .admin-page-title{font-weight:700;font-size:15px}
+.admin-theme-toggle{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;border:1px solid rgba(172,255,52,.18);background:rgba(244,248,224,.06);color:var(--text-primary);cursor:pointer;font:600 12px 'Inter',sans-serif}
+.admin-theme-toggle .material-icons-round{font-size:17px}
 #admin-main{margin-left:var(--sidebar-w);margin-top:52px;flex:1;padding:28px;max-width:calc(100vw - var(--sidebar-w));min-height:calc(100vh - 52px)}
 .admin-section-title{font-size:20px;font-weight:800;margin-bottom:20px}
 .admin-card{background:#182200;border:1px solid rgba(172,255,52,0.10);border-radius:14px;padding:20px;margin-bottom:20px}
@@ -84,6 +86,24 @@ select.form-control option{background:#182200}
   .admin-menu-toggle{display:block}
   .grid-2,.grid-3{grid-template-columns:1fr}
 }
+
+html[data-theme="light"]{--deep-onyx:#f4f7ec;--text-primary:#17210d;--text:#17210d;--text-soft:#5f6d55;--bg:#f4f7ec;--bg-2:#fff;--card:#fff;--border:rgba(50,75,25,.16)}
+html[data-theme="light"] body{background:#f4f7ec;color:#17210d}
+html[data-theme="light"] #admin-sidebar,html[data-theme="light"] #admin-topbar{background:#fff;border-color:rgba(50,75,25,.14)}
+html[data-theme="light"] .admin-brand{border-color:rgba(50,75,25,.12)}
+html[data-theme="light"] .admin-nav-link{color:#526047}
+html[data-theme="light"] .admin-nav-link:hover,html[data-theme="light"] .admin-nav-link.active{background:rgba(128,170,0,.12);color:#587600}
+html[data-theme="light"] .admin-card,html[data-theme="light"] .admin-stat,html[data-theme="light"] .modal,html[data-theme="light"] .toast{background:#fff;border-color:rgba(50,75,25,.14)}
+html[data-theme="light"] .data-table th,html[data-theme="light"] .form-label,html[data-theme="light"] .text-soft{color:#66725d}
+html[data-theme="light"] .text-muted,html[data-theme="light"] .empty-cell{color:#84907a}
+html[data-theme="light"] .data-table td{border-color:rgba(50,75,25,.09)}
+html[data-theme="light"] .data-table tr:hover td{background:rgba(128,170,0,.06)}
+html[data-theme="light"] .form-control{background:#f8faf4;border-color:rgba(50,75,25,.2);color:#17210d}
+html[data-theme="light"] select.form-control option{background:#fff;color:#17210d}
+html[data-theme="light"] .btn-ghost{background:rgba(50,75,25,.08);color:#17210d}
+html[data-theme="light"] .btn-outline{border-color:rgba(50,75,25,.25);color:#17210d}
+html[data-theme="light"] .admin-theme-toggle{background:#f4f7ec;color:#17210d;border-color:rgba(50,75,25,.18)}
+html[data-theme="light"] .EasyMDEContainer .CodeMirror,html[data-theme="light"] .EasyMDEContainer .editor-toolbar,html[data-theme="light"] .EasyMDEContainer .editor-preview{background:#fff!important;color:#17210d!important}
 
 /* ── EasyMDE dark-theme overrides ── */
 .EasyMDEContainer .CodeMirror {

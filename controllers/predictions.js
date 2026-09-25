@@ -10,7 +10,7 @@ function redactVip(pred, user) {
 
 exports.list = asyncHandler(async (req, res) => {
   const { page, limit, offset } = parsePagination(req.query);
-  const { date, league_id, category, market, tip, vip, result, search } = req.query;
+  const { date, league_id, category, market, tip, tip_prefix, vip, result, search, time_from, time_to } = req.query;
   const isAdmin = req.user?.role === 'admin';
   const adminView = isAdmin && req.query.admin_view === '1';
 
@@ -30,6 +30,13 @@ exports.list = asyncHandler(async (req, res) => {
   else if (date === 'tomorrow') { where.push('DATE(match_date) = CURDATE() + INTERVAL 1 DAY'); }
   else if (date) { where.push('DATE(match_date) = ?'); params.push(date); }
 
+  if (time_from && /^\d{2}:\d{2}$/.test(time_from)) {
+    where.push('TIME(match_date) >= ?'); params.push(`${time_from}:00`);
+  }
+  if (time_to && /^\d{2}:\d{2}$/.test(time_to)) {
+    where.push('TIME(match_date) <= ?'); params.push(`${time_to}:59`);
+  }
+
   if (league_id) { where.push('league_id = ?'); params.push(league_id); }
   if (category && category !== 'all') {
     if (category === 'free') {
@@ -43,6 +50,7 @@ exports.list = asyncHandler(async (req, res) => {
   }
   if (market) { where.push('market = ?'); params.push(market); }
   if (tip) { where.push('tip = ?'); params.push(tip); }
+  else if (tip_prefix) { where.push('tip LIKE ?'); params.push(`${tip_prefix}%`); }
   if (vip === '1') { where.push('is_vip = 1'); }
 
   // Admin view tabs
@@ -52,7 +60,7 @@ exports.list = asyncHandler(async (req, res) => {
     where.push(`(result = 'pending' OR result IS NULL)`);
     where.push(`(fixture_status IS NULL OR fixture_status NOT IN (${LIVE_STATUSES.map(()=>'?').join(',')}))`);
     params.push(...LIVE_STATUSES);
-    if (!adminView) where.push('match_date >= NOW() - INTERVAL 3 HOUR');
+    where.push('match_date >= CURDATE()');
   } else if (view === 'live') {
     where.push(`fixture_status IN (${LIVE_STATUSES.map(()=>'?').join(',')})`);
     params.push(...LIVE_STATUSES);
@@ -68,6 +76,10 @@ exports.list = asyncHandler(async (req, res) => {
   } else if (result) {
     where.push('result = ?'); params.push(result);
   }
+
+  // Public prediction lists should not surface stale fixtures unless a past
+  // date or finished-result view was explicitly requested.
+  if (!adminView && !date && !view && !result) where.push('match_date >= CURDATE()');
 
   if (search) { where.push('(home_team LIKE ? OR away_team LIKE ?)'); params.push(`%${search}%`, `%${search}%`); }
 

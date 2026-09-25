@@ -91,6 +91,8 @@
 </main>
 
 <div id="footer-placeholder"></div>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
 <script src="/js/app.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
@@ -183,7 +185,10 @@ async function loadArticle() {
       <span><span class="material-icons-round" style="font-size:14px;vertical-align:middle">calendar_today</span> ${new Date(page.updated_at).toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'})}</span>
       <span><span class="material-icons-round" style="font-size:14px;vertical-align:middle">psychology</span> AI-Generated Predictions</span>
     `;
-    document.getElementById('art-content').innerHTML = page.content || '';
+    const rawContent = page.content || '';
+    document.getElementById('art-content').innerHTML = window.marked && window.DOMPurify
+      ? DOMPurify.sanitize(marked.parse(rawContent))
+      : rawContent;
 
     // Load bottom ad after article renders
     const bottomAd = document.getElementById('ad-detail-bottom');

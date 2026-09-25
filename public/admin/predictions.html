@@ -58,6 +58,8 @@
       <option value="">All</option><option value="1">Published</option><option value="0">Draft</option>
     </select>
     <input type="date" class="form-control" style="max-width:160px" id="f-date">
+    <input type="time" class="form-control" style="max-width:130px" id="f-time-from" aria-label="Kickoff time from" title="Kickoff from">
+    <input type="time" class="form-control" style="max-width:130px" id="f-time-to" aria-label="Kickoff time to" title="Kickoff to">
   </div>
 
   <div class="data-table-wrap admin-card" style="padding:0">
@@ -99,6 +101,7 @@
             <option>BTTS</option>
             <option>Double Chance</option>
             <option>Draw No Bet</option>
+            <option>First Half Result</option>
             <option>Correct Score</option>
             <option>Corners</option>
           </select>
@@ -176,12 +179,13 @@ function setAdminView(btn, view) {
 // Tip options per market
 const MARKET_TIPS = {
   '1X2':          ['Home Win','Draw','Away Win'],
-  'Over/Under':   ['Over 1.5 Goals','Over 2.5 Goals','Over 3.5 Goals','Under 1.5 Goals','Under 2.5 Goals','Under 3.5 Goals'],
+  'Over/Under':   ['Over 1.5 Goals','Over 2.5 Goals','Over 3.5 Goals','Over 4.5 Goals','Under 1.5 Goals','Under 2.5 Goals','Under 3.5 Goals','Under 4.5 Goals'],
   'BTTS':         ['BTTS Yes','BTTS No'],
   'Double Chance':['Double Chance 1X','Double Chance X2','Double Chance 12'],
   'Draw No Bet':  ['Draw No Bet Home','Draw No Bet Away'],
+  'First Half Result':['First Half Home Win','First Half Draw','First Half Away Win'],
   'Correct Score':['Score 1-0','Score 0-1','Score 1-1','Score 2-0','Score 0-2','Score 2-1','Score 1-2','Score 2-2','Score 3-0','Score 0-3','Score 3-1','Score 1-3','Score 3-2','Score 2-3','Score 0-0'],
-  'Corners':      ['Over 9.5 Corners','Over 10.5 Corners','Under 9.5 Corners','Under 8.5 Corners'],
+  'Corners':      ['Over 7.5 Corners','Over 8.5 Corners','Over 9.5 Corners','Over 10.5 Corners','Over 11.5 Corners','Under 7.5 Corners','Under 8.5 Corners','Under 9.5 Corners','Under 10.5 Corners','Under 11.5 Corners'],
 };
 
 function updateTipOptions(currentTip = '') {
@@ -216,6 +220,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('f-tip-filter').addEventListener('change', () => loadPreds(1));
   document.getElementById('f-pub').addEventListener('change', () => loadPreds(1));
   document.getElementById('f-date').addEventListener('change', () => loadPreds(1));
+  document.getElementById('f-time-from').addEventListener('change', () => loadPreds(1));
+  document.getElementById('f-time-to').addEventListener('change', () => loadPreds(1));
 });
 
 async function loadLeagues() {
@@ -244,6 +250,8 @@ async function loadPreds(page = 1) {
   const pub = document.getElementById('f-pub').value;
   const tip = document.getElementById('f-tip-filter').value;
   const date = document.getElementById('f-date').value;
+  const timeFrom = document.getElementById('f-time-from').value;
+  const timeTo = document.getElementById('f-time-to').value;
 
   const isQueue = currentView === 'queue';
   const params = new URLSearchParams({
@@ -254,6 +262,8 @@ async function loadPreds(page = 1) {
     ...(tip && { tip }),
     ...(!isQueue && pub !== '' && { is_published: pub }),
     ...(date && { date }),
+    ...(timeFrom && { time_from: timeFrom }),
+    ...(timeTo && { time_to: timeTo }),
   });
   const d = await api(`/predictions?${params}`);
   const preds = d.data?.predictions || [];

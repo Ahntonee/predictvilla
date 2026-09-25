@@ -1,5 +1,8 @@
 ﻿// Shared admin utilities
 (function () {
+  const savedAdminTheme = localStorage.getItem('pv_admin_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', savedAdminTheme);
+
   // Guard: redirect to login if not admin
   function getAdmin() {
     try {
@@ -58,7 +61,18 @@
       topbar.innerHTML = `
         <button class="admin-menu-toggle" onclick="document.getElementById('admin-sidebar').classList.toggle('open')"><span class="material-icons-round">menu</span></button>
         <span class="admin-page-title" id="admin-page-title"></span>
-        <span class="text-soft" style="font-size:13px;margin-left:auto">${escHtml(window.adminUser?.name || 'Admin')}</span>`;
+        <button type="button" class="admin-theme-toggle" id="admin-theme-toggle" title="Switch day/night mode" aria-label="Switch day/night mode">
+          <span class="material-icons-round">${document.documentElement.dataset.theme === 'light' ? 'dark_mode' : 'light_mode'}</span>
+          <span>${document.documentElement.dataset.theme === 'light' ? 'Night' : 'Day'} mode</span>
+        </button>
+        <span class="text-soft" style="font-size:13px">${escHtml(window.adminUser?.name || 'Admin')}</span>`;
+      document.getElementById('admin-theme-toggle')?.addEventListener('click', () => {
+        const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('pv_admin_theme', next);
+        const toggle = document.getElementById('admin-theme-toggle');
+        toggle.innerHTML = `<span class="material-icons-round">${next === 'light' ? 'dark_mode' : 'light_mode'}</span><span>${next === 'light' ? 'Night' : 'Day'} mode</span>`;
+      });
     }
   };
 

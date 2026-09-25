@@ -28,6 +28,7 @@
   window._MARKET_LABEL = '__MARKET_LABEL__';
   window._MARKET_API   = '__MARKET_API__';
   window._TIP_API      = '__TIP_API__';
+  window._TIP_PREFIX   = '__TIP_PREFIX__';
 </script>
 </head>
 <body>
@@ -100,6 +101,7 @@ let searchTimer;
 
 const MARKET_API = window._MARKET_API;
 const TIP_API = window._TIP_API;
+const TIP_PREFIX = window._TIP_PREFIX;
 
 document.addEventListener('DOMContentLoaded', async () => {
   await populateLeagues();
@@ -152,6 +154,7 @@ function applyFilters() {
   currentResult = document.getElementById('result-filter')?.value || '';
   const params = { date: currentDate, page: currentPage, limit: 18, market: MARKET_API };
   if (TIP_API)        params.tip       = TIP_API;
+  if (TIP_PREFIX)     params.tip_prefix = TIP_PREFIX;
   if (currentCat)    params.category   = currentCat;
   if (currentLeague) params.league_id  = currentLeague;
   if (currentResult) params.result     = currentResult;

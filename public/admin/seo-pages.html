@@ -8,6 +8,9 @@
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 <link rel="icon" href="/images/logo.svg" type="image/svg+xml"><link rel="icon" href="/images/logo.png" type="image/png">
 <link rel="stylesheet" href="/css/style.css"><link rel="stylesheet" href="admin.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+<script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
 <style>
 .seo-editor-wrap { display:grid; grid-template-columns:1fr 340px; gap:20px; align-items:start; }
 @media(max-width:900px){ .seo-editor-wrap{ grid-template-columns:1fr; } }
@@ -91,20 +94,8 @@
         </div>
 
         <div class="admin-card" style="padding:20px">
-          <label class="form-label mb-2">Article Content (HTML)</label>
-          <div class="editor-toolbar">
-            <button onclick="fmt('bold')"><strong>B</strong></button>
-            <button onclick="fmt('italic')"><em>I</em></button>
-            <button onclick="fmt('underline')"><u>U</u></button>
-            <button onclick="insertTag('h2')">H2</button>
-            <button onclick="insertTag('h3')">H3</button>
-            <button onclick="insertTag('p')">P</button>
-            <button onclick="insertTag('ul')">List</button>
-            <button onclick="insertLink()">Link</button>
-            <button onclick="toggleHtml()">HTML</button>
-          </div>
-          <div class="rich-editor" id="f-content" contenteditable="true" spellcheck="false"></div>
-          <textarea id="f-content-html" style="display:none;width:100%;min-height:300px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-family:monospace;font-size:12px;resize:vertical"></textarea>
+          <label class="form-label mb-2">Article Content (Markdown) *</label>
+          <textarea id="f-content"></textarea>
         </div>
       </div>
 
@@ -143,12 +134,18 @@
               <option value="">All markets</option>
               <option value="Over 1.5 Goals">Over 1.5 Goals</option>
               <option value="Over 2.5 Goals">Over 2.5 Goals</option>
+              <option value="Over 3.5 Goals">Over 3.5 Goals</option>
+              <option value="Under 3.5 Goals">Under 3.5 Goals</option>
+              <option value="Over 4.5 Goals">Over 4.5 Goals</option>
+              <option value="Under 4.5 Goals">Under 4.5 Goals</option>
               <option value="BTTS - Yes">BTTS - Yes</option>
               <option value="Home Win">Home Win</option>
               <option value="Away Win">Away Win</option>
               <option value="Draw">Draw</option>
               <option value="Double Chance">Double Chance</option>
               <option value="Draw No Bet">Draw No Bet</option>
+              <option value="First Half Result">First Half Result</option>
+              <option value="Corners">Corners (Over/Under)</option>
               <option value="Correct Score">Correct Score</option>
             </select>
           </div>
@@ -173,6 +170,7 @@ injectAdminShell('seo-pages.html');
 
 const base = window.location.origin;
 let htmlMode = false;
+let mde = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   loadPages();
@@ -219,7 +217,15 @@ function showEditor(data) {
   document.getElementById('f-market').value = data?.market || '';
   document.getElementById('f-published').checked = data ? !!data.is_published : true;
   document.getElementById('f-live-preds').checked = data ? !!data.show_live_predictions : true;
-  document.getElementById('f-content').innerHTML = data?.content || '';
+  if (mde) { mde.toTextArea(); mde = null; }
+  document.getElementById('f-content').value = data?.content || '';
+  mde = new EasyMDE({
+    element: document.getElementById('f-content'),
+    spellChecker: false,
+    status: ['lines', 'words'],
+    minHeight: '360px',
+    toolbar: ['bold','italic','heading','|','quote','unordered-list','ordered-list','|','link','image','table','|','preview','side-by-side','fullscreen','|','guide'],
+  });
   updateSlugPreview();
 
   if (data?.id) {
@@ -233,6 +239,7 @@ function showEditor(data) {
 }
 
 function showList() {
+  if (mde) { mde.toTextArea(); mde = null; }
   document.getElementById('editor-view').style.display = 'none';
   document.getElementById('list-view').style.display = 'block';
   loadPages();
@@ -284,9 +291,7 @@ function toggleHtml() {
 
 async function savePage() {
   const id = document.getElementById('edit-id').value;
-  const content = htmlMode
-    ? document.getElementById('f-content-html').value
-    : document.getElementById('f-content').innerHTML;
+  const content = mde ? mde.value() : document.getElementById('f-content').value;
 
   const body = {
     title: document.getElementById('f-title').value.trim(),
@@ -298,7 +303,7 @@ async function savePage() {
     is_published: document.getElementById('f-published').checked,
     show_live_predictions: document.getElementById('f-live-preds').checked,
   };
-  if (!body.title || !body.slug) return showToast('Title and slug are required', 'error');
+  if (!body.title || !body.slug || !body.content) return showToast('Title, slug and content are required', 'error');
   const d = await api(id ? `/admin/seo-pages/${id}` : '/admin/seo-pages', { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) });
   if (d.success) {
     showToast(id ? 'Page updated' : 'Page created', 'success');

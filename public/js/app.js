@@ -444,6 +444,15 @@ async function injectHeader() {
     ['/predictions/away-win', 'flight_takeoff', 'Away Win'],
     ['/predictions/under-25', 'trending_down', 'Under 2.5'],
     ['/predictions/over-15', 'add_circle_outline', 'Over 1.5'],
+    ['/predictions/over-35', 'trending_up', 'Over 3.5'],
+    ['/predictions/under-35', 'trending_down', 'Under 3.5'],
+    ['/predictions/over-45', 'trending_up', 'Over 4.5'],
+    ['/predictions/under-45', 'trending_down', 'Under 4.5'],
+    ['/predictions/first-half-home-win', 'timer', '1st Half Home'],
+    ['/predictions/first-half-away-win', 'timer', '1st Half Away'],
+    ['/predictions/corners-over', 'corner_right', 'Over Corners'],
+    ['/predictions/corners-under', 'corner_left', 'Under Corners'],
+    ['/predictions/draw-no-bet', 'shield', 'Draw No Bet'],
   ];
 
   const sidebarAuthHtml = user

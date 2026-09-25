@@ -506,15 +506,21 @@ const MARKET_PAGES = {
   },
   'over-15': { title:'Over 1.5 Goals Predictions Today | Predictvilla', description:'Daily over 1.5 goals football predictions.', keywords:'over 1.5 goals predictions', label:'Over 1.5 Goals', api:'Over/Under', tip:'Over 1.5 Goals', intro:'Today\'s Over 1.5 Goals selections generated from scoring form and expected-goals data.' },
   'over-35': { title:'Over 3.5 Goals Predictions Today | Predictvilla', description:'Daily over 3.5 goals football predictions.', keywords:'over 3.5 goals predictions', label:'Over 3.5 Goals', api:'Over/Under', tip:'Over 3.5 Goals', intro:'Today\'s Over 3.5 Goals selections for higher-scoring fixtures.' },
+  'over-45': { title:'Over 4.5 Goals Predictions Today | Predictvilla', description:'Daily over 4.5 goals football predictions.', keywords:'over 4.5 goals predictions', label:'Over 4.5 Goals', api:'Over/Under', tip:'Over 4.5 Goals', intro:'Today\'s Over 4.5 Goals selections for exceptionally high-scoring fixtures.' },
   'under-15': { title:'Under 1.5 Goals Predictions Today | Predictvilla', description:'Daily under 1.5 goals football predictions.', keywords:'under 1.5 goals predictions', label:'Under 1.5 Goals', api:'Over/Under', tip:'Under 1.5 Goals', intro:'Today\'s Under 1.5 Goals selections based on defensive and scoring trends.' },
   'under-25': { title:'Under 2.5 Goals Predictions Today | Predictvilla', description:'Daily under 2.5 goals football predictions.', keywords:'under 2.5 goals predictions', label:'Under 2.5 Goals', api:'Over/Under', tip:'Under 2.5 Goals', intro:'Today\'s Under 2.5 Goals selections based on defensive and scoring trends.' },
   'under-35': { title:'Under 3.5 Goals Predictions Today | Predictvilla', description:'Daily under 3.5 goals football predictions.', keywords:'under 3.5 goals predictions', label:'Under 3.5 Goals', api:'Over/Under', tip:'Under 3.5 Goals', intro:'Today\'s Under 3.5 Goals selections based on expected match totals.' },
+  'under-45': { title:'Under 4.5 Goals Predictions Today | Predictvilla', description:'Daily under 4.5 goals football predictions.', keywords:'under 4.5 goals predictions', label:'Under 4.5 Goals', api:'Over/Under', tip:'Under 4.5 Goals', intro:'Today\'s Under 4.5 Goals selections based on expected match totals.' },
   'home-win': { title:'Home Win Predictions Today | Predictvilla', description:'Daily home win football predictions.', keywords:'home win predictions', label:'Home Win', api:'1X2', tip:'Home Win', intro:'Today\'s strongest home-win selections based on form, venue and opponent data.' },
   'draw': { title:'Draw Predictions Today | Predictvilla', description:'Daily football draw predictions.', keywords:'draw predictions today', label:'Draw', api:'1X2', tip:'Draw', intro:'Today\'s draw selections based on closely matched team profiles.' },
   'away-win': { title:'Away Win Predictions Today | Predictvilla', description:'Daily away win football predictions.', keywords:'away win predictions', label:'Away Win', api:'1X2', tip:'Away Win', intro:'Today\'s strongest away-win selections based on form and matchup data.' },
   'btts-yes': { title:'BTTS Yes Predictions Today | Predictvilla', description:'Both teams to score yes predictions.', keywords:'BTTS yes predictions', label:'BTTS Yes', api:'BTTS', tip:'BTTS Yes', intro:'Fixtures where both teams are projected to score.' },
   'btts-no': { title:'BTTS No Predictions Today | Predictvilla', description:'Both teams to score no predictions.', keywords:'BTTS no predictions', label:'BTTS No', api:'BTTS', tip:'BTTS No', intro:'Fixtures where at least one team is projected not to score.' },
   'corners': { title:'Corners Predictions Today | Predictvilla', description:'Daily football corners predictions.', keywords:'corners predictions today', label:'Corners', api:'Corners', intro:'Corners predictions derived from home and away corner averages.' },
+  'corners-over': { title:'Over Corners Predictions Today | Predictvilla', description:'Daily over corners football predictions.', keywords:'over corners predictions', label:'Over Corners', api:'Corners', tipPrefix:'Over ', intro:'Over-corners predictions derived from attacking pressure and team corner averages.' },
+  'corners-under': { title:'Under Corners Predictions Today | Predictvilla', description:'Daily under corners football predictions.', keywords:'under corners predictions', label:'Under Corners', api:'Corners', tipPrefix:'Under ', intro:'Under-corners predictions derived from match tempo and team corner averages.' },
+  'first-half-home-win': { title:'First Half Home Win Predictions | Predictvilla', description:'Daily first-half home win predictions.', keywords:'first half home win tips', label:'First Half Home Win', api:'First Half Result', tip:'First Half Home Win', intro:'Fixtures where the home team is projected to lead at half-time.' },
+  'first-half-away-win': { title:'First Half Away Win Predictions | Predictvilla', description:'Daily first-half away win predictions.', keywords:'first half away win tips', label:'First Half Away Win', api:'First Half Result', tip:'First Half Away Win', intro:'Fixtures where the away team is projected to lead at half-time.' },
 };
 
 let _marketTemplate = null;
@@ -536,6 +542,7 @@ app.get('/predictions/:market', async (req, res) => {
     .replace(/__MARKET_LABEL__/g, meta.label)
     .replace(/__MARKET_API__/g,   meta.api)
     .replace(/__TIP_API__/g,      meta.tip || '')
+    .replace(/__TIP_PREFIX__/g,   meta.tipPrefix || '')
     .replace(/__MARKET_INTRO__/g, meta.intro);
   html = await injectStaticShell(html, req.path);
   res.send(html);
