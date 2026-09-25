@@ -164,8 +164,16 @@ async function getFixtureOdds(fixtureId) {
  * Priority: team_statistics DB rows (pre-fetched by syncAllTeamStats) → live API call.
  * Live API calls only happen for teams not yet in the DB, keeping quota usage low.
  */
-async function autoPredictFixtures() {
+async function autoPredictFixtures(options = {}) {
   if (!KEY) return [];
+
+  const targetDate = options.targetDate || 'today';
+  const limit = Math.min(Math.max(parseInt(options.limit) || 10, 1), 100);
+  const dateClause = targetDate === 'tomorrow'
+    ? 'DATE(p.match_date) = CURDATE() + INTERVAL 1 DAY'
+    : targetDate === 'today+tomorrow'
+      ? 'DATE(p.match_date) IN (CURDATE(), CURDATE() + INTERVAL 1 DAY)'
+      : 'DATE(p.match_date) = CURDATE()';
 
   const [fixtures] = await pool.query(
     `SELECT
@@ -185,10 +193,11 @@ async function autoPredictFixtures() {
        ON tsa.team_name = p.away_team AND tsa.league_id = p.league_id
      WHERE p.published_at IS NULL
        AND p.result = 'pending'
-       AND DATE(p.match_date) IN (CURDATE(), CURDATE()+1)
+       AND ${dateClause}
        AND p.api_fixture_id IS NOT NULL
        AND p.source IN ('auto_sync', 'intelligence')
-     LIMIT 50`
+     LIMIT ?`,
+    [limit]
   );
 
   const generated = [];

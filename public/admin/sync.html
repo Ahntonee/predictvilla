@@ -104,6 +104,10 @@
 
 /* Shared log */
 .sync-log-wrap { grid-column: 1 / -1; }
+.sync-activity { display:none; align-items:center; gap:10px; margin-bottom:16px; padding:12px 14px; border:1px solid rgba(160,208,0,.35); border-radius:8px; background:rgba(160,208,0,.08); color:var(--text); font-size:13px; }
+.sync-activity.show { display:flex; }
+.sync-spinner { width:16px; height:16px; border:2px solid rgba(160,208,0,.3); border-top-color:var(--primary); border-radius:50%; animation:sync-spin .75s linear infinite; }
+@keyframes sync-spin { to { transform:rotate(360deg); } }
 #sync-log {
   font-size: 12px; font-family: monospace;
   background: var(--bg-2); border: 1px solid var(--border);
@@ -126,6 +130,9 @@
 <div id="admin-topbar"></div>
 <main id="admin-main">
   <h1 class="admin-section-title"><span class="material-icons-round">sync</span> API-Football Data Sync</h1>
+  <div id="sync-activity" class="sync-activity" role="status" aria-live="polite">
+    <span class="sync-spinner"></span><span id="sync-activity-text">Processing…</span>
+  </div>
 
   <div class="sync-grid">
 
@@ -158,7 +165,7 @@
       </div>
       <p class="sync-desc">Pull all 1,200+ leagues from API-Football. Run once a week. Uses ~1 request.</p>
       <div>
-        <button class="btn btn-sm btn-green" onclick="runSync('leagues')">
+        <button class="btn btn-sm btn-green" onclick="runSync('leagues', this)">
           <span class="material-icons-round" style="font-size:15px">sync</span> Sync Leagues
         </button>
       </div>
@@ -172,7 +179,7 @@
       </div>
       <p class="sync-desc">Fetch fixtures for today and tomorrow across popular leagues. Uses ~20 requests.</p>
       <div>
-        <button class="btn btn-sm btn-green" onclick="runSync('fixtures-today')">
+        <button class="btn btn-sm btn-green" onclick="runSync('fixtures-today', this)">
           <span class="material-icons-round" style="font-size:15px">sync</span> Sync Today
         </button>
       </div>
@@ -187,7 +194,7 @@
       <p class="sync-desc">Sync all fixtures for a specific date.</p>
       <input type="date" class="form-control" id="fix-date" value="">
       <div>
-        <button class="btn btn-sm btn-green" onclick="runSync('fixtures-date')">
+        <button class="btn btn-sm btn-green" onclick="runSync('fixtures-date', this)">
           <span class="material-icons-round" style="font-size:15px">sync</span> Sync Date
         </button>
       </div>
@@ -215,7 +222,7 @@
         <input type="hidden" id="range-days" value="30">
         <label style="font-size:13px;color:var(--text-soft);margin-left:8px">Starting from offset:</label>
         <input type="number" class="form-control" id="range-from-offset" value="0" min="0" max="59" style="max-width:70px" title="0 = today, 1 = tomorrow, etc.">
-        <button class="btn btn-sm btn-green" onclick="runSync('fixtures-range')">
+        <button class="btn btn-sm btn-green" onclick="runSync('fixtures-range', this)">
           <span class="material-icons-round" style="font-size:15px">cloud_download</span> Seed Fixtures
         </button>
       </div>
@@ -230,7 +237,7 @@
       <p class="sync-desc">Update won/lost results for finished matches.</p>
       <input type="date" class="form-control" id="results-date" value="">
       <div>
-        <button class="btn btn-sm btn-green" onclick="runSync('results-date')">
+        <button class="btn btn-sm btn-green" onclick="runSync('results-date', this)">
           <span class="material-icons-round" style="font-size:15px">sync</span> Update Results
         </button>
       </div>
@@ -253,7 +260,7 @@
         </select>
       </div>
       <div>
-        <button class="btn btn-sm btn-amber" onclick="runSync('odds')">
+        <button class="btn btn-sm btn-amber" onclick="runSync('odds', this)">
           <span class="material-icons-round" style="font-size:15px">sync</span> Fetch Missing Odds
         </button>
       </div>
@@ -282,14 +289,18 @@
         </div>
         <div>
           <div class="sync-label">Min confidence to publish</div>
-          <input type="number" class="form-control" id="ap-confidence" value="55" min="1" max="99">
+          <input type="number" class="form-control" id="ap-confidence" value="68" min="1" max="99">
+        </div>
+        <div>
+          <div class="sync-label">Min games to publish</div>
+          <input type="number" class="form-control" id="ap-min-games" value="20" min="1" max="100">
         </div>
         <div style="display:flex;align-items:center;gap:8px;margin-top:16px">
           <input type="checkbox" id="ap-autopublish" checked style="accent-color:#a0d000;width:16px;height:16px">
           <label for="ap-autopublish" style="font-size:13px;cursor:pointer">Auto-publish high-confidence tips</label>
         </div>
         <div style="margin-top:16px">
-          <button class="btn btn-sm btn-green" onclick="runSync('auto-predict')">
+          <button class="btn btn-sm btn-green" onclick="runSync('auto-predict', this)">
             <span class="material-icons-round" style="font-size:15px">stars</span> Run Auto-Predict
           </button>
         </div>
@@ -345,7 +356,7 @@
 
       <div class="flex" style="align-items:center;gap:16px;flex-wrap:wrap">
         <div class="api-cost">Estimated API cost: <strong id="bf-cost">27</strong> requests</div>
-        <button class="btn btn-sm btn-purple" onclick="runSync('seed-historical')">
+        <button class="btn btn-sm btn-purple" onclick="runSync('seed-historical', this)">
           <span class="material-icons-round" style="font-size:15px">download</span> Start Backfill
         </button>
       </div>
@@ -359,7 +370,7 @@
       </div>
       <p class="sync-desc">Grade all predictions that have stored scores, log outcomes, and recalculate accuracy stats. Run this after every backfill or results sync.</p>
       <div>
-        <button class="btn btn-sm btn-purple" onclick="runSync('accuracy')">
+        <button class="btn btn-sm btn-purple" onclick="runSync('accuracy', this)">
           <span class="material-icons-round" style="font-size:15px">equalizer</span> Grade &amp; Recalibrate
         </button>
       </div>
@@ -373,12 +384,12 @@
       </div>
       <p class="sync-desc">Additional sync operations for team stats, H2H data, and market weight tuning.</p>
       <div style="display:flex;flex-wrap:wrap;gap:8px">
-        <button class="btn btn-ghost btn-sm" onclick="runSync('team-stats')">Team Stats</button>
-        <button class="btn btn-ghost btn-sm" onclick="runSync('corner-stats')">Corner Stats</button>
-        <button class="btn btn-ghost btn-sm" onclick="runSync('h2h')">H2H Data</button>
-        <button class="btn btn-ghost btn-sm" onclick="runSync('adjust-weights')">Adjust Weights</button>
-        <button class="btn btn-ghost btn-sm" onclick="runSync('daily-specials')">Daily Specials</button>
-        <button class="btn btn-ghost btn-sm" onclick="runSync('grade')">Grade Pending</button>
+        <button class="btn btn-ghost btn-sm" onclick="runSync('team-stats', this)">Team Stats</button>
+        <button class="btn btn-ghost btn-sm" onclick="runSync('corner-stats', this)">Corner Stats</button>
+        <button class="btn btn-ghost btn-sm" onclick="runSync('h2h', this)">H2H Data</button>
+        <button class="btn btn-ghost btn-sm" onclick="runSync('adjust-weights', this)">Adjust Weights</button>
+        <button class="btn btn-ghost btn-sm" onclick="runSync('daily-specials', this)">Daily Specials</button>
+        <button class="btn btn-ghost btn-sm" onclick="runSync('grade', this)">Grade Pending</button>
       </div>
     </div>
 
@@ -478,6 +489,7 @@ const ENDPOINTS = {
                           targetDate:    document.getElementById('ap-target').value,
                           limit:         parseInt(document.getElementById('ap-limit').value),
                           minConfidence: parseInt(document.getElementById('ap-confidence').value),
+                          minGames:      parseInt(document.getElementById('ap-min-games').value),
                           autoPublish:   document.getElementById('ap-autopublish').checked,
                         }) }),
   'fixtures-range':   () => api('/sync/fixtures/range', { method: 'POST', body: JSON.stringify({
@@ -499,26 +511,45 @@ const ENDPOINTS = {
 };
 
 async function runSync(type, clickedButton) {
-  const btn = clickedButton || (document.activeElement?.tagName === 'BUTTON' ? document.activeElement : null);
+  const btn = clickedButton || window.event?.currentTarget || (document.activeElement?.tagName === 'BUTTON' ? document.activeElement : null);
+  const activity = document.getElementById('sync-activity');
+  const activityText = document.getElementById('sync-activity-text');
   if (!ENDPOINTS[type]) {
     log(`[ERR] Unknown sync action: ${type}`, 'err');
     showToast('This sync action is not configured.', 'error');
     return;
   }
-  if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+  if (btn?.dataset.processing === '1') return;
+  if (btn) {
+    btn.dataset.processing = '1';
+    btn.dataset.originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="sync-spinner" style="display:inline-block;vertical-align:middle;margin-right:6px"></span> Processing…';
+  }
+  activityText.textContent = `Processing ${type.replaceAll('-', ' ')}. Please wait…`;
+  activity.classList.add('show');
   log(`Starting ${type}…`);
   try {
     const d = await ENDPOINTS[type]();
     if (d.success) {
       const info = d.data ? JSON.stringify(d.data) : '';
       log(`[OK] ${d.message || type + ' complete'} ${info}`, 'ok');
+      showToast(d.message || `${type} complete`, 'success');
     } else {
       log(`[ERR] ${d.message || 'Unknown error'}`, 'err');
+      showToast(d.message || `${type} failed`, 'error');
     }
   } catch(e) {
     log(`[ERR] Network error: ${e.message}`, 'err');
+    showToast(`Network error: ${e.message}`, 'error');
   } finally {
-    if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+    activity.classList.remove('show');
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = btn.dataset.originalHtml;
+      delete btn.dataset.processing;
+      delete btn.dataset.originalHtml;
+    }
   }
 }
 </script>

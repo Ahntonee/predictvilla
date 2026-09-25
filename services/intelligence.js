@@ -169,7 +169,7 @@ function generateAnalysis({ homeTeam, awayTeam, homeForm, awayForm, probs, selec
   ].filter(Boolean).join(' ');
 }
 
-async function runForFixture(fixtureData) {
+async function runForFixture(fixtureData, options = {}) {
   const { id, homeTeam, awayTeam, matchDate, homeForm, awayForm, homeCornerAvg, awayCornerAvg, leagueId, dbLeagueId } = fixtureData;
 
   // Destructuring defaults only apply to `undefined`, not `null`. MySQL NULLs
@@ -216,8 +216,13 @@ async function runForFixture(fixtureData) {
     homeGoalsAvg, awayGoalsAvg,
   });
 
-  const autoThreshold = parseInt(process.env.INTELLIGENCE_AUTO_PUBLISH_THRESHOLD) || 78;
-  const publishedAt   = confidence >= autoThreshold ? new Date() : null;
+  const autoThreshold = Math.min(Math.max(parseInt(options.minConfidence) || 68, 1), 99);
+  const minGames = Math.min(Math.max(parseInt(options.minGames) || 20, 1), 100);
+  const gamesEligible = Number(fixtureData.homeMatchesPlayed || 0) >= minGames
+    && Number(fixtureData.awayMatchesPlayed || 0) >= minGames;
+  const publishedAt = options.autoPublish !== false && confidence >= autoThreshold && gamesEligible
+    ? new Date()
+    : null;
 
   return {
     id,
@@ -231,12 +236,23 @@ async function runForFixture(fixtureData) {
     source:           'intelligence',
     bookies_available: bookmakers.length ? JSON.stringify(bookmakers) : null,
     published_at:     publishedAt,
+    publish_blocked_by: publishedAt ? null
+      : options.autoPublish === false ? 'auto-publish disabled'
+        : confidence < autoThreshold ? `confidence below ${autoThreshold}`
+          : `fewer than ${minGames} games for one or both teams`,
     is_vip:           confidence >= 85 ? 1 : 0,
     homeGoalsAvg, awayGoalsAvg,
   };
 }
 
-async function runForAllToday() {
+async function runForAllToday(options = {}) {
+  const targetDate = options.targetDate || 'today';
+  const limit = Math.min(Math.max(parseInt(options.limit) || 10, 1), 100);
+  const dateClause = targetDate === 'tomorrow'
+    ? 'DATE(p.match_date) = CURDATE() + INTERVAL 1 DAY'
+    : targetDate === 'today+tomorrow'
+      ? 'DATE(p.match_date) IN (CURDATE(), CURDATE() + INTERVAL 1 DAY)'
+      : 'DATE(p.match_date) = CURDATE()';
   const [fixtures] = await pool.query(
     `SELECT
        p.id,
@@ -253,24 +269,27 @@ async function runForAllToday() {
        l.api_league_id       AS leagueId,
        tsh.home_corners_avg  AS homeCornerAvg,
        tsa.away_corners_avg  AS awayCornerAvg
+       ,COALESCE(tsh.matches_played, 0) AS homeMatchesPlayed
+       ,COALESCE(tsa.matches_played, 0) AS awayMatchesPlayed
      FROM predictions p
      LEFT JOIN leagues l ON l.id = p.league_id
      LEFT JOIN team_statistics tsh
        ON tsh.team_name = p.home_team AND tsh.league_id = p.league_id
      LEFT JOIN team_statistics tsa
        ON tsa.team_name = p.away_team AND tsa.league_id = p.league_id
-     WHERE DATE(p.match_date) IN (CURDATE(), CURDATE()+1)
+     WHERE ${dateClause}
        AND p.result = 'pending'
        AND p.published_at IS NULL
        AND p.source IN ('auto_sync', 'intelligence')
-     LIMIT 100`
+     LIMIT ?`,
+    [limit]
   );
 
   console.log(`[Intelligence] Found ${fixtures.length} fixtures to process`);
-  let generated = 0, autoPublished = 0;
+  let generated = 0, autoPublished = 0, belowConfidence = 0, insufficientGames = 0;
   for (const fx of fixtures) {
     try {
-      const result = await runForFixture(fx);
+      const result = await runForFixture(fx, options);
       if (!result) {
         console.log(`[Intelligence] Skipped fixture ${fx.id} (${fx.homeTeam} vs ${fx.awayTeam}) — below confidence threshold or no data`);
         continue;
@@ -289,6 +308,8 @@ async function runForAllToday() {
       );
       generated++;
       if (result.published_at) autoPublished++;
+      else if (result.publish_blocked_by?.startsWith('confidence')) belowConfidence++;
+      else if (result.publish_blocked_by?.startsWith('fewer')) insufficientGames++;
     } catch (err) {
       console.error(`[Intelligence] runForAllToday fixture ${fx.id}:`, err.message);
     }
@@ -299,7 +320,7 @@ async function runForAllToday() {
      ON DUPLICATE KEY UPDATE setting_value = NOW()`
   );
   console.log(`[Intelligence] Generated ${generated}, auto-published ${autoPublished}`);
-  return { generated, autoPublished };
+  return { generated, autoPublished, belowConfidence, insufficientGames };
 }
 
 async function getPatternInsights() {

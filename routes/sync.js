@@ -250,10 +250,21 @@ router.post('/results/by-date', asyncHandler(async (req, res) => {
 
 // Auto-predict with controls
 router.post('/auto-predict/run', asyncHandler(async (req, res) => {
-  const { targetDate, limit = 10, minConfidence = 55, autoPublish = true } = req.body || {};
-  const fixtures = await autoPredictFixtures({ targetDate, limit: parseInt(limit), minConfidence: parseInt(minConfidence), autoPublish });
-  const result = await runForAllToday(targetDate);
-  return successResponse(res, { fixtures: Array.isArray(fixtures) ? fixtures.length : 0, ...result }, 'Auto-predict complete');
+  const { targetDate = 'today', limit = 10, minConfidence = 68, minGames = 20, autoPublish = true } = req.body || {};
+  const options = {
+    targetDate: ['today', 'tomorrow', 'today+tomorrow'].includes(targetDate) ? targetDate : 'today',
+    limit: Math.min(Math.max(parseInt(limit) || 10, 1), 100),
+    minConfidence: Math.min(Math.max(parseInt(minConfidence) || 68, 1), 99),
+    minGames: Math.min(Math.max(parseInt(minGames) || 20, 1), 100),
+    autoPublish: autoPublish === true,
+  };
+  const fixtures = await autoPredictFixtures(options);
+  const result = await runForAllToday(options);
+  return successResponse(res, {
+    fixturesPrepared: Array.isArray(fixtures) ? fixtures.length : 0,
+    thresholds: { confidence: options.minConfidence, games: options.minGames },
+    ...result,
+  }, 'Auto-predict complete');
 }));
 
 module.exports = router;
