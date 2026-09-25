@@ -106,8 +106,17 @@
 .sync-log-wrap { grid-column: 1 / -1; }
 .sync-activity { display:none; align-items:center; gap:10px; margin-bottom:16px; padding:12px 14px; border:1px solid rgba(160,208,0,.35); border-radius:8px; background:rgba(160,208,0,.08); color:var(--text); font-size:13px; }
 .sync-activity.show { display:flex; }
+.sync-activity.is-complete { border-color:rgba(34,197,94,.55); background:rgba(34,197,94,.1); color:#86efac; }
+.sync-activity.is-failed { border-color:rgba(239,68,68,.55); background:rgba(239,68,68,.1); color:#fca5a5; }
 .sync-spinner { width:16px; height:16px; border:2px solid rgba(160,208,0,.3); border-top-color:var(--primary); border-radius:50%; animation:sync-spin .75s linear infinite; }
 @keyframes sync-spin { to { transform:rotate(360deg); } }
+.sync-action { transition:transform .18s ease, box-shadow .18s ease, background-color .18s ease; }
+.sync-action.is-processing { animation:sync-pulse 1.1s ease-in-out infinite; cursor:wait; }
+.sync-action.is-complete { background:#16803a !important; color:#fff !important; animation:sync-result .35s ease-out; }
+.sync-action.is-failed { background:#b91c1c !important; color:#fff !important; animation:sync-fail .35s ease-out; }
+@keyframes sync-pulse { 50% { box-shadow:0 0 0 5px rgba(160,208,0,.16); transform:translateY(-1px); } }
+@keyframes sync-result { from { transform:scale(.94); } to { transform:scale(1); } }
+@keyframes sync-fail { 25%,75% { transform:translateX(-3px); } 50% { transform:translateX(3px); } }
 #sync-log {
   font-size: 12px; font-family: monospace;
   background: var(--bg-2); border: 1px solid var(--border);
@@ -151,7 +160,7 @@
         <div class="api-progress-label" id="aps-pct">—% used</div>
       </div>
       <div>
-        <button class="btn btn-outline btn-sm" onclick="loadApiStatus()">
+        <button type="button" class="btn btn-outline btn-sm" id="refresh-api-status">
           <span class="material-icons-round" style="font-size:15px">refresh</span> Refresh
         </button>
       </div>
@@ -165,7 +174,7 @@
       </div>
       <p class="sync-desc">Pull all 1,200+ leagues from API-Football. Run once a week. Uses ~1 request.</p>
       <div>
-        <button class="btn btn-sm btn-green" onclick="runSync('leagues', this)">
+        <button type="button" class="btn btn-sm btn-green sync-action" data-sync-action="leagues">
           <span class="material-icons-round" style="font-size:15px">sync</span> Sync Leagues
         </button>
       </div>
@@ -179,7 +188,7 @@
       </div>
       <p class="sync-desc">Fetch fixtures for today and tomorrow across popular leagues. Uses ~20 requests.</p>
       <div>
-        <button class="btn btn-sm btn-green" onclick="runSync('fixtures-today', this)">
+        <button type="button" class="btn btn-sm btn-green sync-action" data-sync-action="fixtures-today">
           <span class="material-icons-round" style="font-size:15px">sync</span> Sync Today
         </button>
       </div>
@@ -194,7 +203,7 @@
       <p class="sync-desc">Sync all fixtures for a specific date.</p>
       <input type="date" class="form-control" id="fix-date" value="">
       <div>
-        <button class="btn btn-sm btn-green" onclick="runSync('fixtures-date', this)">
+        <button type="button" class="btn btn-sm btn-green sync-action" data-sync-action="fixtures-date">
           <span class="material-icons-round" style="font-size:15px">sync</span> Sync Date
         </button>
       </div>
@@ -222,7 +231,7 @@
         <input type="hidden" id="range-days" value="30">
         <label style="font-size:13px;color:var(--text-soft);margin-left:8px">Starting from offset:</label>
         <input type="number" class="form-control" id="range-from-offset" value="0" min="0" max="59" style="max-width:70px" title="0 = today, 1 = tomorrow, etc.">
-        <button class="btn btn-sm btn-green" onclick="runSync('fixtures-range', this)">
+        <button type="button" class="btn btn-sm btn-green sync-action" data-sync-action="fixtures-range">
           <span class="material-icons-round" style="font-size:15px">cloud_download</span> Seed Fixtures
         </button>
       </div>
@@ -237,7 +246,7 @@
       <p class="sync-desc">Update won/lost results for finished matches.</p>
       <input type="date" class="form-control" id="results-date" value="">
       <div>
-        <button class="btn btn-sm btn-green" onclick="runSync('results-date', this)">
+        <button type="button" class="btn btn-sm btn-green sync-action" data-sync-action="results-date">
           <span class="material-icons-round" style="font-size:15px">sync</span> Update Results
         </button>
       </div>
@@ -260,7 +269,7 @@
         </select>
       </div>
       <div>
-        <button class="btn btn-sm btn-amber" onclick="runSync('odds', this)">
+        <button type="button" class="btn btn-sm btn-amber sync-action" data-sync-action="odds">
           <span class="material-icons-round" style="font-size:15px">sync</span> Fetch Missing Odds
         </button>
       </div>
@@ -296,7 +305,7 @@
           <label for="ap-autopublish" style="font-size:13px;cursor:pointer">Auto-publish high-confidence tips</label>
         </div>
         <div style="margin-top:16px">
-          <button class="btn btn-sm btn-green" onclick="runSync('auto-predict', this)">
+          <button type="button" class="btn btn-sm btn-green sync-action" data-sync-action="auto-predict">
             <span class="material-icons-round" style="font-size:15px">stars</span> Run Auto-Predict
           </button>
         </div>
@@ -352,7 +361,7 @@
 
       <div class="flex" style="align-items:center;gap:16px;flex-wrap:wrap">
         <div class="api-cost">Estimated API cost: <strong id="bf-cost">27</strong> requests</div>
-        <button class="btn btn-sm btn-purple" onclick="runSync('seed-historical', this)">
+        <button type="button" class="btn btn-sm btn-purple sync-action" data-sync-action="seed-historical">
           <span class="material-icons-round" style="font-size:15px">download</span> Start Backfill
         </button>
       </div>
@@ -366,7 +375,7 @@
       </div>
       <p class="sync-desc">Grade all predictions that have stored scores, log outcomes, and recalculate accuracy stats. Run this after every backfill or results sync.</p>
       <div>
-        <button class="btn btn-sm btn-purple" onclick="runSync('accuracy', this)">
+        <button type="button" class="btn btn-sm btn-purple sync-action" data-sync-action="accuracy">
           <span class="material-icons-round" style="font-size:15px">equalizer</span> Grade &amp; Recalibrate
         </button>
       </div>
@@ -380,12 +389,12 @@
       </div>
       <p class="sync-desc">Additional sync operations for team stats, H2H data, and market weight tuning.</p>
       <div style="display:flex;flex-wrap:wrap;gap:8px">
-        <button class="btn btn-ghost btn-sm" onclick="runSync('team-stats', this)">Team Stats</button>
-        <button class="btn btn-ghost btn-sm" onclick="runSync('corner-stats', this)">Corner Stats</button>
-        <button class="btn btn-ghost btn-sm" onclick="runSync('h2h', this)">H2H Data</button>
-        <button class="btn btn-ghost btn-sm" onclick="runSync('adjust-weights', this)">Adjust Weights</button>
-        <button class="btn btn-ghost btn-sm" onclick="runSync('daily-specials', this)">Daily Specials</button>
-        <button class="btn btn-ghost btn-sm" onclick="runSync('grade', this)">Grade Pending</button>
+        <button type="button" class="btn btn-ghost btn-sm sync-action" data-sync-action="team-stats">Team Stats</button>
+        <button type="button" class="btn btn-ghost btn-sm sync-action" data-sync-action="corner-stats">Corner Stats</button>
+        <button type="button" class="btn btn-ghost btn-sm sync-action" data-sync-action="h2h">H2H Data</button>
+        <button type="button" class="btn btn-ghost btn-sm sync-action" data-sync-action="adjust-weights">Adjust Weights</button>
+        <button type="button" class="btn btn-ghost btn-sm sync-action" data-sync-action="daily-specials">Daily Specials</button>
+        <button type="button" class="btn btn-ghost btn-sm sync-action" data-sync-action="grade">Grade Pending</button>
       </div>
     </div>
 
@@ -396,7 +405,7 @@
           <div class="sync-icon green"><span class="material-icons-round">terminal</span></div>
           Sync Log
         </span>
-        <button class="btn btn-ghost btn-sm" onclick="clearLog()">Clear</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="clear-sync-log">Clear</button>
       </div>
       <div id="sync-log">Waiting for sync actions…</div>
     </div>
@@ -451,7 +460,6 @@ async function loadApiStatus() {
     const limit = req.limit_day ?? 0;
     const remaining = limit - used;
     const pct = limit ? Math.round(used / limit * 100) : 0;
-    const season = d.data?.subscription?.plan || process.env.API_FOOTBALL_SEASON || '—';
     document.getElementById('aps-used').textContent = used;
     document.getElementById('aps-remaining').textContent = remaining.toLocaleString();
     document.getElementById('aps-limit').textContent = limit.toLocaleString();
@@ -506,7 +514,7 @@ const ENDPOINTS = {
 };
 
 async function runSync(type, clickedButton) {
-  const btn = clickedButton || window.event?.currentTarget || (document.activeElement?.tagName === 'BUTTON' ? document.activeElement : null);
+  const btn = clickedButton;
   const activity = document.getElementById('sync-activity');
   const activityText = document.getElementById('sync-activity-text');
   if (!ENDPOINTS[type]) {
@@ -514,39 +522,66 @@ async function runSync(type, clickedButton) {
     showToast('This sync action is not configured.', 'error');
     return;
   }
-  if (btn?.dataset.processing === '1') return;
+  if (document.body.dataset.syncBusy === '1') {
+    showToast('Another sync operation is already processing.', 'error');
+    return;
+  }
+  document.body.dataset.syncBusy = '1';
+  document.querySelectorAll('.sync-action').forEach(actionButton => { actionButton.disabled = true; });
   if (btn) {
-    btn.dataset.processing = '1';
     btn.dataset.originalHtml = btn.innerHTML;
-    btn.disabled = true;
+    btn.classList.remove('is-complete', 'is-failed');
+    btn.classList.add('is-processing');
     btn.innerHTML = '<span class="sync-spinner" style="display:inline-block;vertical-align:middle;margin-right:6px"></span> Processing…';
   }
+  activity.classList.remove('is-complete', 'is-failed');
   activityText.textContent = `Processing ${type.replaceAll('-', ' ')}. Please wait…`;
   activity.classList.add('show');
   log(`Starting ${type}…`);
+  let finalState = 'failed';
+  let finalMessage = `${type.replaceAll('-', ' ')} failed`;
   try {
     const d = await ENDPOINTS[type]();
     if (d.success) {
       const info = d.data ? JSON.stringify(d.data) : '';
       log(`[OK] ${d.message || type + ' complete'} ${info}`, 'ok');
       showToast(d.message || `${type} complete`, 'success');
+      finalState = 'complete';
+      finalMessage = d.message || `${type.replaceAll('-', ' ')} completed`;
     } else {
       log(`[ERR] ${d.message || 'Unknown error'}`, 'err');
       showToast(d.message || `${type} failed`, 'error');
+      finalMessage = d.message || finalMessage;
     }
   } catch(e) {
     log(`[ERR] Network error: ${e.message}`, 'err');
     showToast(`Network error: ${e.message}`, 'error');
+    finalMessage = `Network error: ${e.message}`;
   } finally {
-    activity.classList.remove('show');
+    delete document.body.dataset.syncBusy;
+    document.querySelectorAll('.sync-action').forEach(actionButton => { actionButton.disabled = false; });
+    activity.classList.add(finalState === 'complete' ? 'is-complete' : 'is-failed');
+    activityText.textContent = finalMessage;
     if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = btn.dataset.originalHtml;
-      delete btn.dataset.processing;
-      delete btn.dataset.originalHtml;
+      btn.classList.remove('is-processing');
+      btn.classList.add(finalState === 'complete' ? 'is-complete' : 'is-failed');
+      btn.innerHTML = `<span class="material-icons-round" style="font-size:16px">${finalState === 'complete' ? 'check_circle' : 'error'}</span> ${finalState === 'complete' ? 'Completed' : 'Failed'}`;
+      window.setTimeout(() => {
+        btn.classList.remove('is-complete', 'is-failed');
+        btn.innerHTML = btn.dataset.originalHtml;
+        delete btn.dataset.originalHtml;
+      }, finalState === 'complete' ? 2500 : 4000);
     }
+    window.setTimeout(() => activity.classList.remove('show', 'is-complete', 'is-failed'), finalState === 'complete' ? 3000 : 5000);
   }
 }
+
+document.querySelectorAll('[data-sync-action]').forEach(btn => {
+  btn.addEventListener('click', () => runSync(btn.dataset.syncAction, btn));
+});
+document.getElementById('refresh-api-status')?.addEventListener('click', loadApiStatus);
+document.getElementById('clear-sync-log')?.addEventListener('click', clearLog);
+log('Data Sync controls ready.');
 </script>
 </body>
 </html>
