@@ -237,6 +237,81 @@ exports.getById = asyncHandler(async (req, res) => {
   return successResponse(res, { prediction: rows[0] });
 });
 
+exports.getAdminAnalysis = asyncHandler(async (req, res) => {
+  const [rows] = await pool.query(
+    `SELECT p.*, l.name AS league_name, l.country, l.api_league_id
+     FROM predictions p LEFT JOIN leagues l ON l.id=p.league_id WHERE p.id=?`,
+    [req.params.id]
+  );
+  if (!rows.length) return errorResponse(res, 'Prediction not found', 404);
+  const prediction = rows[0];
+
+  const [h2h] = await pool.query(
+    `SELECT home_team, away_team, home_score, away_score, match_date, league_api_id, season
+     FROM h2h_history
+     WHERE (home_team=? AND away_team=?) OR (home_team=? AND away_team=?)
+     ORDER BY match_date DESC LIMIT 10`,
+    [prediction.home_team, prediction.away_team, prediction.away_team, prediction.home_team]
+  ).catch(() => [[]]);
+  const [homeStats] = await pool.query(
+    `SELECT * FROM team_statistics WHERE team_name=? AND league_id=? ORDER BY season DESC LIMIT 1`,
+    [prediction.home_team, prediction.league_id]
+  ).catch(() => [[]]);
+  const [awayStats] = await pool.query(
+    `SELECT * FROM team_statistics WHERE team_name=? AND league_id=? ORDER BY season DESC LIMIT 1`,
+    [prediction.away_team, prediction.league_id]
+  ).catch(() => [[]]);
+
+  let apiRecords = [];
+  if (prediction.api_fixture_id || prediction.home_api_team_id || prediction.away_api_team_id || prediction.api_league_id) {
+    const fixture = String(prediction.api_fixture_id || '');
+    const home = String(prediction.home_api_team_id || '');
+    const away = String(prediction.away_api_team_id || '');
+    const league = String(prediction.api_league_id || '');
+    [apiRecords] = await pool.query(
+      `SELECT endpoint, external_id, request_params, payload, last_seen_at
+       FROM api_football_records
+       WHERE (?<>'' AND (external_id=? OR JSON_UNQUOTE(JSON_EXTRACT(request_params,'$.fixture'))=?))
+          OR (?<>'' AND JSON_UNQUOTE(JSON_EXTRACT(request_params,'$.team')) IN (?,?))
+          OR (?<>'' AND JSON_UNQUOTE(JSON_EXTRACT(request_params,'$.league'))=?)
+       ORDER BY last_seen_at DESC LIMIT 200`,
+      [fixture, fixture, fixture, home || away, home, away, league, league]
+    ).catch(() => [[]]);
+  }
+
+  const archived = apiRecords.map(record => ({
+    endpoint: record.endpoint,
+    externalId: record.external_id,
+    requestParams: typeof record.request_params === 'string' ? JSON.parse(record.request_params) : record.request_params,
+    data: typeof record.payload === 'string' ? JSON.parse(record.payload) : record.payload,
+    updatedAt: record.last_seen_at,
+  }));
+
+  return successResponse(res, {
+    prediction,
+    engine: {
+      analysis: prediction.analysis,
+      tip: prediction.tip,
+      market: prediction.market,
+      confidence: prediction.confidence_score,
+      intelligenceScore: prediction.intelligence_score,
+      form: { home: prediction.home_form, away: prediction.away_form },
+      goals: {
+        homeScored: prediction.home_goals_avg, awayScored: prediction.away_goals_avg,
+        homeConceded: prediction.home_goals_conceded_avg, awayConceded: prediction.away_goals_conceded_avg,
+      },
+      injuries: { home: prediction.home_injuries_count, away: prediction.away_injuries_count },
+      h2hSummary: prediction.h2h_summary,
+      bookies: prediction.bookies_available,
+      generatedAt: prediction.api_data_updated_at,
+    },
+    homeStats: homeStats[0] || null,
+    awayStats: awayStats[0] || null,
+    h2h,
+    apiRecords: archived,
+  });
+});
+
 // Admin CRUD
 exports.create = asyncHandler(async (req, res) => {
   const { home_team, away_team, match_date, tip, market, category, league_id,

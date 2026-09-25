@@ -44,6 +44,20 @@
     .needs-result td:first-child { border-left: 3px solid #ef4444; }
     .queue-row td:first-child { border-left: 3px solid #ffd000; }
   </style>
+  <style>
+    .analysis-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .analysis-panel{background:var(--bg,rgba(0,0,0,.15));border:1px solid var(--border,rgba(255,255,255,.1));border-radius:10px;padding:14px}
+    .analysis-panel h4{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--primary);margin-bottom:10px}
+    .analysis-kv{display:grid;grid-template-columns:minmax(110px,.8fr) 1.2fr;gap:6px 10px;font-size:12px;margin-bottom:5px}
+    .analysis-kv span:first-child{color:var(--text-soft)}
+    .analysis-copy{white-space:pre-wrap;font-size:13px;line-height:1.65}
+    .api-record{margin-top:8px;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+    .api-record summary{padding:9px 11px;cursor:pointer;font-size:12px;font-weight:700;background:rgba(160,208,0,.05)}
+    .api-record pre{max-height:360px;overflow:auto;padding:12px;font-size:11px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+    .analysis-loader{display:inline-block;width:20px;height:20px;border:2px solid rgba(160,208,0,.25);border-top-color:var(--primary);border-radius:50%;animation:analysis-spin .7s linear infinite}
+    @keyframes analysis-spin{to{transform:rotate(360deg)}}
+    @media(max-width:760px){.analysis-grid{grid-template-columns:1fr}}
+  </style>
 
   <div class="search-bar admin-card" style="margin-bottom:16px;padding:14px;flex-wrap:wrap">
     <input type="text" class="form-control" style="max-width:200px" placeholder="Search teams…" id="f-search">
@@ -141,6 +155,20 @@
   </div>
 </div>
 
+<!-- API + AI Analysis Modal -->
+<div class="modal-overlay" id="analysis-modal">
+  <div class="modal" style="max-width:980px">
+    <div class="modal-header">
+      <h3 id="analysis-modal-title">Match Analysis</h3>
+      <button type="button" class="modal-close" id="analysis-close-btn"><span class="material-icons-round">close</span></button>
+    </div>
+    <div class="modal-body" id="analysis-modal-body">
+      <div class="empty-cell">Loading match intelligence…</div>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-ghost" id="analysis-done-btn">Close</button></div>
+  </div>
+</div>
+
 <!-- Set Result Modal -->
 <div class="modal-overlay" id="result-modal">
   <div class="modal" style="max-width:380px">
@@ -210,6 +238,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('result-close-btn').addEventListener('click', () => document.getElementById('result-modal').classList.remove('open'));
   document.getElementById('result-cancel-btn').addEventListener('click', () => document.getElementById('result-modal').classList.remove('open'));
   document.getElementById('result-save-btn').addEventListener('click', submitResult);
+  document.getElementById('analysis-close-btn').addEventListener('click', closeAnalysis);
+  document.getElementById('analysis-done-btn').addEventListener('click', closeAnalysis);
   document.getElementById('chk-all').addEventListener('change', e => toggleAll(e.target));
   document.getElementById('bulk-pub-btn').addEventListener('click', () => bulkPublish(1));
   document.getElementById('bulk-unpub-btn').addEventListener('click', () => bulkPublish(0));
@@ -310,6 +340,7 @@ async function loadPreds(page = 1) {
       </td>
       <td>
         <div class="flex gap-1">
+          <button class="btn btn-sm btn-ghost" data-analysis-id="${p.id}" title="View API and AI analysis"><span class="material-icons-round">analytics</span></button>
           <button class="btn btn-sm btn-ghost" data-edit-id="${p.id}" title="Edit"><span class="material-icons-round">edit</span></button>
           <button class="btn btn-sm btn-ghost" data-result-id="${p.id}" title="Set Result"><span class="material-icons-round">flag</span></button>
           <button class="btn btn-sm btn-danger" data-del-id="${p.id}" title="Delete"><span class="material-icons-round">delete</span></button>
@@ -326,6 +357,7 @@ async function loadPreds(page = 1) {
     });
   });
   document.querySelectorAll('[data-edit-id]').forEach(btn => btn.addEventListener('click', () => editPred(btn.dataset.editId)));
+  document.querySelectorAll('[data-analysis-id]').forEach(btn => btn.addEventListener('click', () => openAnalysis(btn.dataset.analysisId)));
   document.querySelectorAll('[data-result-id]').forEach(btn => btn.addEventListener('click', () => openResult(btn.dataset.resultId)));
   document.querySelectorAll('[data-del-id]').forEach(btn => btn.addEventListener('click', () => deletePred(btn.dataset.delId)));
 
@@ -362,6 +394,64 @@ function closeModal() { document.getElementById('pred-modal').classList.remove('
 async function editPred(id) {
   const d = await api(`/predictions/admin/${id}`);
   openModal(d.data?.prediction);
+}
+
+function closeAnalysis() { document.getElementById('analysis-modal').classList.remove('open'); }
+function analysisValue(value) {
+  if (value === null || value === undefined || value === '') return '<span class="text-soft">Not available</span>';
+  if (typeof value === 'object') return escHtml(JSON.stringify(value));
+  return escHtml(value);
+}
+function analysisRows(entries) {
+  return entries.map(([label, value]) => `<div class="analysis-kv"><span>${escHtml(label)}</span><span>${analysisValue(value)}</span></div>`).join('');
+}
+
+async function openAnalysis(id) {
+  const modal = document.getElementById('analysis-modal');
+  const body = document.getElementById('analysis-modal-body');
+  modal.classList.add('open');
+  body.innerHTML = '<div class="empty-cell"><span class="analysis-loader"></span><br>Loading stored API and AI analysis…</div>';
+  const response = await api(`/predictions/admin/${id}/analysis`);
+  if (!response.success) {
+    body.innerHTML = `<div class="empty-cell" style="color:var(--danger)">${escHtml(response.message || 'Could not load analysis')}</div>`;
+    return;
+  }
+  const data = response.data || {};
+  const p = data.prediction || {};
+  const engine = data.engine || {};
+  const records = data.apiRecords || [];
+  document.getElementById('analysis-modal-title').textContent = `${p.home_team || ''} vs ${p.away_team || ''}`;
+  body.innerHTML = `
+    <div class="analysis-grid">
+      <section class="analysis-panel" style="grid-column:1/-1">
+        <h4>Prediction Engine / AI Analysis</h4>
+        <div class="analysis-copy">${analysisValue(engine.analysis)}</div>
+      </section>
+      <section class="analysis-panel"><h4>Prediction</h4>${analysisRows([
+        ['Tip',engine.tip],['Market',engine.market],['Confidence',engine.confidence != null ? engine.confidence + '%' : null],
+        ['Intelligence score',engine.intelligenceScore],['Odds',p.odds],['Source',p.source],['API updated',engine.generatedAt ? fmtDateTime(engine.generatedAt) : null]
+      ])}</section>
+      <section class="analysis-panel"><h4>Form and Availability</h4>${analysisRows([
+        [p.home_team || 'Home form',engine.form?.home],[p.away_team || 'Away form',engine.form?.away],
+        ['Home injuries',engine.injuries?.home],['Away injuries',engine.injuries?.away],['H2H summary',engine.h2hSummary],['Bookmakers',engine.bookies]
+      ])}</section>
+      <section class="analysis-panel"><h4>Goal Performance</h4>${analysisRows([
+        ['Home scored average',engine.goals?.homeScored],['Home conceded average',engine.goals?.homeConceded],
+        ['Away scored average',engine.goals?.awayScored],['Away conceded average',engine.goals?.awayConceded]
+      ])}</section>
+      <section class="analysis-panel"><h4>Match Reference</h4>${analysisRows([
+        ['League',p.league_name],['Kickoff',p.match_date ? fmtDateTime(p.match_date) : null],['Fixture ID',p.api_fixture_id],
+        ['Home API team ID',p.home_api_team_id],['Away API team ID',p.away_api_team_id],['Fixture status',p.fixture_status]
+      ])}</section>
+      <section class="analysis-panel"><h4>${escHtml(p.home_team || 'Home')} Statistics</h4>${data.homeStats ? analysisRows(Object.entries(data.homeStats)) : '<span class="text-soft">No stored team statistics.</span>'}</section>
+      <section class="analysis-panel"><h4>${escHtml(p.away_team || 'Away')} Statistics</h4>${data.awayStats ? analysisRows(Object.entries(data.awayStats)) : '<span class="text-soft">No stored team statistics.</span>'}</section>
+      <section class="analysis-panel" style="grid-column:1/-1"><h4>Head-to-Head History</h4>
+        ${(data.h2h || []).length ? analysisRows(data.h2h.map((match, index) => [`Match ${index + 1}`, `${match.home_team} ${match.home_score}-${match.away_score} ${match.away_team} (${fmtDate(match.match_date)})`])) : '<span class="text-soft">No stored head-to-head matches.</span>'}
+      </section>
+      <section class="analysis-panel" style="grid-column:1/-1"><h4>Archived API-Football Data (${records.length})</h4>
+        ${records.length ? records.map((record, index) => `<details class="api-record"><summary>${escHtml(record.endpoint)} · ${record.updatedAt ? fmtDateTime(record.updatedAt) : 'stored record'} · #${index + 1}</summary><pre>${escHtml(JSON.stringify({ request:record.requestParams, response:record.data }, null, 2))}</pre></details>`).join('') : '<span class="text-soft">No matching archived API records are stored for this fixture yet. Run the relevant API Data Hub imports to populate this section.</span>'}
+      </section>
+    </div>`;
 }
 
 async function savePred() {
