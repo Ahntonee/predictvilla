@@ -52,7 +52,12 @@ async function syncFixtures(daysAhead = 0) {
     fixtures = resp.data?.response || [];
   } catch (err) {
     console.error('[ApiFootball] syncFixtures fetch error:', err.message);
-    return 0;
+    const apiMessage = err.response?.data?.errors
+      ? JSON.stringify(err.response.data.errors)
+      : err.message;
+    const error = new Error(`Could not fetch fixtures for ${dateStr}: ${apiMessage}`);
+    error.status = err.response?.status || 502;
+    throw error;
   }
 
   // Filter to only leagues we track

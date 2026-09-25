@@ -50,7 +50,7 @@ exports.list = asyncHandler(async (req, res) => {
   const LIVE_STATUSES = ['1H','2H','HT','ET','BT','P','LIVE','1H_HT','2H_ET'];
   if (view === 'upcoming') {
     where.push(`(result = 'pending' OR result IS NULL)`);
-    where.push(`fixture_status NOT IN (${LIVE_STATUSES.map(()=>'?').join(',')})`);
+    where.push(`(fixture_status IS NULL OR fixture_status NOT IN (${LIVE_STATUSES.map(()=>'?').join(',')}))`);
     params.push(...LIVE_STATUSES);
     if (!adminView) where.push('match_date >= NOW() - INTERVAL 3 HOUR');
   } else if (view === 'live') {
@@ -58,7 +58,7 @@ exports.list = asyncHandler(async (req, res) => {
     params.push(...LIVE_STATUSES);
   } else if (view === 'finished') {
     where.push(`(match_date < NOW() - INTERVAL 2 HOUR OR result IN ('won','lost','void'))`);
-    where.push(`fixture_status NOT IN (${LIVE_STATUSES.map(()=>'?').join(',')})`);
+    where.push(`(fixture_status IS NULL OR fixture_status NOT IN (${LIVE_STATUSES.map(()=>'?').join(',')}))`);
     params.push(...LIVE_STATUSES);
   } else if (result === 'live') {
     where.push(`fixture_status IN (${LIVE_STATUSES.map(()=>'?').join(',')})`);
