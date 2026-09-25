@@ -108,6 +108,7 @@ app.use('/api/admin/revenue', require('./routes/analytics'));
 app.use('/api/pages', require('./routes/pages'));
 app.use('/api/admin/pages', require('./routes/pages'));
 app.use('/api/sync', require('./routes/sync'));
+app.use('/api/admin/api-football', require('./routes/apiFootballArchive'));
 app.use('/api/tokens', require('./routes/tokens'));
 app.use('/api/backlinks', require('./routes/backlinks'));
 app.use('/api/ads', require('./routes/ads'));
@@ -846,7 +847,7 @@ const ALLOWED_ADMIN = [
   'categories.html','leaderboard.html','blog.html','subscriptions.html',
   'users.html','leagues.html','sync.html','analytics.html','revenue.html',
   'seo.html','pages.html','settings.html','prediction-stats.html',
-  'game-browser.html','backlinks.html','ads.html','seo-pages.html',
+  'game-browser.html','backlinks.html','ads.html','seo-pages.html','api-data.html',
 ];
 app.get('/admin/:file', (req, res, next) => {
   if (!ALLOWED_ADMIN.includes(req.params.file)) return res.status(403).json({ message: 'Forbidden' });

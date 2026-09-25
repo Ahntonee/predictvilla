@@ -29,6 +29,7 @@
       { href: 'users.html', icon: 'group', label: 'Users' },
       { href: 'leagues.html', icon: 'public', label: 'Leagues' },
       { href: 'sync.html', icon: 'sync', label: 'Data Sync' },
+      { href: 'api-data.html', icon: 'storage', label: 'API Data Hub' },
       { href: 'analytics.html', icon: 'analytics', label: 'Analytics' },
       { href: 'prediction-stats.html', icon: 'auto_awesome', label: 'Pred. Intelligence' },
       { href: 'revenue.html', icon: 'payments', label: 'Revenue' },

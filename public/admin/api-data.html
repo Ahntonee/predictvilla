@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>API Data Hub — Predictvilla Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css"><link rel="stylesheet" href="admin.css">
+<style>
+.hub-grid{display:grid;grid-template-columns:minmax(300px,420px) 1fr;gap:18px}.json-preview{white-space:pre-wrap;word-break:break-word;max-height:420px;overflow:auto;font:12px/1.5 monospace;background:var(--bg-2);padding:14px;border-radius:8px}.processing{display:none;align-items:center;gap:9px;color:var(--primary);font-size:13px}.processing.show{display:flex}.spin{width:16px;height:16px;border:2px solid rgba(160,208,0,.25);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}@media(max-width:900px){.hub-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="admin-sidebar"></div><div id="admin-topbar"></div>
+<main id="admin-main">
+  <h1 class="admin-section-title"><span class="material-icons-round">storage</span> API-Football Data Hub</h1>
+  <div class="hub-grid">
+    <section class="admin-card">
+      <h3 class="mb-2">Import endpoint</h3>
+      <p class="text-soft mb-3" style="font-size:12px">Responses are permanently archived. Enter the parameters required by API-Football for the selected endpoint.</p>
+      <div class="form-group"><label class="form-label">Endpoint</label><select id="endpoint" class="form-control"></select></div>
+      <div class="form-group"><label class="form-label">Parameters (JSON)</label><textarea id="params" class="form-control" rows="7" placeholder='{"league":39,"season":2026}'>{}</textarea></div>
+      <div class="form-group"><label class="form-label">Maximum pages for this run</label><input id="max-pages" class="form-control" type="number" value="10" min="1" max="100"></div>
+      <div class="flex gap-2" style="align-items:center"><button id="import-btn" class="btn btn-primary"><span class="material-icons-round">cloud_download</span> Import</button><span id="processing" class="processing"><span class="spin"></span>Fetching and saving…</span></div>
+      <div id="result" class="mt-3 text-soft" style="font-size:12px"></div>
+    </section>
+    <section class="admin-card">
+      <div class="flex-between mb-3"><h3>Stored records</h3><select id="record-endpoint" class="form-control" style="max-width:220px"><option value="">All endpoints</option></select></div>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Endpoint</th><th>External ID</th><th>Imported</th><th></th></tr></thead><tbody id="records"><tr><td colspan="4" class="empty-cell">Loading…</td></tr></tbody></table></div>
+      <div id="pager" class="pager"></div>
+    </section>
+  </div>
+  <section class="admin-card"><h3 class="mb-2">Recent import runs</h3><div class="data-table-wrap"><table class="data-table"><thead><tr><th>Endpoint</th><th>Status</th><th>Pages</th><th>Received</th><th>New</th><th>Started</th><th>Error</th></tr></thead><tbody id="imports"></tbody></table></div></section>
+</main>
+<div class="modal-overlay" id="payload-modal"><div class="modal" style="max-width:850px"><div class="modal-header"><h3>Stored API payload</h3><button class="modal-close" id="payload-close"><span class="material-icons-round">close</span></button></div><div class="modal-body"><pre id="payload" class="json-preview"></pre></div></div></div>
+<script src="admin.js"></script>
+<script>
+injectAdminShell('api-data.html');
+let recordsById = new Map();
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const data = await api('/admin/api-football/endpoints');
+  const endpoints = data.data?.endpoints || [];
+  for (const endpoint of endpoints) {
+    document.getElementById('endpoint').appendChild(new Option(endpoint, endpoint));
+    document.getElementById('record-endpoint').appendChild(new Option(endpoint, endpoint));
+  }
+  document.getElementById('import-btn').addEventListener('click', runImport);
+  document.getElementById('record-endpoint').addEventListener('change', () => loadRecords(1));
+  document.getElementById('payload-close').addEventListener('click', () => document.getElementById('payload-modal').classList.remove('open'));
+  await Promise.all([loadRecords(1), loadImports()]);
+});
+
+async function runImport() {
+  let params;
+  try { params = JSON.parse(document.getElementById('params').value || '{}'); }
+  catch { return showToast('Parameters must be valid JSON', 'error'); }
+  const button = document.getElementById('import-btn');
+  button.disabled = true;
+  document.getElementById('processing').classList.add('show');
+  document.getElementById('result').textContent = 'Import in progress. Keep this page open…';
+  const response = await api('/admin/api-football/import', { method:'POST', body:JSON.stringify({ endpoint:document.getElementById('endpoint').value, params, maxPages:Number(document.getElementById('max-pages').value) || 10 }) });
+  button.disabled = false;
+  document.getElementById('processing').classList.remove('show');
+  if (!response.success) { document.getElementById('result').textContent = response.message; return; }
+  const r = response.data;
+  document.getElementById('result').textContent = `${r.recordsReceived} received; ${r.recordsInserted} new records saved across ${r.pagesFetched}/${r.totalPages} pages${r.truncated ? ' (page limit reached)' : ''}.`;
+  showToast(response.message, 'success');
+  await Promise.all([loadRecords(1), loadImports()]);
+}
+
+async function loadRecords(page=1) {
+  const endpoint = document.getElementById('record-endpoint').value;
+  const data = await api(`/admin/api-football/records?page=${page}&limit=25${endpoint ? `&endpoint=${encodeURIComponent(endpoint)}` : ''}`);
+  const rows = data.data?.records || [];
+  recordsById = new Map(rows.map(row => [String(row.id), row]));
+  document.getElementById('records').innerHTML = rows.length ? rows.map(row => `<tr><td>${escHtml(row.endpoint)}</td><td>${escHtml(row.external_id || '—')}</td><td>${fmtDateTime(row.last_seen_at)}</td><td><button class="btn btn-sm btn-ghost" onclick="viewPayload('${row.id}')">View JSON</button></td></tr>`).join('') : '<tr><td colspan="4" class="empty-cell">No imported records</td></tr>';
+  const p = data.data?.pagination;
+  if (p) renderPager(document.getElementById('pager'), p.page, p.total, p.limit, 'loadRecords');
+}
+
+function viewPayload(id) {
+  const row = recordsById.get(String(id));
+  if (!row) return;
+  const payload = typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload;
+  document.getElementById('payload').textContent = JSON.stringify(payload, null, 2);
+  document.getElementById('payload-modal').classList.add('open');
+}
+
+async function loadImports() {
+  const data = await api('/admin/api-football/imports');
+  const rows = data.data?.imports || [];
+  document.getElementById('imports').innerHTML = rows.length ? rows.map(row => `<tr><td>${escHtml(row.endpoint)}</td><td><span class="badge badge-${row.status === 'completed' ? 'active' : row.status === 'failed' ? 'lost' : 'pending'}">${escHtml(row.status)}</span></td><td>${row.pages_fetched}</td><td>${row.records_received}</td><td>${row.records_inserted}</td><td>${fmtDateTime(row.started_at)}</td><td style="max-width:260px;color:var(--danger)">${escHtml(row.error_message || '')}</td></tr>`).join('') : '<tr><td colspan="7" class="empty-cell">No imports yet</td></tr>';
+}
+</script>
+</body></html>

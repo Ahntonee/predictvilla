@@ -372,6 +372,35 @@ async function migrate() {
       INDEX idx_backlinks_active_expiry (is_active, expires_at)
     )`,
 
+    `CREATE TABLE IF NOT EXISTS api_football_imports (
+      id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+      endpoint VARCHAR(100) NOT NULL,
+      request_params JSON NULL,
+      status ENUM('running','completed','failed') NOT NULL DEFAULT 'running',
+      pages_fetched INT UNSIGNED NOT NULL DEFAULT 0,
+      records_received INT UNSIGNED NOT NULL DEFAULT 0,
+      records_inserted INT UNSIGNED NOT NULL DEFAULT 0,
+      error_message TEXT NULL,
+      started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      completed_at DATETIME NULL,
+      INDEX idx_api_import_endpoint (endpoint, started_at),
+      INDEX idx_api_import_status (status)
+    )`,
+
+    `CREATE TABLE IF NOT EXISTS api_football_records (
+      id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+      endpoint VARCHAR(100) NOT NULL,
+      external_id VARCHAR(255) NULL,
+      request_params JSON NULL,
+      payload JSON NOT NULL,
+      content_hash CHAR(64) NOT NULL,
+      first_imported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      last_seen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_api_endpoint_hash (endpoint, content_hash),
+      INDEX idx_api_record_endpoint (endpoint, last_seen_at),
+      INDEX idx_api_record_external (endpoint, external_id)
+    )`,
+
     `CREATE TABLE IF NOT EXISTS page_views (
       id INT PRIMARY KEY AUTO_INCREMENT,
       path VARCHAR(500),
