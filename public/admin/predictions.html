@@ -58,6 +58,9 @@
     .api-record summary{padding:9px 11px;cursor:pointer;font-size:12px;font-weight:700;background:rgba(160,208,0,.05)}
     .api-record pre{max-height:360px;overflow:auto;padding:12px;font-size:11px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
     .analysis-loader{display:inline-block;width:20px;height:20px;border:2px solid rgba(160,208,0,.25);border-top-color:var(--primary);border-radius:50%;animation:analysis-spin .7s linear infinite}
+    .research-table{width:100%;border-collapse:collapse;font-size:12px}.research-table th,.research-table td{padding:8px;border-bottom:1px solid var(--border);text-align:left}.research-table th{color:var(--text-soft)}
+    .research-result-W{color:#16a34a;font-weight:800}.research-result-D{color:#d99a00;font-weight:800}.research-result-L{color:#ef4444;font-weight:800}
+    .h2h-bar{padding:10px;border-radius:7px;background:#16a34a;color:#fff;text-align:center;font-weight:800;margin:10px 0}
     @keyframes analysis-spin{to{transform:rotate(360deg)}}
     @media(max-width:760px){.analysis-grid{grid-template-columns:1fr}}
   </style>
@@ -172,7 +175,7 @@
     <div class="modal-body" id="analysis-modal-body">
       <div class="empty-cell">Loading match intelligence…</div>
     </div>
-    <div class="modal-footer"><button type="button" class="btn btn-ghost" id="analysis-done-btn">Close</button></div>
+    <div class="modal-footer"><button type="button" class="btn btn-ghost" id="analysis-done-btn">Close</button><button type="button" class="btn btn-primary" id="analysis-apply-btn"><span class="material-icons-round">auto_awesome</span> Apply Suggestion to Edit Form</button></div>
   </div>
 </div>
 
@@ -202,7 +205,7 @@
 <script src="admin.js"></script>
 <script>
 injectAdminShell('predictions.html');
-let currentPage = 1, totalPreds = 0, debTimer, currentView = 'upcoming';
+let currentPage = 1, totalPreds = 0, debTimer, currentView = 'upcoming', currentAnalysisPrediction = null;
 
 function setAdminView(btn, view) {
   document.querySelectorAll('#admin-view-tabs .category-tab').forEach(b => b.classList.remove('active'));
@@ -268,6 +271,11 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('result-save-btn').addEventListener('click', submitResult);
   document.getElementById('analysis-close-btn').addEventListener('click', closeAnalysis);
   document.getElementById('analysis-done-btn').addEventListener('click', closeAnalysis);
+  document.getElementById('analysis-apply-btn').addEventListener('click', () => {
+    if (!currentAnalysisPrediction) return;
+    closeAnalysis();
+    openModal(currentAnalysisPrediction);
+  });
   document.getElementById('chk-all').addEventListener('change', e => toggleAll(e.target));
   document.getElementById('bulk-pub-btn').addEventListener('click', () => bulkPublish(1));
   document.getElementById('bulk-unpub-btn').addEventListener('click', () => bulkPublish(0));
@@ -283,9 +291,10 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function loadLeagues() {
-  const d = await api('/leagues');
-  const all = Object.values(d.data?.leagues||{}).flat();
+  const d = await api('/leagues/admin?limit=2000');
+  const all = d.data?.leagues || [];
   const sel = document.getElementById('f-league');
+  sel.innerHTML = '<option value="">Select competition</option>';
   all.forEach(l => sel.appendChild(new Option(l.name, l.id)));
 }
 
@@ -425,6 +434,11 @@ function closeModal() { document.getElementById('pred-modal').classList.remove('
 
 async function editPred(id) {
   const d = await api(`/predictions/admin/${id}`);
+  const leagueId = d.data?.prediction?.league_id;
+  if (leagueId && !document.querySelector(`#f-league option[value="${leagueId}"]`)) {
+    const league = await api(`/leagues/${leagueId}`);
+    if (league.data?.league) document.getElementById('f-league').appendChild(new Option(league.data.league.name, leagueId));
+  }
   openModal(d.data?.prediction);
 }
 
@@ -436,6 +450,10 @@ function analysisValue(value) {
 }
 function analysisRows(entries) {
   return entries.map(([label, value]) => `<div class="analysis-kv"><span>${escHtml(label)}</span><span>${analysisValue(value)}</span></div>`).join('');
+}
+function recentResearchTable(matches) {
+  if (!matches?.length) return '<div class="text-soft" style="padding:12px">No recent matches stored.</div>';
+  return `<table class="research-table"><thead><tr><th>Date</th><th>Match</th><th>Score</th><th>Result</th></tr></thead><tbody>${matches.map(match => `<tr><td>${fmtDate(match.match_date)}</td><td>${escHtml(match.home_team)} vs ${escHtml(match.away_team)}</td><td><strong>${match.home_score ?? '—'}-${match.away_score ?? '—'}</strong></td><td class="research-result-${match.result}">${match.result}</td></tr>`).join('')}</tbody></table>`;
 }
 
 async function openAnalysis(id) {
@@ -450,11 +468,18 @@ async function openAnalysis(id) {
   }
   const data = response.data || {};
   const p = data.prediction || {};
+  currentAnalysisPrediction = p;
   const engine = data.engine || {};
   const records = data.apiRecords || [];
   document.getElementById('analysis-modal-title').textContent = `${p.home_team || ''} vs ${p.away_team || ''}`;
   body.innerHTML = `
     <div class="analysis-grid">
+      <section class="analysis-panel"><h4>${escHtml(p.home_team || 'Home')} — Last 5</h4>${recentResearchTable(data.homeRecent)}</section>
+      <section class="analysis-panel"><h4>${escHtml(p.away_team || 'Away')} — Last 5</h4>${recentResearchTable(data.awayRecent)}</section>
+      <section class="analysis-panel" style="grid-column:1/-1"><h4>Head to Head — ${escHtml(p.home_team)} vs ${escHtml(p.away_team)} <span class="text-soft">(last ${(data.h2h || []).length} meetings)</span></h4>
+        <div class="h2h-bar">${escHtml(p.home_team)} ${(data.h2h || []).filter(match => match.home_team === p.home_team ? match.home_score > match.away_score : match.away_score > match.home_score).length}W · Draws ${(data.h2h || []).filter(match => match.home_score === match.away_score).length} · ${escHtml(p.away_team)} ${(data.h2h || []).filter(match => match.home_team === p.away_team ? match.home_score > match.away_score : match.away_score > match.home_score).length}W</div>
+        ${recentResearchTable((data.h2h || []).map(match => ({...match,result:match.home_score > match.away_score ? 'W' : match.home_score < match.away_score ? 'L' : 'D'})))}
+      </section>
       <section class="analysis-panel" style="grid-column:1/-1">
         <h4>Prediction Engine / AI Analysis</h4>
         <div class="analysis-copy">${analysisValue(engine.analysis)}</div>

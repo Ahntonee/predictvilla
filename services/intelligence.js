@@ -171,7 +171,7 @@ function generateAnalysis({ homeTeam, awayTeam, homeForm, awayForm, probs, selec
 }
 
 async function runForFixture(fixtureData, options = {}) {
-  const { id, homeTeam, awayTeam, matchDate, homeForm, awayForm, homeCornerAvg, awayCornerAvg, leagueId, dbLeagueId } = fixtureData;
+  const { id, apiFixtureId, homeTeam, awayTeam, matchDate, homeForm, awayForm, homeCornerAvg, awayCornerAvg, leagueId, dbLeagueId } = fixtureData;
 
   // Destructuring defaults only apply to `undefined`, not `null`. MySQL NULLs
   // arrive as null, which coerces to 0 in multiplication and breaks the Poisson
@@ -188,7 +188,7 @@ async function runForFixture(fixtureData, options = {}) {
   const matrix = buildScoreMatrix(lh, la);
   const probs  = scoreMatrixProbs(matrix);
 
-  const bookOdds  = await getLiveOddsForFixture(homeTeam, awayTeam, matchDate).catch(() => null);
+  const bookOdds  = await getLiveOddsForFixture(homeTeam, awayTeam, matchDate, apiFixtureId).catch(() => null);
   const bookmakers = bookOdds?.bookmakers || [];
 
   const selected = selectBestMarket(
@@ -261,6 +261,7 @@ async function runForAllToday(options = {}) {
   const [fixtures] = await pool.query(
     `SELECT
        p.id,
+       p.api_fixture_id       AS apiFixtureId,
        p.home_team           AS homeTeam,
        p.away_team           AS awayTeam,
        p.match_date          AS matchDate,

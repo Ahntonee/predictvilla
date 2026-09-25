@@ -20,7 +20,7 @@ exports.list = asyncHandler(async (req, res) => {
 
 exports.listAdmin = asyncHandler(async (req, res) => {
   const page = Math.max(parseInt(req.query.page) || 1, 1);
-  const limit = Math.min(Math.max(parseInt(req.query.limit) || 30, 1), 100);
+  const limit = Math.min(Math.max(parseInt(req.query.limit) || 30, 1), 2000);
   const where = [], params = [];
   if (req.query.search) { where.push('(name LIKE ? OR country LIKE ?)'); params.push(`%${req.query.search}%`, `%${req.query.search}%`); }
   if (req.query.continent) { where.push('continent=?'); params.push(req.query.continent); }

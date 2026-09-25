@@ -45,8 +45,7 @@ Copy `.env.example` to `.env` and fill in every value.
 | `JWT_SECRET` | Long random string for signing JWTs |
 | `PAYSTACK_SECRET_KEY` | Paystack secret key (sk_live_…) |
 | `PAYSTACK_WEBHOOK_SECRET` | Paystack webhook secret for HMAC verification |
-| `ODDS_API_KEY` | The Odds API key |
-| `API_FOOTBALL_KEY` | API-Football v3 key |
+| `API_FOOTBALL_KEY` | API-Football v3 key (fixtures, statistics and odds) |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | Email delivery |
 | `FROM_EMAIL` / `FROM_NAME` | Sender address shown in emails |
 | `TELEGRAM_BOT_TOKEN` | Telegram bot token for notifications |

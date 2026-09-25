@@ -13,6 +13,19 @@ const apiQuota = require('../services/apiQuota');
 const { pool } = require('../config/db');
 
 router.use(authenticate, requireAdmin);
+router.use((req, res, next) => {
+  if (req.method !== 'GET') {
+    res.on('finish', () => {
+      if (res.statusCode < 400) {
+        pool.query(
+          `INSERT INTO site_settings (setting_key, setting_value) VALUES ('last_sync_action', NOW())
+           ON DUPLICATE KEY UPDATE setting_value=NOW()`
+        ).catch(error => console.error('[Sync] Could not update last sync timestamp:', error.message));
+      }
+    });
+  }
+  next();
+});
 
 router.post('/fixtures', asyncHandler(async (req, res) => {
   const count = await syncFixtures(0);
@@ -48,7 +61,7 @@ router.post('/auto-predict', asyncHandler(async (req, res) => {
 
 router.post('/odds', asyncHandler(async (req, res) => {
   const updated = await syncOddsForTodayFixtures();
-  return successResponse(res, { updated }, `Updated bookie odds for ${updated} predictions`);
+  return successResponse(res, { updated }, `Updated API-Football odds for ${updated} predictions`);
 }));
 
 router.post('/statistics', asyncHandler(async (req, res) => {

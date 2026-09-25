@@ -7,11 +7,16 @@ const { refreshLeagueReliability } = require('../services/statistics');
 
 exports.getStatus = asyncHandler(async (req, res) => {
   const [lastRun] = await pool.query("SELECT setting_value FROM site_settings WHERE setting_key='last_intelligence_run'");
+  const [lastSync] = await pool.query(
+    `SELECT MAX(CAST(setting_value AS DATETIME)) AS last_sync FROM site_settings
+     WHERE setting_key IN ('last_sync_action','last_sync_fixtures','last_sync_results','last_intelligence_run')`
+  );
   const [queueCount] = await pool.query("SELECT COUNT(*) as cnt FROM predictions WHERE source='intelligence' AND published_at IS NULL");
   const [todayGenerated] = await pool.query("SELECT COUNT(*) as cnt FROM predictions WHERE source='intelligence' AND DATE(created_at)=CURDATE()");
   const [autoPublished] = await pool.query("SELECT COUNT(*) as cnt FROM predictions WHERE source='intelligence' AND DATE(published_at)=CURDATE()");
   return successResponse(res, {
     lastRun: lastRun[0]?.setting_value || null,
+    lastSync: lastSync[0]?.last_sync || lastRun[0]?.setting_value || null,
     queueCount: queueCount[0].cnt,
     todayGenerated: todayGenerated[0].cnt,
     autoPublished: autoPublished[0].cnt,

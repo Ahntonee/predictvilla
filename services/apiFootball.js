@@ -375,4 +375,4 @@ async function syncLiveScores() {
   return updated;
 }
 
-module.exports = { syncFixtures, syncResults, syncLiveScores, autoPredictFixtures, getTeamStats, getH2H };
+module.exports = { syncFixtures, syncResults, syncLiveScores, autoPredictFixtures, getTeamStats, getH2H, getFixtureOdds };

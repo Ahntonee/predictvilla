@@ -253,6 +253,20 @@ exports.getAdminAnalysis = asyncHandler(async (req, res) => {
      ORDER BY match_date DESC LIMIT 10`,
     [prediction.home_team, prediction.away_team, prediction.away_team, prediction.home_team]
   ).catch(() => [[]]);
+  const recentFor = async team => {
+    const [matches] = await pool.query(
+      `SELECT home_team, away_team, home_score, away_score, match_date
+       FROM h2h_history WHERE home_team=? OR away_team=? ORDER BY match_date DESC LIMIT 5`,
+      [team, team]
+    ).catch(() => [[]]);
+    return matches.map(match => {
+      const isHome = match.home_team === team;
+      const scored = isHome ? match.home_score : match.away_score;
+      const conceded = isHome ? match.away_score : match.home_score;
+      return { ...match, result: scored == null || conceded == null ? '—' : scored > conceded ? 'W' : scored < conceded ? 'L' : 'D' };
+    });
+  };
+  const [homeRecent, awayRecent] = await Promise.all([recentFor(prediction.home_team), recentFor(prediction.away_team)]);
   const [homeStats] = await pool.query(
     `SELECT * FROM team_statistics WHERE team_name=? AND league_id=? ORDER BY season DESC LIMIT 1`,
     [prediction.home_team, prediction.league_id]
@@ -308,6 +322,8 @@ exports.getAdminAnalysis = asyncHandler(async (req, res) => {
     homeStats: homeStats[0] || null,
     awayStats: awayStats[0] || null,
     h2h,
+    homeRecent,
+    awayRecent,
     apiRecords: archived,
   });
 });
