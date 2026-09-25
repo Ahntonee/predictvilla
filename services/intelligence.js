@@ -252,7 +252,7 @@ async function runForFixture(fixtureData, options = {}) {
 
 async function runForAllToday(options = {}) {
   const targetDate = options.targetDate || 'today';
-  const limit = Math.min(Math.max(parseInt(options.limit) || 20, 1), 100);
+  const limit = Math.min(Math.max(parseInt(options.limit) || 20, 1), 2000);
   const dateClause = targetDate === 'tomorrow'
     ? 'DATE(p.match_date) = CURDATE() + INTERVAL 1 DAY'
     : targetDate === 'today+tomorrow'

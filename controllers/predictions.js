@@ -312,6 +312,13 @@ exports.getAdminAnalysis = asyncHandler(async (req, res) => {
   });
 });
 
+exports.autofillOdds = asyncHandler(async (req, res) => {
+  const { autofillPredictionOdds } = require('../services/oddsApi');
+  const result = await autofillPredictionOdds(req.params.id);
+  if (!result.found) return errorResponse(res, result.reason || 'Live odds were not found', 404);
+  return successResponse(res, result, `Live odds updated to ${result.odds}`);
+});
+
 // Admin CRUD
 exports.create = asyncHandler(async (req, res) => {
   const { home_team, away_team, match_date, tip, market, category, league_id,

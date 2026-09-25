@@ -16,7 +16,10 @@
 <main id="admin-main">
   <div class="flex-between mb-3">
     <h1 class="admin-section-title mb-0">Predictions</h1>
-    <button class="btn btn-primary" id="add-pred-btn">+ Add Prediction</button>
+    <div class="flex gap-2">
+      <button type="button" class="btn btn-ghost" id="autofill-all-odds-btn"><span class="material-icons-round">currency_exchange</span> Autofill Live Odds</button>
+      <button class="btn btn-primary" id="add-pred-btn">+ Add Prediction</button>
+    </div>
   </div>
 
   <!-- View tabs -->
@@ -126,16 +129,20 @@
       </div>
       <div class="grid-2">
         <div class="form-group"><label class="form-label">Category</label>
-          <select class="form-control" id="f-category">
+          <input type="text" class="form-control" id="f-category" readonly title="Automatically aligned with the selected tip">
+        </div>
+        <div class="form-group"><label class="form-label">Access</label>
+          <select class="form-control" id="f-access">
             <option value="free">Free</option>
             <option value="vip">VIP</option>
-            <option value="banker">Banker</option>
           </select>
         </div>
-        <div class="form-group"><label class="form-label">Odds</label><input type="number" class="form-control" id="f-odds" step="0.01" placeholder="1.85"></div>
       </div>
       <div class="grid-2">
+        <div class="form-group"><label class="form-label">Odds</label><div class="flex gap-2"><input type="number" class="form-control" id="f-odds" step="0.01" placeholder="1.85"><button type="button" class="btn btn-ghost btn-sm" id="modal-autofill-odds-btn" title="Fetch live odds"><span class="material-icons-round">currency_exchange</span> Autofill</button></div></div>
         <div class="form-group"><label class="form-label">Confidence (1–99)</label><input type="number" class="form-control" id="f-conf" min="1" max="99" placeholder="Auto"></div>
+      </div>
+      <div class="grid-2">
         <div class="form-group"><label class="form-label">Bookie</label><input type="text" class="form-control" id="f-bookie" placeholder="Bet9ja"></div>
       </div>
       <div class="form-group"><label class="form-label">Analysis</label><textarea class="form-control" id="f-analysis" rows="4" placeholder="Match analysis…"></textarea></div>
@@ -221,6 +228,24 @@ function updateTipOptions(currentTip = '') {
   const tips = MARKET_TIPS[market] || [];
   const sel = document.getElementById('f-tip');
   sel.innerHTML = tips.map(t => `<option value="${t}" ${t === currentTip ? 'selected' : ''}>${t}</option>`).join('');
+  updateMarketCategory();
+}
+
+function marketForTip(tip) {
+  return Object.keys(MARKET_TIPS).find(market => MARKET_TIPS[market].includes(tip)) || '1X2';
+}
+function categoryForTip(tip) {
+  const special = {
+    'Home Win':'home_win','Away Win':'away_win','Draw':'draw','BTTS Yes':'gg','BTTS No':'ng',
+    'Double Chance 1X':'dc_1x','Double Chance X2':'dc_x2','Double Chance 12':'dc_12',
+    'Draw No Bet Home':'dnb_home','Draw No Bet Away':'dnb_away',
+    'First Half Home Win':'first_half_home','First Half Draw':'first_half_draw','First Half Away Win':'first_half_away',
+  };
+  return special[tip] || tip.toLowerCase().replace(/goals|corners|score/g, '').trim().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+}
+function updateMarketCategory() {
+  const category = document.getElementById('f-category');
+  if (category) category.value = categoryForTip(document.getElementById('f-tip').value || '');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -235,6 +260,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('modal-close-btn').addEventListener('click', closeModal);
   document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
   document.getElementById('modal-save-btn').addEventListener('click', savePred);
+  document.getElementById('f-tip').addEventListener('change', updateMarketCategory);
+  document.getElementById('modal-autofill-odds-btn').addEventListener('click', () => autofillOdds(document.getElementById('edit-id').value, document.getElementById('modal-autofill-odds-btn'), true));
+  document.getElementById('autofill-all-odds-btn').addEventListener('click', autofillAllOdds);
   document.getElementById('result-close-btn').addEventListener('click', () => document.getElementById('result-modal').classList.remove('open'));
   document.getElementById('result-cancel-btn').addEventListener('click', () => document.getElementById('result-modal').classList.remove('open'));
   document.getElementById('result-save-btn').addEventListener('click', submitResult);
@@ -341,6 +369,7 @@ async function loadPreds(page = 1) {
       <td>
         <div class="flex gap-1">
           <button class="btn btn-sm btn-ghost" data-analysis-id="${p.id}" title="View API and AI analysis"><span class="material-icons-round">analytics</span></button>
+          <button class="btn btn-sm btn-ghost" data-odds-id="${p.id}" title="Autofill live odds"><span class="material-icons-round">currency_exchange</span></button>
           <button class="btn btn-sm btn-ghost" data-edit-id="${p.id}" title="Edit"><span class="material-icons-round">edit</span></button>
           <button class="btn btn-sm btn-ghost" data-result-id="${p.id}" title="Set Result"><span class="material-icons-round">flag</span></button>
           <button class="btn btn-sm btn-danger" data-del-id="${p.id}" title="Delete"><span class="material-icons-round">delete</span></button>
@@ -358,6 +387,7 @@ async function loadPreds(page = 1) {
   });
   document.querySelectorAll('[data-edit-id]').forEach(btn => btn.addEventListener('click', () => editPred(btn.dataset.editId)));
   document.querySelectorAll('[data-analysis-id]').forEach(btn => btn.addEventListener('click', () => openAnalysis(btn.dataset.analysisId)));
+  document.querySelectorAll('[data-odds-id]').forEach(btn => btn.addEventListener('click', () => autofillOdds(btn.dataset.oddsId, btn)));
   document.querySelectorAll('[data-result-id]').forEach(btn => btn.addEventListener('click', () => openResult(btn.dataset.resultId)));
   document.querySelectorAll('[data-del-id]').forEach(btn => btn.addEventListener('click', () => deletePred(btn.dataset.delId)));
 
@@ -374,8 +404,9 @@ function openModal(p = null) {
   document.getElementById('f-conf').value = p?.confidence_score || '';
   document.getElementById('f-bookie').value = p?.bookie || '';
   document.getElementById('f-analysis').value = p?.analysis || '';
-  document.getElementById('f-market').value = p?.market || '1X2';
-  document.getElementById('f-category').value = (p?.category || 'free').toLowerCase();
+  const alignedMarket = p?.tip ? marketForTip(p.tip) : (p?.market || '1X2');
+  document.getElementById('f-market').value = alignedMarket;
+  document.getElementById('f-access').value = p?.is_vip ? 'vip' : 'free';
   document.getElementById('f-matchdate').value = p?.match_date ? p.match_date.slice(0,16) : '';
   document.getElementById('f-league').value = p?.league_id || '';
   // For new predictions: always pre-check "publish immediately"
@@ -384,6 +415,7 @@ function openModal(p = null) {
   document.getElementById('f-seo-body').value = p?.seo_body || '';
   // Populate tip dropdown based on selected market
   updateTipOptions(p?.tip || '');
+  document.getElementById('modal-autofill-odds-btn').disabled = !p?.id;
 
   if (p && isPast(p.match_date)) {
     showToast('Warning: this match has already kicked off', 'error');
@@ -465,13 +497,14 @@ async function savePred() {
     away_team: document.getElementById('f-away').value.trim(),
     tip: document.getElementById('f-tip').value,
     market: document.getElementById('f-market').value,
-    category: document.getElementById('f-category').value,
+    category: categoryForTip(document.getElementById('f-tip').value),
     odds: parseFloat(document.getElementById('f-odds').value)||null,
     confidence_score: parseInt(document.getElementById('f-conf').value)||null,
     bookie: document.getElementById('f-bookie').value.trim(),
     analysis: document.getElementById('f-analysis').value.trim(),
     match_date: matchDate,
     league_id: document.getElementById('f-league').value||null,
+    is_vip: document.getElementById('f-access').value === 'vip' ? 1 : 0,
     is_published: document.getElementById('f-publish').checked ? 1 : 0,
     is_banker: document.getElementById('f-banker').checked ? 1 : 0,
     seo_body: document.getElementById('f-seo-body').value.trim() || null,
@@ -482,6 +515,39 @@ async function savePred() {
     : await api('/predictions/admin', {method:'POST', body:JSON.stringify(body)});
   if (d.success) { closeModal(); showToast(id ? 'Updated!' : 'Created & published!', 'success'); loadPreds(currentPage); }
   else showToast(d.message,'error');
+}
+
+async function autofillOdds(id, btn, updateModal = false) {
+  if (!id) return showToast('Save the prediction before fetching live odds.', 'error');
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="analysis-loader" style="width:15px;height:15px"></span> Fetching';
+  const d = await api(`/predictions/admin/${id}/autofill-odds`, { method:'POST' });
+  if (d.success) {
+    showToast(d.message || 'Live odds updated', 'success');
+    btn.innerHTML = '<span class="material-icons-round">check_circle</span> Updated';
+    if (updateModal) {
+      document.getElementById('f-odds').value = d.data?.odds || '';
+      document.getElementById('f-bookie').value = (d.data?.bookmakers || []).join(', ');
+    } else loadPreds(currentPage);
+  } else {
+    btn.innerHTML = '<span class="material-icons-round">error</span> Not found';
+  }
+  window.setTimeout(() => { btn.disabled = false; btn.innerHTML = original; }, 2500);
+}
+
+async function autofillAllOdds() {
+  const btn = document.getElementById('autofill-all-odds-btn');
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="analysis-loader" style="width:15px;height:15px"></span> Fetching live odds…';
+  const d = await api('/sync/odds', { method:'POST' });
+  if (d.success) {
+    showToast(d.message || 'Live odds autofill complete', 'success');
+    btn.innerHTML = '<span class="material-icons-round">check_circle</span> Completed';
+    loadPreds(currentPage);
+  } else btn.innerHTML = '<span class="material-icons-round">error</span> Failed';
+  window.setTimeout(() => { btn.disabled = false; btn.innerHTML = original; }, 3000);
 }
 
 async function togglePub(id, cur) {

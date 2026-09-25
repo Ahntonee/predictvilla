@@ -17,6 +17,7 @@ router.get('/:slug', optionalAuth, ctrl.getBySlug);
 // Admin
 router.get('/admin/:id', authenticate, requireAdmin, ctrl.getById);
 router.get('/admin/:id/analysis', authenticate, requireAdmin, ctrl.getAdminAnalysis);
+router.post('/admin/:id/autofill-odds', authenticate, requireAdmin, ctrl.autofillOdds);
 router.post('/admin', authenticate, requireAdmin, validatePrediction, ctrl.create);
 router.put('/admin/:id', authenticate, requireAdmin, ctrl.update);
 router.delete('/admin/:id', authenticate, requireAdmin, ctrl.remove);

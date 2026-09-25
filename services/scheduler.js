@@ -99,22 +99,25 @@ function startScheduler() {
   });
 
   // ── Midnight reset (00:00) ───────────────────────────────────────────────────
-  const SYNC_SCHEDULE = process.env.SYNC_CRON_SCHEDULE || '0 0 * * *';
+  const SYNC_SCHEDULE = process.env.AUTO_PREDICT_CRON_SCHEDULE || '0 0 * * *';
+  const schedulerTimezone = process.env.APP_TIMEZONE || 'Africa/Lagos';
   cron.schedule(SYNC_SCHEDULE, async () => {
     console.log('[Scheduler] Midnight reset — syncing fixtures + running intelligence');
     try {
       await syncFixtures(0);   // today
       await syncFixtures(1);   // tomorrow
-      await autoPredictFixtures();
-      await runForAllToday();
+      const dailyOptions = { targetDate: 'today', limit: 2000, minConfidence: 68, autoPublish: true };
+      await autoPredictFixtures(dailyOptions);
+      const result = await runForAllToday(dailyOptions);
+      console.log(`[Scheduler] 00:00 auto-predict complete — ${result.generated} generated, ${result.autoPublished} published at 68%+ confidence`);
       await runDailySpecials();
     } catch (e) { console.error('[Scheduler] midnight sync error:', e.message); }
-  });
+  }, { timezone: schedulerTimezone });
 
   // 00:10 — second intelligence pass (catches any fixtures missed at 00:00)
   cron.schedule('10 0 * * *', async () => {
     try {
-      await runForAllToday();
+      await runForAllToday({ targetDate: 'today', limit: 2000, minConfidence: 68, autoPublish: true });
       await runDailySpecials();
     } catch (e) { console.error('[Scheduler] re-score error:', e.message); }
   });
