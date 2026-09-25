@@ -69,13 +69,13 @@ async function syncFixtures(daysAhead = 0) {
       const matchDate = new Date(fixture.date);
       const slug = generatePredictionSlug(homeTeam, awayTeam, matchDate);
 
-      await pool.query(
+      const [insertResult] = await pool.query(
         `INSERT IGNORE INTO predictions
            (slug, league_id, home_team, away_team, home_team_logo, away_team_logo, match_date, tip, market, category, source, api_fixture_id)
          VALUES (?, ?, ?, ?, ?, ?, ?, 'TBD', '1X2', 'free', 'auto_sync', ?)`,
         [slug, dbLeagueId, homeTeam, awayTeam, teams.home.logo, teams.away.logo, matchDate, fixture.id]
       );
-      synced++;
+      synced += insertResult.affectedRows ? 1 : 0;
     } catch (err) {
       console.error(`[ApiFootball] insert fixture ${f.fixture.id}:`, err.message);
     }
@@ -168,7 +168,7 @@ async function autoPredictFixtures(options = {}) {
   if (!KEY) return [];
 
   const targetDate = options.targetDate || 'today';
-  const limit = Math.min(Math.max(parseInt(options.limit) || 10, 1), 100);
+  const limit = Math.min(Math.max(parseInt(options.limit) || 20, 1), 100);
   const dateClause = targetDate === 'tomorrow'
     ? 'DATE(p.match_date) = CURDATE() + INTERVAL 1 DAY'
     : targetDate === 'today+tomorrow'

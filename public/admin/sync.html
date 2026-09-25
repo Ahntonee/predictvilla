@@ -285,15 +285,11 @@
         </div>
         <div>
           <div class="sync-label">Fixtures to process</div>
-          <input type="number" class="form-control" id="ap-limit" value="10" min="1" max="100">
+          <input type="number" class="form-control" id="ap-limit" value="20" min="1" max="100">
         </div>
         <div>
           <div class="sync-label">Min confidence to publish</div>
           <input type="number" class="form-control" id="ap-confidence" value="68" min="1" max="99">
-        </div>
-        <div>
-          <div class="sync-label">Min games to publish</div>
-          <input type="number" class="form-control" id="ap-min-games" value="20" min="1" max="100">
         </div>
         <div style="display:flex;align-items:center;gap:8px;margin-top:16px">
           <input type="checkbox" id="ap-autopublish" checked style="accent-color:#a0d000;width:16px;height:16px">
@@ -489,7 +485,6 @@ const ENDPOINTS = {
                           targetDate:    document.getElementById('ap-target').value,
                           limit:         parseInt(document.getElementById('ap-limit').value),
                           minConfidence: parseInt(document.getElementById('ap-confidence').value),
-                          minGames:      parseInt(document.getElementById('ap-min-games').value),
                           autoPublish:   document.getElementById('ap-autopublish').checked,
                         }) }),
   'fixtures-range':   () => api('/sync/fixtures/range', { method: 'POST', body: JSON.stringify({

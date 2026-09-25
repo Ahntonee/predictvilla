@@ -217,10 +217,7 @@ async function runForFixture(fixtureData, options = {}) {
   });
 
   const autoThreshold = Math.min(Math.max(parseInt(options.minConfidence) || 68, 1), 99);
-  const minGames = Math.min(Math.max(parseInt(options.minGames) || 20, 1), 100);
-  const gamesEligible = Number(fixtureData.homeMatchesPlayed || 0) >= minGames
-    && Number(fixtureData.awayMatchesPlayed || 0) >= minGames;
-  const publishedAt = options.autoPublish !== false && confidence >= autoThreshold && gamesEligible
+  const publishedAt = options.autoPublish !== false && confidence >= autoThreshold
     ? new Date()
     : null;
 
@@ -238,8 +235,7 @@ async function runForFixture(fixtureData, options = {}) {
     published_at:     publishedAt,
     publish_blocked_by: publishedAt ? null
       : options.autoPublish === false ? 'auto-publish disabled'
-        : confidence < autoThreshold ? `confidence below ${autoThreshold}`
-          : `fewer than ${minGames} games for one or both teams`,
+        : `confidence below ${autoThreshold}`,
     is_vip:           confidence >= 85 ? 1 : 0,
     homeGoalsAvg, awayGoalsAvg,
   };
@@ -247,7 +243,7 @@ async function runForFixture(fixtureData, options = {}) {
 
 async function runForAllToday(options = {}) {
   const targetDate = options.targetDate || 'today';
-  const limit = Math.min(Math.max(parseInt(options.limit) || 10, 1), 100);
+  const limit = Math.min(Math.max(parseInt(options.limit) || 20, 1), 100);
   const dateClause = targetDate === 'tomorrow'
     ? 'DATE(p.match_date) = CURDATE() + INTERVAL 1 DAY'
     : targetDate === 'today+tomorrow'
@@ -269,8 +265,6 @@ async function runForAllToday(options = {}) {
        l.api_league_id       AS leagueId,
        tsh.home_corners_avg  AS homeCornerAvg,
        tsa.away_corners_avg  AS awayCornerAvg
-       ,COALESCE(tsh.matches_played, 0) AS homeMatchesPlayed
-       ,COALESCE(tsa.matches_played, 0) AS awayMatchesPlayed
      FROM predictions p
      LEFT JOIN leagues l ON l.id = p.league_id
      LEFT JOIN team_statistics tsh
@@ -286,7 +280,7 @@ async function runForAllToday(options = {}) {
   );
 
   console.log(`[Intelligence] Found ${fixtures.length} fixtures to process`);
-  let generated = 0, autoPublished = 0, belowConfidence = 0, insufficientGames = 0;
+  let generated = 0, autoPublished = 0, belowConfidence = 0;
   for (const fx of fixtures) {
     try {
       const result = await runForFixture(fx, options);
@@ -309,7 +303,6 @@ async function runForAllToday(options = {}) {
       generated++;
       if (result.published_at) autoPublished++;
       else if (result.publish_blocked_by?.startsWith('confidence')) belowConfidence++;
-      else if (result.publish_blocked_by?.startsWith('fewer')) insufficientGames++;
     } catch (err) {
       console.error(`[Intelligence] runForAllToday fixture ${fx.id}:`, err.message);
     }
@@ -320,7 +313,7 @@ async function runForAllToday(options = {}) {
      ON DUPLICATE KEY UPDATE setting_value = NOW()`
   );
   console.log(`[Intelligence] Generated ${generated}, auto-published ${autoPublished}`);
-  return { generated, autoPublished, belowConfidence, insufficientGames };
+  return { generated, autoPublished, belowConfidence };
 }
 
 async function getPatternInsights() {

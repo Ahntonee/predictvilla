@@ -250,21 +250,33 @@ router.post('/results/by-date', asyncHandler(async (req, res) => {
 
 // Auto-predict with controls
 router.post('/auto-predict/run', asyncHandler(async (req, res) => {
-  const { targetDate = 'today', limit = 10, minConfidence = 68, minGames = 20, autoPublish = true } = req.body || {};
+  const { targetDate = 'today', limit = 20, minConfidence = 68, autoPublish = true } = req.body || {};
   const options = {
     targetDate: ['today', 'tomorrow', 'today+tomorrow'].includes(targetDate) ? targetDate : 'today',
-    limit: Math.min(Math.max(parseInt(limit) || 10, 1), 100),
+    limit: Math.min(Math.max(parseInt(limit) || 20, 1), 100),
     minConfidence: Math.min(Math.max(parseInt(minConfidence) || 68, 1), 99),
-    minGames: Math.min(Math.max(parseInt(minGames) || 20, 1), 100),
     autoPublish: autoPublish === true,
   };
+  let fixturesSynced = 0;
+  if (options.targetDate === 'today' || options.targetDate === 'today+tomorrow') {
+    fixturesSynced += await syncFixtures(0);
+  }
+  if (options.targetDate === 'tomorrow' || options.targetDate === 'today+tomorrow') {
+    fixturesSynced += await syncFixtures(1);
+  }
   const fixtures = await autoPredictFixtures(options);
   const result = await runForAllToday(options);
+  const message = result.autoPublished > 0
+    ? `Auto-predict published ${result.autoPublished} prediction${result.autoPublished === 1 ? '' : 's'} to the frontend`
+    : result.generated > 0
+      ? `Generated ${result.generated} prediction${result.generated === 1 ? '' : 's'}, but none reached ${options.minConfidence}% confidence for auto-publishing`
+      : 'No eligible fixtures were found. Sync active leagues and verify the selected date.';
   return successResponse(res, {
+    fixturesSynced,
     fixturesPrepared: Array.isArray(fixtures) ? fixtures.length : 0,
-    thresholds: { confidence: options.minConfidence, games: options.minGames },
+    thresholds: { confidence: options.minConfidence },
     ...result,
-  }, 'Auto-predict complete');
+  }, message);
 }));
 
 module.exports = router;
