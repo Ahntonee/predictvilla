@@ -320,6 +320,58 @@ async function migrate() {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )`,
 
+    `CREATE TABLE IF NOT EXISTS seo_article_pages (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      slug VARCHAR(255) NOT NULL UNIQUE,
+      title VARCHAR(255) NOT NULL,
+      meta_title VARCHAR(255) NULL,
+      meta_description TEXT NULL,
+      meta_keywords TEXT NULL,
+      content LONGTEXT NULL,
+      target_url VARCHAR(500) NULL,
+      market VARCHAR(100) NULL,
+      is_published TINYINT(1) NOT NULL DEFAULT 1,
+      show_live_predictions TINYINT(1) NOT NULL DEFAULT 1,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_seo_article_published (is_published),
+      INDEX idx_seo_article_market (market)
+    )`,
+
+    `CREATE TABLE IF NOT EXISTS ads (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      name VARCHAR(255) NOT NULL,
+      type VARCHAR(50) NOT NULL DEFAULT 'banner',
+      position VARCHAR(100) NOT NULL,
+      code TEXT NULL,
+      image_url VARCHAR(1000) NULL,
+      link_url VARCHAR(1000) NULL,
+      alt_text VARCHAR(255) NULL,
+      width INT NULL,
+      height INT NULL,
+      is_active TINYINT(1) NOT NULL DEFAULT 1,
+      starts_at DATETIME NULL,
+      ends_at DATETIME NULL,
+      impressions BIGINT UNSIGNED NOT NULL DEFAULT 0,
+      clicks BIGINT UNSIGNED NOT NULL DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_ads_position_active (position, is_active)
+    )`,
+
+    `CREATE TABLE IF NOT EXISTS backlinks (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      keyword VARCHAR(255) NOT NULL,
+      url VARCHAR(1000) NOT NULL,
+      site_name VARCHAR(255) NULL,
+      category VARCHAR(100) NOT NULL DEFAULT 'general',
+      expires_at DATE NULL,
+      is_active TINYINT(1) NOT NULL DEFAULT 1,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_backlinks_active_expiry (is_active, expires_at)
+    )`,
+
     `CREATE TABLE IF NOT EXISTS page_views (
       id INT PRIMARY KEY AUTO_INCREMENT,
       path VARCHAR(500),
