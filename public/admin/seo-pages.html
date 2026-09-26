@@ -170,6 +170,7 @@ let mde = null;
 document.addEventListener('DOMContentLoaded', () => {
   loadPages();
   document.getElementById('new-seo-page-btn').addEventListener('click', () => showEditor());
+  document.getElementById('pages-body').addEventListener('click', handlePageAction);
   document.getElementById('f-slug').addEventListener('input', updateSlugPreview);
   document.getElementById('f-desc').addEventListener('input', () => {
     const l = document.getElementById('f-desc').value.length;
@@ -191,13 +192,36 @@ async function loadPages() {
         <td style="font-size:12px;color:var(--text-soft)">${fmtDate(p.updated_at)}</td>
         <td>
           <div class="flex gap-1">
-            <button class="btn btn-sm btn-ghost" onclick="editPage(${p.id})" title="Edit"><span class="material-icons-round" style="font-size:14px">edit</span></button>
-            <a href="${escHtml(p.target_url || `/predictions/${p.slug}`)}" target="_blank" class="btn btn-sm btn-ghost" title="View"><span class="material-icons-round" style="font-size:14px">open_in_new</span></a>
-            <button class="btn btn-sm btn-ghost" style="color:var(--danger)" onclick="deletePage(${p.id})" title="Delete"><span class="material-icons-round" style="font-size:14px">delete</span></button>
+            <button type="button" class="btn btn-sm btn-ghost" data-page-action="edit" data-page-id="${p.id}" title="Edit"><span class="material-icons-round" style="font-size:14px;pointer-events:none">edit</span></button>
+            <button type="button" class="btn btn-sm btn-ghost" data-page-action="view" data-page-url="${escHtml(p.target_url || `/predictions/${p.slug}`)}" title="View"><span class="material-icons-round" style="font-size:14px;pointer-events:none">open_in_new</span></button>
+            <button type="button" class="btn btn-sm btn-ghost" data-page-action="delete" data-page-id="${p.id}" style="color:var(--danger)" title="Delete"><span class="material-icons-round" style="font-size:14px;pointer-events:none">delete</span></button>
           </div>
         </td>
       </tr>`).join('')
     : '<tr><td colspan="7" class="empty-cell">No SEO pages yet — create your first one to start ranking</td></tr>';
+}
+
+async function handlePageAction(event) {
+  const button = event.target.closest('[data-page-action]');
+  if (!button) return;
+  event.preventDefault();
+  const action = button.dataset.pageAction;
+  if (action === 'view') {
+    const opened = window.open(button.dataset.pageUrl, '_blank', 'noopener');
+    if (!opened) window.location.href = button.dataset.pageUrl;
+    return;
+  }
+  const id = Number(button.dataset.pageId);
+  if (!id) return showToast('Invalid SEO page reference', 'error');
+  button.disabled = true;
+  button.classList.add('loading');
+  try {
+    if (action === 'edit') await editPage(id);
+    if (action === 'delete') await deletePage(id);
+  } finally {
+    button.disabled = false;
+    button.classList.remove('loading');
+  }
 }
 
 function showEditor(data) {
@@ -215,13 +239,18 @@ function showEditor(data) {
   document.getElementById('f-live-preds').checked = data ? !!data.show_live_predictions : true;
   if (mde) { mde.toTextArea(); mde = null; }
   document.getElementById('f-content').value = data?.content || '';
-  mde = new EasyMDE({
-    element: document.getElementById('f-content'),
-    spellChecker: false,
-    status: ['lines', 'words'],
-    minHeight: '360px',
-    toolbar: ['bold','italic','heading','|','quote','unordered-list','ordered-list','|','link','image','table','|','preview','side-by-side','fullscreen','|','guide'],
-  });
+  if (typeof EasyMDE === 'function') {
+    mde = new EasyMDE({
+      element: document.getElementById('f-content'),
+      spellChecker: false,
+      status: ['lines', 'words'],
+      minHeight: '360px',
+      toolbar: ['bold','italic','heading','|','quote','unordered-list','ordered-list','|','link','image','table','|','preview','side-by-side','fullscreen','|','guide'],
+    });
+  } else {
+    document.getElementById('f-content').style.minHeight = '360px';
+    showToast('Rich editor unavailable; using the standard editor', 'info');
+  }
   updateSlugPreview();
 
   if (data?.id) {
@@ -243,7 +272,8 @@ function showList() {
 
 async function editPage(id) {
   const d = await api(`/admin/seo-pages/${id}`);
-  if (d.data?.page) showEditor(d.data.page);
+  if (d.success && d.data?.page) showEditor(d.data.page);
+  else showToast(d.message || 'Could not load this SEO page', 'error');
 }
 
 function autoSlug() {

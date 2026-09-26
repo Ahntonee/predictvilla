@@ -2,11 +2,9 @@ const router = require('express').Router();
 const { pool } = require('../config/db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { successResponse, errorResponse, asyncHandler } = require('../utils/helpers');
-const { seedMarketSeoPages } = require('../services/marketSeoPages');
 
 // Admin: list all
 router.get('/', authenticate, requireAdmin, asyncHandler(async (req, res) => {
-  await seedMarketSeoPages(pool);
   const [rows] = await pool.query('SELECT id, slug, title, target_url, market, is_published, show_live_predictions, updated_at FROM seo_article_pages ORDER BY target_url, updated_at DESC');
   return successResponse(res, { pages: rows });
 }));
