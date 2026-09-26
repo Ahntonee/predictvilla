@@ -1898,7 +1898,7 @@ body.has-sidebar { padding-top: calc(var(--topbar-h) + env(safe-area-inset-top))
 .date-btn.active { color: #fff; border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.10); }
 .date-calendar-btn{display:flex;align-items:center;justify-content:center;width:38px;height:38px;flex:0 0 38px;border:1px solid transparent;border-radius:7px;background:transparent;color:rgba(255,255,255,.55);cursor:pointer}
 .date-calendar-btn:hover{color:#fff;background:rgba(255,255,255,.07)}
-.visually-hidden-date{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important}
+.calendar-native-input{position:fixed!important;left:-10000px!important;top:0!important;width:1px!important;height:1px!important;opacity:0!important;border:0!important;padding:0!important}
 [data-theme="light"] .date-picker-row{border-bottom-color:rgba(20,45,15,.12)}
 [data-theme="light"] .date-btn{color:#697465}
 [data-theme="light"] .date-btn:hover{color:#183116;background:rgba(70,100,40,.08)}
@@ -2027,6 +2027,13 @@ body.has-sidebar { padding-top: calc(var(--topbar-h) + env(safe-area-inset-top))
   width: fit-content; max-width: 100%;
 }
 [data-theme="dark"] .date-strip { background: #1c1c1c; }
+[data-theme="light"] .date-strip{background:#f1f4eb;border:1px solid rgba(35,55,20,.12)}
+[data-theme="light"] .date-strip-btn{color:#111}
+[data-theme="light"] .date-strip-btn:hover{color:#000;background:rgba(45,70,20,.08)}
+[data-theme="light"] .date-strip-btn.active{background:#fff;color:#000;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+[data-theme="light"] .date-strip-sep{background:rgba(0,0,0,.18)}
+[data-theme="light"] .date-strip-cal{color:#111}
+[data-theme="light"] .date-strip-cal:hover{color:#000;background:rgba(45,70,20,.08);border-radius:50%}
 .date-strip::-webkit-scrollbar { display: none; }
 
 .date-strip-sep {

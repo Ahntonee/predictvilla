@@ -228,6 +228,17 @@ function buildDateStrip() {
   if (!strip) return;
   const now = new Date();
   const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const visibleDates = [];
+  const cursor = new Date(now);
+  cursor.setDate(cursor.getDate() - 1);
+  while (cursor.getDay() === 0 || cursor.getDay() === 6) cursor.setDate(cursor.getDate() - 1);
+  while (visibleDates.length < 6) {
+    if (cursor.getDay() !== 0 && cursor.getDay() !== 6) visibleDates.push(new Date(cursor));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  const todayIso = now.toISOString().split('T')[0];
+  const selectedIso = (now.getDay() === 0 || now.getDay() === 6) ? visibleDates[0].toISOString().split('T')[0] : todayIso;
+  currentDate = selectedIso;
 
   let html = `<button type="button" class="date-strip-btn live-btn" data-date="live">
     <span class="material-icons-round" style="font-size:14px;vertical-align:middle">radio_button_checked</span> Live
@@ -235,18 +246,12 @@ function buildDateStrip() {
   </button>
   <div class="date-strip-sep"></div>`;
 
-  for (let i = -1; i <= 5; i++) {
-    const d = new Date(now); d.setDate(d.getDate() + i);
-    let sub, dateKey;
+  for (const d of visibleDates) {
+    let sub;
+    const dateKey = d.toISOString().split('T')[0];
     const dayNum = d.getDate();
-    if (i === -1) { sub = 'YST'; dateKey = 'yesterday'; }
-    else if (i === 0) { sub = 'TODAY'; dateKey = 'today'; }
-    else if (i === 1) { sub = 'TMR'; dateKey = 'tomorrow'; }
-    else {
-      sub = days[d.getDay()];
-      dateKey = d.toISOString().split('T')[0];
-    }
-    const active = (dateKey === 'today') ? ' active' : '';
+    sub = dateKey === todayIso ? 'TODAY' : days[d.getDay()];
+    const active = dateKey === selectedIso ? ' active' : '';
     html += `<button type="button" class="date-strip-btn${active}" data-date="${dateKey}">
       <span class="ds-num">${dayNum}</span>
       <span class="ds-sub">${sub}</span>
@@ -257,7 +262,7 @@ function buildDateStrip() {
   <button type="button" class="date-strip-cal" id="date-strip-calendar" title="Pick date">
     <span class="material-icons-round" style="font-size:18px">calendar_month</span>
   </button>
-  <input type="date" id="date-picker-input" style="position:absolute;opacity:0;pointer-events:none;width:0;height:0">`;
+  <input type="date" id="date-picker-input" class="calendar-native-input">`;
 
   strip.innerHTML = html;
   strip.querySelectorAll('.date-strip-btn').forEach(button => button.addEventListener('click', () => setDateStrip(button, button.dataset.date)));
