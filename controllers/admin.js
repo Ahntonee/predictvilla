@@ -139,10 +139,17 @@ exports.updateSeoSetting = asyncHandler(async (req, res) => {
 });
 
 exports.getDashboardStats = asyncHandler(async (req, res) => {
+  // Builds live dashboard totals; win rate counts only published predictions with a confirmed win/loss.
   res.set('Cache-Control', 'no-store, max-age=0');
   const [[predTotal]] = await pool.query("SELECT COUNT(*) as cnt FROM predictions WHERE published_at IS NOT NULL");
   const [[predToday]] = await pool.query("SELECT COUNT(*) as cnt FROM predictions WHERE DATE(match_date)=CURDATE() AND published_at IS NOT NULL");
-  const [[winRate]] = await pool.query("SELECT stat_value FROM accuracy_stats WHERE stat_key='overall_win_rate'");
+  const [[publishedResults]] = await pool.query(
+    `SELECT COUNT(*) AS confirmed,
+            COALESCE(SUM(result = 'won'), 0) AS won,
+            ROUND(COALESCE(SUM(result = 'won'), 0) / NULLIF(COUNT(*), 0) * 100, 1) AS win_rate
+     FROM predictions
+     WHERE published_at IS NOT NULL AND result IN ('won', 'lost')`
+  );
   const [[activeVip]] = await pool.query("SELECT COUNT(*) as cnt FROM subscriptions WHERE status='active'");
   const [[totalUsers]] = await pool.query("SELECT COUNT(*) as cnt FROM users");
   const [[newUsers]] = await pool.query("SELECT COUNT(*) as cnt FROM users WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)");
@@ -153,7 +160,11 @@ exports.getDashboardStats = asyncHandler(async (req, res) => {
 
   return successResponse(res, {
     predictions: { total: predTotal.cnt, today: predToday.cnt, queue: queueCount.cnt },
-    winRate: winRate?.stat_value || 0,
+    winRate: Number(publishedResults.win_rate) || 0,
+    publishedResults: {
+      confirmed: Number(publishedResults.confirmed) || 0,
+      won: Number(publishedResults.won) || 0,
+    },
     subscribers: { active: activeVip.cnt },
     users: { total: totalUsers.cnt, newThisWeek: newUsers.cnt },
     revenue: { thisMonth: revMonth.total || 0, total: revTotal.total || 0 },

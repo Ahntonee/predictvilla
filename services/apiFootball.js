@@ -117,12 +117,16 @@ async function syncFixtures(daysAhead = 0) {
 
 const FINISHED_STATUSES = new Set(['FT', 'AET', 'PEN', 'AWD', 'WO']);
 
-async function syncResults() {
+async function syncResults(targetDate = null) {
+  // Pulls final scores for pending predictions, optionally restricted to one match date.
   if (!KEY) return 0;
+  const dateFilter = targetDate ? ' AND DATE(match_date) = ?' : '';
+  const queryParams = targetDate ? [targetDate] : [];
   const [pending] = await pool.query(
     `SELECT id, api_fixture_id, DATE_FORMAT(match_date, '%Y-%m-%d') AS match_day
      FROM predictions
-     WHERE result = 'pending' AND api_fixture_id IS NOT NULL AND match_date < NOW() - INTERVAL 2 HOUR`
+     WHERE result = 'pending' AND api_fixture_id IS NOT NULL AND match_date < NOW() - INTERVAL 2 HOUR${dateFilter}`,
+    queryParams
   );
   if (!pending.length) return 0;
 

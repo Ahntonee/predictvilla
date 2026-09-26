@@ -69,7 +69,11 @@ function startScheduler() {
   // ── Nightly wind-down (before midnight) ─────────────────────────────────────
   // 23:30 — pull final scores for yesterday's fixtures
   cron.schedule('30 23 * * *', async () => {
-    try { await syncResults(); } catch (e) { console.error('[Scheduler] syncResults error:', e.message); }
+    try {
+      await syncResults();
+      await gradeFinished();
+      await logUntracked();
+    } catch (e) { console.error('[Scheduler] syncResults error:', e.message); }
   });
 
   // 23:45 — grade finished predictions + log outcomes for accuracy engine
@@ -149,7 +153,11 @@ function startScheduler() {
   // Poll throughout the day so late-night/early-morning results are graded and
   // appear in Recent Wins without waiting for the nightly reconciliation.
   cron.schedule('*/5 * * * *', async () => {
-    try { await syncLiveScores(); } catch (e) { console.error('[Scheduler] live scores error:', e.message); }
+    try {
+      await syncLiveScores();
+      await gradeFinished();
+      await logUntracked();
+    } catch (e) { console.error('[Scheduler] live scores error:', e.message); }
   });
 }
 

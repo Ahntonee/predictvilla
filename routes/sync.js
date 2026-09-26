@@ -27,6 +27,15 @@ router.use((req, res, next) => {
   next();
 });
 
+// Synchronizes final scores, grades pending predictions and refreshes accuracy records.
+async function syncAndGradeResults(targetDate = null) {
+  const updated = await syncResults(targetDate);
+  await gradeFinished();
+  const logged = await logUntracked();
+  const stats = await recalculateStats();
+  return { updated, logged, ...stats };
+}
+
 router.post('/fixtures', asyncHandler(async (req, res) => {
   const count = await syncFixtures(0);
   return successResponse(res, { synced: count }, `Synced ${count} fixtures`);
@@ -38,13 +47,16 @@ router.post('/fixtures/tomorrow', asyncHandler(async (req, res) => {
 }));
 
 router.post('/results', asyncHandler(async (req, res) => {
-  const count = await syncResults();
-  return successResponse(res, { updated: count }, `Updated ${count} results`);
+  // A manual result sync must grade immediately so published wins reach the homepage.
+  const result = await syncAndGradeResults();
+  return successResponse(res, result, `Updated ${result.updated} results and graded completed predictions`);
 }));
 
 router.post('/live', asyncHandler(async (req, res) => {
+  // Updates live scores and immediately grades any fixtures that just finished.
   const updated = await syncLiveScores();
   await gradeFinished();
+  await logUntracked();
   return successResponse(res, { updated }, `Live scores synced for ${updated} predictions`);
 }));
 
@@ -56,19 +68,15 @@ router.post('/scores', asyncHandler(async (req, res) => {
 // Full admin-dashboard refresh: pull final scores, grade predictions and update
 // accuracy data so the dashboard and public Recent Wins use the same fresh data.
 router.post('/dashboard-refresh', asyncHandler(async (req, res) => {
-  const updated = await syncResults();
-  await gradeFinished();
-  const logged = await logUntracked();
-  const stats = await recalculateStats();
+  // Runs the complete results pipeline before returning dashboard and wins totals.
+  const result = await syncAndGradeResults();
   const [[wins]] = await pool.query(
     "SELECT COUNT(*) AS cnt FROM predictions WHERE result='won' AND published_at IS NOT NULL"
   );
   return successResponse(res, {
-    updated,
-    logged,
+    ...result,
     wins: wins.cnt,
-    ...stats,
-  }, `Dashboard refreshed: ${updated} results updated and ${wins.cnt} published wins available`);
+  }, `Dashboard refreshed: ${result.updated} results updated and ${wins.cnt} published wins available`);
 }));
 
 router.post('/auto-predict', asyncHandler(async (req, res) => {
@@ -273,10 +281,11 @@ router.post('/fixtures/by-date', asyncHandler(async (req, res) => {
 
 // Update results for a specific date
 router.post('/results/by-date', asyncHandler(async (req, res) => {
+  // Synchronizes and grades only the administrator-selected fixture date.
   const date = req.body?.date;
   if (!date) return res.status(400).json({ success: false, message: 'date required' });
-  const count = await syncResults(date);
-  return successResponse(res, { updated: count, date }, `Updated ${count} results for ${date}`);
+  const result = await syncAndGradeResults(date);
+  return successResponse(res, { ...result, date }, `Updated ${result.updated} results for ${date}`);
 }));
 
 // Auto-predict with controls

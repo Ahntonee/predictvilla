@@ -133,12 +133,13 @@ async function refreshDashboard(syncResultsFirst = false) {
 }
 
 async function loadStats() {
+  // Renders current dashboard metrics returned by the server without using cached accuracy aggregates.
   const d = await api(`/admin/dashboard?_=${Date.now()}`, { silent:true });
   const s = d.data || {};
   const items = [
     { icon:'sports_soccer', val:s.predictions?.total||0, label:'Total Predictions', color:'' },
     { icon:'today', val:s.predictions?.today||0, label:"Today's Tips", color:'' },
-    { icon:'gps_fixed', val:(Number(s.winRate)||0).toFixed(1)+'%', label:'Win Rate (30d)', color:'var(--primary)' },
+    { icon:'gps_fixed', val:(Number(s.winRate)||0).toFixed(1)+'%', label:'Published Win Rate', color:'var(--primary)' },
     { icon:'group', val:s.users?.total||0, label:'Total Users', color:'' },
     { icon:'workspace_premium', val:s.subscribers?.active||0, label:'VIP Subscribers', color:'var(--accent)' },
     { icon:'payments', val:'₦'+Number(s.revenue?.thisMonth||0).toLocaleString(), label:'Revenue This Month', color:'var(--primary)' },
