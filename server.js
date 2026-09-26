@@ -530,6 +530,9 @@ function getMarketTemplate() {
 }
 
 app.get('/predictions/:market', async (req, res) => {
+  if (req.params.market === 'corners-over' || req.params.market === 'corners-under') {
+    return res.redirect(301, '/predictions/corners');
+  }
   const meta = MARKET_PAGES[req.params.market];
   if (!meta) return res.status(404).sendFile(path.join(__dirname, 'public', 'index.html'));
   const canonical = `${process.env.SITE_URL || 'https://www.predictvilla.com'}/predictions/${req.params.market}`;

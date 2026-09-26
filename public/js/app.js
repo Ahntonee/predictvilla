@@ -450,8 +450,7 @@ async function injectHeader() {
     ['/predictions/under-45', 'trending_down', 'Under 4.5'],
     ['/predictions/first-half-home-win', 'timer', '1st Half Home'],
     ['/predictions/first-half-away-win', 'timer', '1st Half Away'],
-    ['/predictions/corners-over', 'north_east', 'Over Corners'],
-    ['/predictions/corners-under', 'south_east', 'Under Corners'],
+    ['/predictions/corners', 'sports_score', 'Corners'],
     ['/predictions/draw-no-bet', 'shield', 'Draw No Bet'],
   ];
 

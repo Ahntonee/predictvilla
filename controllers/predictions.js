@@ -10,7 +10,7 @@ function redactVip(pred, user) {
 
 exports.list = asyncHandler(async (req, res) => {
   const { page, limit, offset } = parsePagination(req.query);
-  const { date, league_id, category, market, tip, tip_prefix, vip, result, search, time_from, time_to } = req.query;
+  const { date, league_id, category, market, tip, tip_prefix, vip, result, search, time, time_from, time_to } = req.query;
   const isAdmin = req.user?.role === 'admin';
   const adminView = isAdmin && req.query.admin_view === '1';
 
@@ -36,6 +36,9 @@ exports.list = asyncHandler(async (req, res) => {
   if (time_to && /^\d{2}:\d{2}$/.test(time_to)) {
     where.push('TIME(match_date) <= ?'); params.push(`${time_to}:59`);
   }
+  if (time && /^\d{2}:\d{2}$/.test(time)) {
+    where.push("DATE_FORMAT(match_date, '%H:%i') = ?"); params.push(time);
+  }
 
   if (league_id) { where.push('league_id = ?'); params.push(league_id); }
   if (category && category !== 'all') {
@@ -44,6 +47,8 @@ exports.list = asyncHandler(async (req, res) => {
       where.push('is_vip = 0');
     } else if (category === 'vip') {
       where.push('is_vip = 1');
+    } else if (category === 'corners') {
+      where.push("(market = 'Corners' OR category LIKE 'corners_%')");
     } else {
       where.push('category = ?'); params.push(category);
     }

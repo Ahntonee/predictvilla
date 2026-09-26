@@ -78,8 +78,7 @@
       <option value="">All</option><option value="1">Published</option><option value="0">Draft</option>
     </select>
     <input type="date" class="form-control" style="max-width:160px" id="f-date">
-    <input type="time" class="form-control" style="max-width:130px" id="f-time-from" aria-label="Kickoff time from" title="Kickoff from">
-    <input type="time" class="form-control" style="max-width:130px" id="f-time-to" aria-label="Kickoff time to" title="Kickoff to">
+    <input type="time" class="form-control" style="max-width:150px" id="f-time" aria-label="Kickoff time" title="Filter by kickoff time">
   </div>
 
   <div class="data-table-wrap admin-card" style="padding:0">
@@ -286,8 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('f-tip-filter').addEventListener('change', () => loadPreds(1));
   document.getElementById('f-pub').addEventListener('change', () => loadPreds(1));
   document.getElementById('f-date').addEventListener('change', () => loadPreds(1));
-  document.getElementById('f-time-from').addEventListener('change', () => loadPreds(1));
-  document.getElementById('f-time-to').addEventListener('change', () => loadPreds(1));
+  document.getElementById('f-time').addEventListener('change', () => loadPreds(1));
 });
 
 async function loadLeagues() {
@@ -317,8 +315,7 @@ async function loadPreds(page = 1) {
   const pub = document.getElementById('f-pub').value;
   const tip = document.getElementById('f-tip-filter').value;
   const date = document.getElementById('f-date').value;
-  const timeFrom = document.getElementById('f-time-from').value;
-  const timeTo = document.getElementById('f-time-to').value;
+  const time = document.getElementById('f-time').value;
 
   const isQueue = currentView === 'queue';
   const params = new URLSearchParams({
@@ -329,8 +326,7 @@ async function loadPreds(page = 1) {
     ...(tip && { tip }),
     ...(!isQueue && pub !== '' && { is_published: pub }),
     ...(date && { date }),
-    ...(timeFrom && { time_from: timeFrom }),
-    ...(timeTo && { time_to: timeTo }),
+    ...(time && { time }),
   });
   const d = await api(`/predictions?${params}`);
   const preds = d.data?.predictions || [];

@@ -78,6 +78,7 @@
             <button class="category-tab" data-cat="away_win">Away Win</button>
             <button class="category-tab" data-cat="over_1_5">Over 1.5</button>
             <button class="category-tab" data-cat="under_2_5">Under 2.5</button>
+            <button class="category-tab" data-cat="corners">Corners</button>
           </div>
           <!-- Category Select (mobile only) -->
           <select id="category-select" class="category-select-mobile" style="display:none">
@@ -90,6 +91,7 @@
             <option value="away_win">Away Win</option>
             <option value="over_1_5">Over 1.5 Goals</option>
             <option value="under_2_5">Under 2.5 Goals</option>
+            <option value="corners">Corners</option>
           </select>
 
           <!-- Mid-feed Ad -->
@@ -327,17 +329,17 @@ function buildDatePicker() {
   }
   const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const todayStr = today.toISOString().slice(0,10);
-  row.innerHTML = `<button class="live-date-btn" id="live-date-btn"><span class="live-pulse"></span>Live</button>` +
+  row.innerHTML = `<button type="button" class="live-date-btn" id="live-date-btn"><span class="live-pulse"></span>Live</button>` +
     days.map(d => {
       const iso = d.toISOString().slice(0,10);
       const isToday = iso === todayStr;
       const label = isToday ? 'TODAY' : dayNames[d.getDay()];
       const active = isToday ? 'active' : '';
-      return `<button class="date-btn ${active}" data-iso="${iso}" data-date="${isToday ? 'today' : iso}">
+      return `<button type="button" class="date-btn ${active}" data-iso="${iso}" data-date="${isToday ? 'today' : iso}">
         <span class="date-num">${d.getDate()}</span>
         <span class="date-label">${label}</span>
       </button>`;
-    }).join('');
+    }).join('') + `<button type="button" class="date-calendar-btn" id="home-calendar-btn" title="Choose date" aria-label="Choose prediction date"><span class="material-icons-round">calendar_month</span></button><input type="date" id="home-date-input" class="visually-hidden-date">`;
   row.querySelectorAll('.date-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       if (liveMode) exitLiveMode(row);
@@ -354,6 +356,19 @@ function buildDatePicker() {
     } else {
       enterLiveMode(row);
     }
+  });
+  const calendarInput = document.getElementById('home-date-input');
+  document.getElementById('home-calendar-btn')?.addEventListener('click', () => {
+    if (typeof calendarInput?.showPicker === 'function') calendarInput.showPicker();
+    else calendarInput?.click();
+  });
+  calendarInput?.addEventListener('change', () => {
+    if (!calendarInput.value) return;
+    if (liveMode) exitLiveMode(row);
+    row.querySelectorAll('.date-btn').forEach(button => button.classList.remove('active'));
+    currentDate = calendarInput.value;
+    currentPage = 1;
+    applyFilters();
   });
 }
 
@@ -447,4 +462,3 @@ async function loadHomepageArticle() {
 </script>
 </body>
 </html>
-

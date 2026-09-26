@@ -166,11 +166,13 @@ function applyFilters() {
 function renderPagination(pg) {
   const el = document.getElementById('pagination');
   if (!pg || pg.totalPages <= 1) { el.innerHTML = ''; return; }
-  const pages = [];
+  const pages = [`<button type="button" class="page-btn" data-page="${pg.page - 1}" ${pg.page <= 1 ? 'disabled' : ''}>Previous</button>`];
   for (let i = 1; i <= pg.totalPages; i++) {
-    pages.push(`<button class="page-btn ${i === pg.page ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`);
+    pages.push(`<button type="button" class="page-btn ${i === pg.page ? 'active' : ''}" data-page="${i}">${i}</button>`);
   }
+  pages.push(`<button type="button" class="page-btn" data-page="${pg.page + 1}" ${pg.page >= pg.totalPages ? 'disabled' : ''}>Next</button>`);
   el.innerHTML = pages.join('');
+  el.querySelectorAll('[data-page]:not(:disabled)').forEach(button => button.addEventListener('click', () => goPage(Number(button.dataset.page))));
 }
 
 function goPage(p) {

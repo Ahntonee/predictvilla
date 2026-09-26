@@ -86,6 +86,7 @@
             <button class="category-tab" data-cat="home_win">Home Win</button>
             <button class="category-tab" data-cat="away_win">Away Win</button>
             <button class="category-tab" data-cat="draw">Draw</button>
+            <button class="category-tab" data-cat="corners">Corners</button>
             <button class="category-tab" data-cat="vip">VIP</button>
           </div>
           <!-- Category Select (mobile only) -->
@@ -101,6 +102,7 @@
             <option value="home_win">Home Win</option>
             <option value="away_win">Away Win</option>
             <option value="draw">Draw</option>
+            <option value="corners">Corners</option>
             <option value="vip">VIP</option>
           </select>
 
@@ -227,7 +229,7 @@ function buildDateStrip() {
   const now = new Date();
   const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
-  let html = `<button class="date-strip-btn live-btn" data-date="live" onclick="setDateStrip(this,'live')">
+  let html = `<button type="button" class="date-strip-btn live-btn" data-date="live">
     <span class="material-icons-round" style="font-size:14px;vertical-align:middle">radio_button_checked</span> Live
     <span class="live-count" id="live-count">0</span>
   </button>
@@ -245,19 +247,21 @@ function buildDateStrip() {
       dateKey = d.toISOString().split('T')[0];
     }
     const active = (dateKey === 'today') ? ' active' : '';
-    html += `<button class="date-strip-btn${active}" data-date="${dateKey}" onclick="setDateStrip(this,'${dateKey}')">
+    html += `<button type="button" class="date-strip-btn${active}" data-date="${dateKey}">
       <span class="ds-num">${dayNum}</span>
       <span class="ds-sub">${sub}</span>
     </button>`;
   }
 
   html += `<div class="date-strip-sep"></div>
-  <button class="date-strip-cal" title="Pick date" onclick="openDatePicker()">
+  <button type="button" class="date-strip-cal" id="date-strip-calendar" title="Pick date">
     <span class="material-icons-round" style="font-size:18px">calendar_month</span>
   </button>
   <input type="date" id="date-picker-input" style="position:absolute;opacity:0;pointer-events:none;width:0;height:0">`;
 
   strip.innerHTML = html;
+  strip.querySelectorAll('.date-strip-btn').forEach(button => button.addEventListener('click', () => setDateStrip(button, button.dataset.date)));
+  document.getElementById('date-strip-calendar')?.addEventListener('click', openDatePicker);
   updateLiveCount();
 }
 
@@ -481,11 +485,13 @@ function applyFilters() {
 function renderPagination(pg) {
   const el = document.getElementById('pagination');
   if (!pg || pg.totalPages <= 1) { el.innerHTML = ''; return; }
-  const pages = [];
+  const pages = [`<button type="button" class="page-btn" data-page="${pg.page - 1}" ${pg.page <= 1 ? 'disabled' : ''}>Previous</button>`];
   for (let i = 1; i <= pg.totalPages; i++) {
-    pages.push(`<button class="page-btn ${i === pg.page ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`);
+    pages.push(`<button type="button" class="page-btn ${i === pg.page ? 'active' : ''}" data-page="${i}">${i}</button>`);
   }
+  pages.push(`<button type="button" class="page-btn" data-page="${pg.page + 1}" ${pg.page >= pg.totalPages ? 'disabled' : ''}>Next</button>`);
   el.innerHTML = pages.join('');
+  el.querySelectorAll('[data-page]:not(:disabled)').forEach(button => button.addEventListener('click', () => goPage(Number(button.dataset.page))));
 }
 
 function goPage(p) {

@@ -148,8 +148,14 @@
   window.renderPager = function (el, page, total, limit, cb) {
     const pages = Math.ceil(total / limit);
     if (pages <= 1) { el.innerHTML = ''; return; }
-    el.innerHTML = Array.from({ length: pages }, (_, i) => i + 1)
-      .map(p => `<button class="btn btn-sm ${p === page ? 'btn-primary' : 'btn-ghost'}" onclick="(${cb})(${p})">${p}</button>`)
-      .join('');
+    const callback = typeof cb === 'function' ? cb : window[cb];
+    const visible = Array.from({ length: pages }, (_, i) => i + 1)
+      .filter(p => pages <= 9 || p === 1 || p === pages || Math.abs(p - page) <= 2);
+    el.innerHTML = `<button type="button" class="btn btn-sm btn-ghost" data-pager-page="${page - 1}" ${page <= 1 ? 'disabled' : ''}>Previous</button>`
+      + visible.map((p, index) => `${index && p - visible[index - 1] > 1 ? '<span class="text-soft">…</span>' : ''}<button type="button" class="btn btn-sm ${p === page ? 'btn-primary' : 'btn-ghost'}" data-pager-page="${p}">${p}</button>`).join('')
+      + `<button type="button" class="btn btn-sm btn-ghost" data-pager-page="${page + 1}" ${page >= pages ? 'disabled' : ''}>Next</button>`;
+    el.querySelectorAll('[data-pager-page]:not(:disabled)').forEach(button => {
+      button.addEventListener('click', () => callback?.(Number(button.dataset.pagerPage)));
+    });
   };
 })();
