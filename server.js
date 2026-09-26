@@ -305,7 +305,7 @@ app.get('/sitemap.xml', async (req, res) => {
   const [preds] = await pool.query('SELECT slug, updated_at FROM predictions WHERE published_at IS NOT NULL ORDER BY updated_at DESC LIMIT 500');
   const [posts] = await pool.query('SELECT slug, updated_at FROM blog_posts WHERE is_published=1 ORDER BY updated_at DESC LIMIT 200');
   const [activeLeagues] = await pool.query('SELECT name FROM leagues WHERE is_active = 1');
-  const [seoArticles] = await pool.query('SELECT slug, updated_at FROM seo_article_pages WHERE is_published=1 ORDER BY updated_at DESC LIMIT 200').catch(() => [[]]);
+  const [seoArticles] = await pool.query('SELECT slug, target_url, updated_at FROM seo_article_pages WHERE is_published=1 ORDER BY updated_at DESC LIMIT 200').catch(() => [[]]);
 
   const today = new Date().toISOString();
   const staticPriorities = {
@@ -325,7 +325,7 @@ app.get('/sitemap.xml', async (req, res) => {
     ...leagueUrls,
     ...preds.map(p => `<url><loc>${base}/prediction/${p.slug}</loc><lastmod>${new Date(p.updated_at).toISOString()}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority><image:image><image:loc>${base}/images/logo.png</image:loc><image:title>${esc(p.home_team)} vs ${esc(p.away_team)}</image:title></image:image></url>`),
     ...posts.map(p => `<url><loc>${base}/blog/${p.slug}</loc><lastmod>${new Date(p.updated_at).toISOString()}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>`),
-    ...seoArticles.map(p => `<url><loc>${base}/tips/${p.slug}</loc><lastmod>${new Date(p.updated_at).toISOString()}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`),
+    ...seoArticles.filter(p => !String(p.target_url || '').startsWith('/predictions/')).map(p => `<url><loc>${base}/tips/${p.slug}</loc><lastmod>${new Date(p.updated_at).toISOString()}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`),
   ];
   const xml = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">${urls.join('')}</urlset>`;
   sitemapCache = { xml, at: Date.now() };
@@ -357,6 +357,27 @@ function readHtmlFile(filePath) {
   return _htmlCache[filePath];
 }
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function renderSeoMarkdown(markdown) {
+  const lines = String(markdown || '').split(/\r?\n/);
+  let html = '', inList = false;
+  const inline = text => esc(text).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (line.startsWith('- ')) {
+      if (!inList) { html += '<ul>'; inList = true; }
+      html += `<li>${inline(line.slice(2))}</li>`;
+      continue;
+    }
+    if (inList) { html += '</ul>'; inList = false; }
+    if (!line) continue;
+    if (line.startsWith('### ')) html += `<h3>${inline(line.slice(4))}</h3>`;
+    else if (line.startsWith('## ')) html += `<h2>${inline(line.slice(3))}</h2>`;
+    else if (line.startsWith('# ')) html += `<h2>${inline(line.slice(2))}</h2>`;
+    else html += `<p>${inline(line)}</p>`;
+  }
+  if (inList) html += '</ul>';
+  return html;
+}
 
 app.use(async (req, res, next) => {
   if (req.method !== 'GET') return next();
@@ -535,18 +556,28 @@ app.get('/predictions/:market', async (req, res) => {
   }
   const meta = MARKET_PAGES[req.params.market];
   if (!meta) return res.status(404).sendFile(path.join(__dirname, 'public', 'index.html'));
+  const [seoRows] = await pool.query(
+    `SELECT * FROM seo_article_pages
+     WHERE is_published = 1 AND (target_url = ? OR slug = ?)
+     ORDER BY (target_url = ?) DESC LIMIT 1`,
+    [`/predictions/${req.params.market}`, req.params.market, `/predictions/${req.params.market}`]
+  ).catch(() => [[]]);
+  const seoPage = seoRows[0] || null;
   const canonical = `${process.env.SITE_URL || 'https://www.predictvilla.com'}/predictions/${req.params.market}`;
   let html = getMarketTemplate()
-    .replace(/__META_TITLE__/g,   meta.title)
-    .replace(/__META_DESC__/g,    meta.description)
-    .replace(/__META_KEYWORDS__/g, meta.keywords)
+    .replace(/__META_TITLE__/g,   esc(seoPage?.meta_title || seoPage?.title || meta.title))
+    .replace(/__META_DESC__/g,    esc(seoPage?.meta_description || meta.description))
+    .replace(/__META_KEYWORDS__/g, esc(seoPage?.meta_keywords || meta.keywords))
     .replace(/__CANONICAL__/g,    canonical)
     .replace(/__MARKET_SLUG__/g,  req.params.market)
     .replace(/__MARKET_LABEL__/g, meta.label)
     .replace(/__MARKET_API__/g,   meta.api)
     .replace(/__TIP_API__/g,      meta.tip || '')
     .replace(/__TIP_PREFIX__/g,   meta.tipPrefix || '')
-    .replace(/__MARKET_INTRO__/g, meta.intro);
+    .replace(/__MARKET_INTRO__/g, esc(meta.intro))
+    .replace(/__SEO_ARTICLE_STYLE__/g, seoPage?.content ? '' : 'display:none;')
+    .replace(/__SEO_ARTICLE_TITLE__/g, esc(seoPage?.title || `${meta.label} Predictions`))
+    .replace(/__SEO_ARTICLE_HTML__/g, () => renderSeoMarkdown(seoPage?.content));
   html = await injectStaticShell(html, req.path);
   res.send(html);
 });

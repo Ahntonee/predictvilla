@@ -322,21 +322,14 @@ function buildDatePicker() {
   const row = document.getElementById('date-picker-row');
   if (!row) return;
   const today = new Date();
-  const days = [];
-  const cursor = new Date(today);
-  cursor.setDate(cursor.getDate() - 1);
-  while (cursor.getDay() === 0 || cursor.getDay() === 6) cursor.setDate(cursor.getDate() - 1);
-  while (days.length < 6) {
-    if (cursor.getDay() !== 0 && cursor.getDay() !== 6) days.push(new Date(cursor));
-    cursor.setDate(cursor.getDate() + 1);
-  }
+  const days = getPredictionDateRange(today);
   const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const todayStr = today.toISOString().slice(0,10);
-  const selectedDate = (today.getDay() === 0 || today.getDay() === 6) ? days[0].toISOString().slice(0,10) : todayStr;
+  const todayStr = localDateKey(today);
+  const selectedDate = todayStr;
   currentDate = selectedDate;
   row.innerHTML = `<button type="button" class="live-date-btn" id="live-date-btn"><span class="live-pulse"></span>Live</button>` +
     days.map(d => {
-      const iso = d.toISOString().slice(0,10);
+      const iso = localDateKey(d);
       const isToday = iso === todayStr;
       const label = isToday ? 'TODAY' : dayNames[d.getDay()];
       const active = iso === selectedDate ? 'active' : '';
@@ -364,8 +357,7 @@ function buildDatePicker() {
   });
   const calendarInput = document.getElementById('home-date-input');
   document.getElementById('home-calendar-btn')?.addEventListener('click', () => {
-    if (typeof calendarInput?.showPicker === 'function') calendarInput.showPicker();
-    else calendarInput?.click();
+    openNativeDatePicker(calendarInput);
   });
   calendarInput?.addEventListener('change', () => {
     if (!calendarInput.value) return;
@@ -444,7 +436,7 @@ async function loadMore() {
 }
 
 setInterval(() => {
-  const isToday = currentDate === new Date().toISOString().slice(0,10);
+  const isToday = currentDate === localDateKey(new Date());
   if (!isToday) return;
   const grid = document.getElementById('predictions-grid');
   if (grid) loadPredictions({ date: currentDate, category: currentCat, page: 1 }, grid);

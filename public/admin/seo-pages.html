@@ -39,7 +39,7 @@
 
     <div class="admin-card mb-3" style="padding:14px 16px;background:rgba(2,245,161,.06);border-color:rgba(2,245,161,.2)">
       <span class="material-icons-round" style="color:var(--primary);vertical-align:middle;margin-right:6px">info</span>
-      <span style="font-size:13px;color:var(--text-soft)">SEO pages live at <strong style="color:var(--text)">/tips/your-slug</strong> — visible to search engines but styled identically to the site. They can embed today's live predictions automatically.</span>
+      <span style="font-size:13px;color:var(--text-soft)">Edit the on-page SEO article shown directly on each existing <strong style="color:var(--text)">/predictions/category</strong> page.</span>
     </div>
 
     <div class="admin-card" style="padding:0;overflow-x:auto">
@@ -75,6 +75,7 @@
     </div>
 
     <input type="hidden" id="edit-id">
+    <input type="hidden" id="f-target-url">
     <div class="seo-editor-wrap">
       <!-- Content -->
       <div>
@@ -86,10 +87,10 @@
           <div class="form-group">
             <label class="form-label">URL Slug * <span class="text-soft">(auto-generated)</span></label>
             <div class="flex gap-2" style="align-items:center">
-              <span style="font-size:13px;color:var(--text-soft)">predictvilla.com/tips/</span>
+              <span style="font-size:13px;color:var(--text-soft)">predictvilla.com/predictions/</span>
               <input type="text" class="form-control" id="f-slug" placeholder="best-football-predictions-today" style="flex:1">
             </div>
-            <div class="preview-url" id="slug-preview">/tips/</div>
+            <div class="preview-url" id="slug-preview">/predictions/</div>
           </div>
         </div>
 
@@ -132,21 +133,15 @@
             <label class="form-label">Market (optional)</label>
             <select class="form-control" id="f-market">
               <option value="">All markets</option>
-              <option value="Over 1.5 Goals">Over 1.5 Goals</option>
-              <option value="Over 2.5 Goals">Over 2.5 Goals</option>
-              <option value="Over 3.5 Goals">Over 3.5 Goals</option>
-              <option value="Under 3.5 Goals">Under 3.5 Goals</option>
-              <option value="Over 4.5 Goals">Over 4.5 Goals</option>
-              <option value="Under 4.5 Goals">Under 4.5 Goals</option>
-              <option value="BTTS - Yes">BTTS - Yes</option>
-              <option value="Home Win">Home Win</option>
-              <option value="Away Win">Away Win</option>
-              <option value="Draw">Draw</option>
+              <option value="1X2">1X2</option>
+              <option value="Over/Under">Over/Under</option>
+              <option value="BTTS">BTTS</option>
               <option value="Double Chance">Double Chance</option>
               <option value="Draw No Bet">Draw No Bet</option>
               <option value="First Half Result">First Half Result</option>
-              <option value="Corners">Corners (Over/Under)</option>
+              <option value="Corners">Corners</option>
               <option value="Correct Score">Correct Score</option>
+              <option value="Accumulator">Accumulator</option>
             </select>
           </div>
           <p style="font-size:12px;color:var(--text-soft)">When set, only predictions matching this market appear below the article.</p>
@@ -189,7 +184,7 @@ async function loadPages() {
   document.getElementById('pages-body').innerHTML = pages.length
     ? pages.map(p => `<tr>
         <td><strong style="font-size:13px">${escHtml(p.title)}</strong></td>
-        <td style="font-size:12px"><a href="/tips/${escHtml(p.slug)}" target="_blank" style="color:var(--primary)">/tips/${escHtml(p.slug)}</a></td>
+        <td style="font-size:12px"><a href="${escHtml(p.target_url || `/predictions/${p.slug}`)}" target="_blank" style="color:var(--primary)">${escHtml(p.target_url || `/predictions/${p.slug}`)}</a></td>
         <td style="font-size:12px;color:var(--text-soft)">${escHtml(p.market||'All')}</td>
         <td>${p.show_live_predictions ? '<span class="badge badge-win">Yes</span>' : '<span class="badge" style="background:var(--bg);border:1px solid var(--border);color:var(--text-soft)">No</span>'}</td>
         <td>${p.is_published ? '<span class="badge badge-win">Published</span>' : '<span class="badge badge-loss">Draft</span>'}</td>
@@ -197,7 +192,7 @@ async function loadPages() {
         <td>
           <div class="flex gap-1">
             <button class="btn btn-sm btn-ghost" onclick="editPage(${p.id})" title="Edit"><span class="material-icons-round" style="font-size:14px">edit</span></button>
-            <a href="/tips/${escHtml(p.slug)}" target="_blank" class="btn btn-sm btn-ghost" title="View"><span class="material-icons-round" style="font-size:14px">open_in_new</span></a>
+            <a href="${escHtml(p.target_url || `/predictions/${p.slug}`)}" target="_blank" class="btn btn-sm btn-ghost" title="View"><span class="material-icons-round" style="font-size:14px">open_in_new</span></a>
             <button class="btn btn-sm btn-ghost" style="color:var(--danger)" onclick="deletePage(${p.id})" title="Delete"><span class="material-icons-round" style="font-size:14px">delete</span></button>
           </div>
         </td>
@@ -210,6 +205,7 @@ function showEditor(data) {
   document.getElementById('editor-view').style.display = 'block';
   document.getElementById('editor-title').textContent = data ? 'Edit Page' : 'New SEO Page';
   document.getElementById('edit-id').value = data?.id || '';
+  document.getElementById('f-target-url').value = data?.target_url || '';
   document.getElementById('f-title').value = data?.title || '';
   document.getElementById('f-slug').value = data?.slug || '';
   document.getElementById('f-desc').value = data?.meta_description || '';
@@ -229,7 +225,7 @@ function showEditor(data) {
   updateSlugPreview();
 
   if (data?.id) {
-    const url = `/tips/${data.slug}`;
+    const url = data.target_url || `/predictions/${data.slug}`;
     document.getElementById('pub-actions').style.display = 'block';
     document.getElementById('pub-url-display').textContent = url;
     document.getElementById('pub-view-link').href = url;
@@ -258,7 +254,7 @@ function autoSlug() {
 }
 function updateSlugPreview() {
   const slug = document.getElementById('f-slug').value;
-  document.getElementById('slug-preview').textContent = `/tips/${slug}`;
+  document.getElementById('slug-preview').textContent = `/predictions/${slug}`;
 }
 
 function fmt(cmd) { document.execCommand(cmd, false, null); document.getElementById('f-content').focus(); }
@@ -299,6 +295,7 @@ async function savePage() {
     meta_description: document.getElementById('f-desc').value.trim() || null,
     meta_keywords: document.getElementById('f-kw').value.trim() || null,
     content: content || null,
+    target_url: document.getElementById('f-target-url').value || `/predictions/${document.getElementById('f-slug').value.trim()}`,
     market: document.getElementById('f-market').value || null,
     is_published: document.getElementById('f-published').checked,
     show_live_predictions: document.getElementById('f-live-preds').checked,
@@ -313,8 +310,10 @@ async function savePage() {
     updateSlugPreview();
     const slug = document.getElementById('f-slug').value;
     document.getElementById('pub-actions').style.display = 'block';
-    document.getElementById('pub-url-display').textContent = `/tips/${slug}`;
-    document.getElementById('pub-view-link').href = `/tips/${slug}`;
+    const pageUrl = body.target_url;
+    document.getElementById('f-target-url').value = pageUrl;
+    document.getElementById('pub-url-display').textContent = pageUrl;
+    document.getElementById('pub-view-link').href = pageUrl;
   } else showToast(d.message || 'Error', 'error');
 }
 

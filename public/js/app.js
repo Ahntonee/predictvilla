@@ -1651,3 +1651,33 @@ async function loadUpcomingPicks(container) {
     if (sectionWrap) sectionWrap.style.display = 'none';
   }
 }
+function localDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+// Date navigation always includes yesterday, today (including weekends), and
+// every following calendar day through the coming Friday.
+function getPredictionDateRange(now = new Date()) {
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  const daysUntilFriday = (5 - now.getDay() + 7) % 7;
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysUntilFriday);
+  const dates = [];
+  for (const cursor = new Date(start); cursor <= end; cursor.setDate(cursor.getDate() + 1)) {
+    dates.push(new Date(cursor));
+  }
+  return dates;
+}
+
+function openNativeDatePicker(input) {
+  if (!input) return;
+  try {
+    input.focus({ preventScroll: true });
+    if (typeof input.showPicker === 'function') input.showPicker();
+    else input.click();
+  } catch (_) {
+    input.click();
+  }
+}

@@ -583,6 +583,11 @@ async function migrate() {
     );
   }
 
+  // Existing prediction-category routes each have one editable on-page article.
+  const { removeIncorrectTipPages, seedMarketSeoPages } = require('../services/marketSeoPages');
+  await removeIncorrectTipPages(db);
+  await seedMarketSeoPages(db);
+
   console.log('[Migrate] Seed data inserted');
   process.exitCode = 0;
 }

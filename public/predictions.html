@@ -228,16 +228,9 @@ function buildDateStrip() {
   if (!strip) return;
   const now = new Date();
   const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const visibleDates = [];
-  const cursor = new Date(now);
-  cursor.setDate(cursor.getDate() - 1);
-  while (cursor.getDay() === 0 || cursor.getDay() === 6) cursor.setDate(cursor.getDate() - 1);
-  while (visibleDates.length < 6) {
-    if (cursor.getDay() !== 0 && cursor.getDay() !== 6) visibleDates.push(new Date(cursor));
-    cursor.setDate(cursor.getDate() + 1);
-  }
-  const todayIso = now.toISOString().split('T')[0];
-  const selectedIso = (now.getDay() === 0 || now.getDay() === 6) ? visibleDates[0].toISOString().split('T')[0] : todayIso;
+  const visibleDates = getPredictionDateRange(now);
+  const todayIso = localDateKey(now);
+  const selectedIso = todayIso;
   currentDate = selectedIso;
 
   let html = `<button type="button" class="date-strip-btn live-btn" data-date="live">
@@ -248,7 +241,7 @@ function buildDateStrip() {
 
   for (const d of visibleDates) {
     let sub;
-    const dateKey = d.toISOString().split('T')[0];
+    const dateKey = localDateKey(d);
     const dayNum = d.getDate();
     sub = dateKey === todayIso ? 'TODAY' : days[d.getDay()];
     const active = dateKey === selectedIso ? ' active' : '';
@@ -327,7 +320,7 @@ function openDatePicker() {
     currentPage = 1;
     applyFilters();
   };
-  inp.showPicker ? inp.showPicker() : inp.click();
+  openNativeDatePicker(inp);
 }
 
 /* Custom select instances */
