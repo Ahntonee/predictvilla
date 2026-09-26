@@ -106,13 +106,22 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function loadStats() {
-  const d = await api('/admin/dashboard');
-  const s = d.data || {};
+  // Combines subscription and revenue endpoints into the four summary cards.
+  const [dashboard, revenue, churn] = await Promise.all([
+    api('/admin/dashboard'),
+    api('/analytics/revenue'),
+    api('/analytics/revenue/churn'),
+  ]);
+  const d = dashboard.data || {};
+  const r = revenue.data || {};
+  const churnRows = churn.data?.data || [];
+  const latestChurn = churnRows[churnRows.length - 1] || {};
+  const churnRate = latestChurn.total ? (Number(latestChurn.churned || 0) / Number(latestChurn.total) * 100) : 0;
   document.getElementById('sub-stats').innerHTML = [
-    { icon:'workspace_premium', val:s.vip_users||0, label:'Active VIPs' },
-    { icon:'today', val:s.new_subs_month||0, label:'New This Month' },
-    { icon:'payments', val:'₦'+(s.revenue_month||0).toLocaleString(), label:'Revenue This Month' },
-    { icon:'trending_down', val:(s.churn_rate||0)+'%', label:'Churn Rate' },
+    { icon:'workspace_premium', val:d.subscribers?.active||0, label:'Active VIPs' },
+    { icon:'today', val:r.thisMonth?.count||0, label:'New This Month' },
+    { icon:'payments', val:'₦'+Number(r.thisMonth?.revenue||0).toLocaleString(), label:'Revenue This Month' },
+    { icon:'trending_down', val:churnRate.toFixed(1)+'%', label:'Churn Rate' },
   ].map(i=>`<div class="admin-stat"><div style="font-size:20px"><span class="material-icons-round" style="font-size:20px">${i.icon}</span></div><div class="sv">${i.val}</div><div class="sl">${i.label}</div></div>`).join('');
 }
 

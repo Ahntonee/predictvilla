@@ -741,10 +741,11 @@ function trackAdClick(id) {
 
 // ── AdSense Inject ────────────────────────────────────────────────────────────
 async function injectAdSense() {
+  // Loads AdSense using the public configuration endpoint instead of an admin-only route.
   try {
-    const r = await fetch('/api/admin/settings');
+    const r = await fetch('/api/config/public');
     const data = await r.json();
-    const clientId = data.data?.settings?.adsense_client_id;
+    const clientId = data.adsenseClientId;
     if (clientId) {
       const s = document.createElement('script');
       s.async = true;

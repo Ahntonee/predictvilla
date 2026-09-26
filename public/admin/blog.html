@@ -128,12 +128,13 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function loadPosts(page = 1) {
+  // Loads the admin post list, including drafts, using the protected admin route.
   currentPage = page;
   const search = document.getElementById('b-search').value;
   const cat = document.getElementById('b-cat').value;
   const pub = document.getElementById('b-pub').value;
   const params = new URLSearchParams({ page, limit: 20, ...(search && { search }), ...(cat && { category: cat }), ...(pub !== '' && { is_published: pub }) });
-  const d = await api(`/blog?${params}`);
+  const d = await api(`/blog/admin/list?${params}`);
   const posts = d.data?.posts || [];
   document.getElementById('posts-body').innerHTML = posts.length
     ? posts.map(p => `<tr>
@@ -238,11 +239,14 @@ function previewImg() {
 }
 
 async function editPost(id) {
-  const d = await api(`/blog/${id}`);
-  showEditor(d.data?.post);
+  // Loads a post by ID and opens it in the admin editor.
+  const d = await api(`/blog/admin/id/${id}`);
+  if (d.success && d.data?.post) showEditor(d.data.post);
+  else showToast(d.message || 'Could not load post', 'error');
 }
 
 async function savePost() {
+  // Creates or updates a blog post through the authenticated admin endpoints.
   const id = document.getElementById('edit-id').value;
   const slugVal = document.getElementById('p-slug').value.trim();
   const body = {
@@ -258,19 +262,21 @@ async function savePost() {
     featured_image: document.getElementById('p-img-data').value || null,
   };
   if (!body.title || !body.content) { showToast('Title and content required', 'error'); return; }
-  const d = id ? await api(`/blog/${id}`, { method: 'PUT', body: JSON.stringify(body) }) : await api('/blog', { method: 'POST', body: JSON.stringify(body) });
+  const d = id ? await api(`/blog/admin/${id}`, { method: 'PUT', body: JSON.stringify(body) }) : await api('/blog/admin', { method: 'POST', body: JSON.stringify(body) });
   if (d.success) { showToast('Saved!', 'success'); hideEditor(); loadPosts(currentPage); }
   else showToast(d.message, 'error');
 }
 
 async function togglePub(id, cur) {
-  await api(`/blog/${id}/publish`, { method: 'PUT', body: JSON.stringify({ is_published: cur ? 0 : 1 }) });
+  // Toggles a post between published and draft status.
+  await api(`/blog/admin/${id}/publish`, { method: 'POST', body: JSON.stringify({ is_published: cur ? 0 : 1 }) });
   loadPosts(currentPage);
 }
 
 async function deletePost(id) {
+  // Permanently removes a blog post after administrator confirmation.
   if (!confirm('Delete this post?')) return;
-  const d = await api(`/blog/${id}`, { method: 'DELETE' });
+  const d = await api(`/blog/admin/${id}`, { method: 'DELETE' });
   if (d.success) { showToast('Deleted', 'info'); loadPosts(currentPage); }
   else showToast(d.message, 'error');
 }

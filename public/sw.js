@@ -1,4 +1,4 @@
-const CACHE = 'pv-v2';
+const CACHE = 'pv-v3';
 const STATIC_ASSETS = [
   '/',
   '/predictions.html',

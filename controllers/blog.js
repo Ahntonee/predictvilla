@@ -21,6 +21,34 @@ exports.list = asyncHandler(async (req, res) => {
   return successResponse(res, { posts: rows, pagination: paginate(countRows[0].cnt, page, limit) });
 });
 
+// Lists all blog posts for the admin editor, including drafts and filter totals.
+exports.listAdmin = asyncHandler(async (req, res) => {
+  const { page, limit, offset } = parsePagination(req.query);
+  const { category, is_published, search } = req.query;
+  const where = [];
+  const params = [];
+  if (category) { where.push('category = ?'); params.push(category); }
+  if (is_published === '1' || is_published === '0') { where.push('is_published = ?'); params.push(Number(is_published)); }
+  if (search) { where.push('(title LIKE ? OR excerpt LIKE ?)'); params.push(`%${search}%`, `%${search}%`); }
+  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+  const [[count]] = await pool.query(`SELECT COUNT(*) AS total FROM blog_posts ${whereSql}`, params);
+  const [posts] = await pool.query(
+    `SELECT id, slug, title, excerpt, featured_image, category, author_name,
+            is_published, published_at, created_at
+     FROM blog_posts ${whereSql}
+     ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+    [...params, limit, offset]
+  );
+  return successResponse(res, { posts, total: count.total, pagination: paginate(count.total, page, limit) });
+});
+
+// Loads one post by numeric ID for the authenticated admin editor.
+exports.getById = asyncHandler(async (req, res) => {
+  const [rows] = await pool.query('SELECT * FROM blog_posts WHERE id=? LIMIT 1', [req.params.id]);
+  if (!rows.length) return errorResponse(res, 'Post not found', 404);
+  return successResponse(res, { post: rows[0] });
+});
+
 exports.getBySlug = asyncHandler(async (req, res) => {
   const [rows] = await pool.query('SELECT * FROM blog_posts WHERE slug=? AND is_published=1', [req.params.slug]);
   if (!rows.length) return errorResponse(res, 'Post not found', 404);
@@ -80,8 +108,13 @@ exports.remove = asyncHandler(async (req, res) => {
 });
 
 exports.publish = asyncHandler(async (req, res) => {
-  await pool.query('UPDATE blog_posts SET is_published=1, published_at=NOW() WHERE id=?', [req.params.id]);
-  return successResponse(res, null, 'Published');
+  // Publishes or unpublishes a post from the admin status toggle.
+  const isPublished = req.body?.is_published !== false && Number(req.body?.is_published) !== 0;
+  await pool.query(
+    'UPDATE blog_posts SET is_published=?, published_at=IF(?, COALESCE(published_at, NOW()), NULL) WHERE id=?',
+    [isPublished ? 1 : 0, isPublished ? 1 : 0, req.params.id]
+  );
+  return successResponse(res, null, isPublished ? 'Published' : 'Moved to draft');
 });
 
 exports.uploadImage = asyncHandler(async (req, res) => {

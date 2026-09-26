@@ -67,19 +67,28 @@ exports.adminGrant = asyncHandler(async (req, res) => {
 });
 
 exports.adminList = asyncHandler(async (req, res) => {
-  const { status, plan, page = 1, limit = 20 } = req.query;
+  // Lists subscriptions for admin filtering, searching and pagination.
+  const { status, plan, search, page = 1, limit = 20 } = req.query;
   const offset = (page - 1) * limit;
   let where = [];
   const params = [];
   if (status) { where.push('s.status=?'); params.push(status); }
   if (plan) { where.push('s.plan=?'); params.push(plan); }
+  if (search) {
+    where.push('(u.name LIKE ? OR u.email LIKE ?)');
+    params.push(`%${search}%`, `%${search}%`);
+  }
   const whereStr = where.length ? 'WHERE ' + where.join(' AND ') : '';
+  const [[count]] = await pool.query(
+    `SELECT COUNT(*) AS total FROM subscriptions s JOIN users u ON u.id=s.user_id ${whereStr}`,
+    params
+  );
   const [rows] = await pool.query(
     `SELECT s.*, u.name, u.email FROM subscriptions s JOIN users u ON u.id=s.user_id
      ${whereStr} ORDER BY s.created_at DESC LIMIT ? OFFSET ?`,
     [...params, parseInt(limit), parseInt(offset)]
   );
-  return successResponse(res, { subscriptions: rows });
+  return successResponse(res, { subscriptions: rows, total: count.total });
 });
 
 exports.adminExtend = asyncHandler(async (req, res) => {

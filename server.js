@@ -101,6 +101,7 @@ app.use('/api/admin/blog', require('./routes/blog'));
 app.use('/api/subscriptions', require('./routes/subscriptions'));
 app.use('/api/webhooks', require('./routes/webhooks'));
 app.use('/api/comments', require('./routes/comments'));
+app.use('/api/contact', require('./routes/contact'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/admin/seo', require('./routes/seo'));
 app.use('/api/admin', require('./routes/admin'));
@@ -118,8 +119,15 @@ app.use('/api/admin/seo-pages', require('./routes/seoPages'));
 app.use('/api', require('./routes/standings'));
 
 // Public config (safe keys only — never expose secrets)
-app.get('/api/config/public', (req, res) => {
-  res.json({ paystackKey: process.env.PAYSTACK_PUBLIC_KEY || '' });
+app.get('/api/config/public', async (req, res) => {
+  // Exposes only browser-safe integration identifiers; secret keys remain server-side.
+  const [[adsenseSetting]] = await pool.query(
+    "SELECT setting_value FROM site_settings WHERE setting_key='adsense_client_id' LIMIT 1"
+  ).catch(() => [[null]]);
+  res.json({
+    paystackKey: process.env.PAYSTACK_PUBLIC_KEY || '',
+    adsenseClientId: adsenseSetting?.setting_value || process.env.ADSENSE_CLIENT_ID || '',
+  });
 });
 
 // Public SEO article page data
@@ -893,8 +901,16 @@ app.post('/api/predictions/:id/vote', async (req, res) => {
 
 // ─── Static files ────────────────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public'), {
-  maxAge: isProd ? '1y' : 0,
+  maxAge: 0,
   etag: true,
+  // Revalidate deployable app code; only fingerprint-independent media is cached long-term.
+  setHeaders(res, filePath) {
+    if (/\.(png|svg|webp|jpg|jpeg|woff2?|ico)$/i.test(filePath)) {
+      res.setHeader('Cache-Control', isProd ? 'public, max-age=31536000' : 'no-cache');
+    } else {
+      res.setHeader('Cache-Control', 'no-cache');
+    }
+  },
 }));
 
 // ─── Admin path guard ─────────────────────────────────────────────────────────

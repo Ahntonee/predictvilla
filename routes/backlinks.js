@@ -36,10 +36,21 @@ router.post('/', authenticate, requireAdmin, asyncHandler(async (req, res) => {
 
 // Admin: update
 router.put('/:id', authenticate, requireAdmin, asyncHandler(async (req, res) => {
+  // Merges partial toggle requests with the stored backlink instead of clearing required fields.
   const { keyword, url, site_name, category, expires_at, is_active } = req.body;
+  const [[existing]] = await pool.query('SELECT * FROM backlinks WHERE id=?', [req.params.id]);
+  if (!existing) return errorResponse(res, 'Backlink not found', 404);
   await pool.query(
     `UPDATE backlinks SET keyword=?, url=?, site_name=?, category=?, expires_at=?, is_active=? WHERE id=?`,
-    [keyword, url, site_name || null, category || 'general', expires_at || null, is_active !== undefined ? is_active : 1, req.params.id]
+    [
+      keyword ?? existing.keyword,
+      url ?? existing.url,
+      site_name !== undefined ? (site_name || null) : existing.site_name,
+      category ?? existing.category,
+      expires_at !== undefined ? (expires_at || null) : existing.expires_at,
+      is_active !== undefined ? is_active : existing.is_active,
+      req.params.id,
+    ]
   );
   return successResponse(res, null, 'Backlink updated');
 }));

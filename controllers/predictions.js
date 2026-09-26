@@ -120,14 +120,34 @@ exports.recentWins = asyncHandler(async (req, res) => {
 });
 
 exports.getStats = asyncHandler(async (req, res) => {
+  // Returns public headline statistics plus category-level performance for admin reporting.
   const [stats] = await pool.query("SELECT stat_key, stat_value FROM accuracy_stats WHERE stat_key IN ('overall_win_rate','vip_win_rate','total_predictions','total_won')");
   const [overrides] = await pool.query('SELECT stat_key, stat_value FROM site_stat_overrides');
   const [leagueCount] = await pool.query('SELECT COUNT(*) as cnt FROM leagues WHERE is_active=1');
   const [todayCount] = await pool.query("SELECT COUNT(*) as cnt FROM predictions WHERE DATE(match_date) = CURDATE() AND published_at IS NOT NULL");
+  const [categoryRows] = await pool.query(
+    `SELECT category, COUNT(*) AS total,
+            SUM(result='won') AS won, SUM(result='lost') AS lost, SUM(result='void') AS void_count,
+            ROUND(AVG(confidence_score), 1) AS avg_confidence
+     FROM predictions
+     WHERE category IS NOT NULL AND category != ''
+     GROUP BY category ORDER BY total DESC`
+  );
 
   const statMap = {};
   stats.forEach(s => { statMap[s.stat_key] = s.stat_value; });
   overrides.forEach(o => { statMap[o.stat_key] = o.stat_value; });
+
+  const byCategory = {};
+  categoryRows.forEach(row => {
+    byCategory[row.category] = {
+      total: Number(row.total) || 0,
+      won: Number(row.won) || 0,
+      lost: Number(row.lost) || 0,
+      void: Number(row.void_count) || 0,
+      avg_confidence: Number(row.avg_confidence) || 0,
+    };
+  });
 
   return successResponse(res, {
     winRate: statMap.overall_win_rate || '82',
@@ -136,6 +156,7 @@ exports.getStats = asyncHandler(async (req, res) => {
     totalWon: statMap.total_won || 0,
     tipsToday: todayCount[0].cnt,
     leaguesCovered: leagueCount[0].cnt,
+    byCategory,
   });
 });
 

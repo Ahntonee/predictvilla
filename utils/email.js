@@ -128,10 +128,24 @@ async function sendVipWelcomeEmail({ name, email, plan, telegramLink }) {
   });
 }
 
+// Forwards a validated website contact message without rendering user input as HTML.
+async function sendContactEmail({ name, email, subject, message }) {
+  const supportEmail = process.env.CONTACT_EMAIL || process.env.SMTP_USER;
+  if (!supportEmail) throw new Error('Contact email is not configured');
+  await transport.sendMail({
+    from: FROM,
+    to: supportEmail,
+    replyTo: email,
+    subject: `[Predictvilla Contact] ${subject || 'General enquiry'}`,
+    text: `Name: ${name}\nEmail: ${email}\nSubject: ${subject || 'General enquiry'}\n\n${message}`,
+  });
+}
+
 module.exports = {
   sendWelcomeEmail,
   sendVerificationEmail,
   sendPasswordResetEmail,
   sendExpiryReminderEmail,
   sendVipWelcomeEmail,
+  sendContactEmail,
 };

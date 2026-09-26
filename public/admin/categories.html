@@ -33,25 +33,25 @@
 <script>
 injectAdminShell('categories.html');
 
-const CATEGORIES = ['Free','VIP','Banker','Daily Special','Accumulator','Weekend Special','Midweek Special','Early Bird','Last Minute'];
 const COLORS = ['#00f5a1','#00f5a1','#f1fec3','#f1fec3','#ff6b6b','#a29bfe','#fd79a8','#55efc4','#fdcb6e'];
 
 document.addEventListener('DOMContentLoaded', loadCategories);
 
 async function loadCategories() {
+  // Renders the actual prediction categories returned by the statistics API.
   const d = await api('/predictions/stats');
   const bycat = d.data?.byCategory || {};
-  const rows = CATEGORIES.map(cat => {
-    const s = bycat[cat] || {};
+  const rows = Object.entries(bycat).map(([category, s]) => {
     const total = s.total || 0;
     const won = s.won || 0;
     const lost = s.lost || 0;
     const void_ = s.void || 0;
     const rate = total > 0 ? ((won / total) * 100).toFixed(1) : '—';
-    return { cat, total, won, lost, void: void_, rate, avg_conf: s.avg_confidence || 0 };
+    const label = category.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+    return { cat: label, total, won, lost, void: void_, rate, avg_conf: s.avg_confidence || 0 };
   });
 
-  document.getElementById('cat-body').innerHTML = rows.map(r => `<tr>
+  document.getElementById('cat-body').innerHTML = rows.length ? rows.map(r => `<tr>
     <td><strong>${escHtml(r.cat)}</strong></td>
     <td>${r.total}</td>
     <td style="color:var(--primary)">${r.won}</td>
@@ -59,7 +59,7 @@ async function loadCategories() {
     <td class="text-muted">${r.void}</td>
     <td><strong style="color:${parseFloat(r.rate)>=65?'var(--primary)':parseFloat(r.rate)>=50?'var(--accent)':'var(--danger)'}">${r.rate}%</strong></td>
     <td>${r.avg_conf ? parseFloat(r.avg_conf).toFixed(0) : '—'}</td>
-  </tr>`).join('');
+  </tr>`).join('') : '<tr><td colspan="7" class="empty-cell">No category data available</td></tr>';
 
   const ctx = document.getElementById('cat-chart').getContext('2d');
   new Chart(ctx, {

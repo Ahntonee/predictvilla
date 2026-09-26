@@ -96,6 +96,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function sendContact() {
+  // Validates and submits the public contact form to the support email endpoint.
   const name = document.getElementById('c-name').value.trim();
   const email = document.getElementById('c-email').value.trim();
   const subject = document.getElementById('c-subject').value;
