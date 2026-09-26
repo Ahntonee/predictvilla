@@ -209,6 +209,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   buildDatePicker();
   applyFilters();
   loadRecentWins();
+  window.setInterval(() => loadRecentWins(), 5 * 60 * 1000);
   setupCategoryTabs();
   loadHomepageArticle();
   document.getElementById('load-more').addEventListener('click', loadMore);

@@ -146,8 +146,9 @@ function startScheduler() {
     try { await syncOddsForTodayFixtures(); } catch (e) { console.error('[Scheduler] odds sync error:', e.message); }
   });
 
-  // Live score polling every 2 minutes between 10:00 and 23:58 (covers all kick-off zones)
-  cron.schedule('*/2 10-23 * * *', async () => {
+  // Poll throughout the day so late-night/early-morning results are graded and
+  // appear in Recent Wins without waiting for the nightly reconciliation.
+  cron.schedule('*/5 * * * *', async () => {
     try { await syncLiveScores(); } catch (e) { console.error('[Scheduler] live scores error:', e.message); }
   });
 }

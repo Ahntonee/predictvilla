@@ -2847,6 +2847,8 @@ img, video, iframe, embed, object, canvas, svg { max-width: 100%; height: auto; 
 .league-group-header img { width: 18px; height: 18px; object-fit: contain; }
 
 .pred-row-vp {
+  position: relative;
+  overflow: hidden;
   display: grid;
   grid-template-columns: 1fr 190px 1fr;
   align-items: center;
@@ -2871,6 +2873,12 @@ img, video, iframe, embed, object, canvas, svg { max-width: 100%; height: auto; 
 .pred-row-vp.result-won { border-left: 3px solid #22c55e !important; }
 .pred-row-vp.result-lost { border-left: 3px solid #ef4444 !important; }
 .pred-row-vp.result-live { border-left: 3px solid #ff4757 !important; }
+.prediction-card{position:relative;overflow:hidden}
+.prediction-result-watermark{position:absolute;right:18px;top:50%;transform:translateY(-50%) rotate(-8deg);display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;user-select:none;z-index:0;opacity:.12}
+.prediction-result-watermark .material-icons-round{font-size:54px;line-height:1}
+.prediction-result-watermark strong{font-size:18px;letter-spacing:.16em;line-height:1;margin-top:2px}
+.watermark-won{color:#16a34a}.watermark-lost{color:#ef4444}
+.pred-row-vp>*:not(.prediction-result-watermark),.prediction-card>*:not(.prediction-result-watermark){position:relative;z-index:1}
 
 .vp-team { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .vp-away { flex-direction: row-reverse; }

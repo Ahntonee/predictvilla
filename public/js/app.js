@@ -136,11 +136,18 @@ function buildIntelligenceGauge(score) {
 }
 
 // ── Mega Acca Card ────────────────────────────────────────────────────────────
+function buildResultWatermark(result) {
+  if (result === 'won') return `<div class="prediction-result-watermark watermark-won" aria-label="Won"><span class="material-icons-round">emoji_events</span><strong>WON</strong></div>`;
+  if (result === 'lost') return `<div class="prediction-result-watermark watermark-lost" aria-label="Lost"><span class="material-icons-round">close</span><strong>LOST</strong></div>`;
+  return '';
+}
+
 function buildAccaCard(p) {
   const lines = (p.analysis || '').split('\n').filter(l => /^\d+\./.test(l));
   const preview = lines.slice(0, 3);
   const remaining = lines.length - preview.length;
   return `<div class="prediction-card acca-card" data-id="${p.id}">
+    ${buildResultWatermark(p.result)}
     <div style="text-align:center;margin-bottom:10px">
       <span class="badge badge-banker" style="background:linear-gradient(135deg,var(--primary),#00b4d8);font-size:11px">
         <span class="material-icons-round" style="font-size:12px;vertical-align:middle">auto_awesome</span>
@@ -221,6 +228,7 @@ function buildPredictionCard(p, isVip = false) {
     : isLive ? `<span class="badge" style="background:rgba(255,71,87,0.15);color:#ff4757;border:1px solid rgba(255,71,87,0.3)"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#ff4757;animation:livePulse 1s infinite;vertical-align:middle;margin-right:4px"></span>LIVE</span>` : '';
 
   return `<div class="prediction-card ${isBanker ? 'banker-card' : ''} ${p.is_vip && !isBanker ? 'vip-card' : ''}" data-id="${p.id}" data-slug="${escapeHtml(p.slug||String(p.id))}" style="cursor:pointer">
+    ${buildResultWatermark(p.result)}
     ${isBanker ? '<div style="text-align:center;margin-bottom:10px"><span class="badge badge-banker"><span class="material-icons-round" style="font-size:12px;vertical-align:middle">star</span> BANKER OF THE DAY</span></div>' : ''}
     ${p.is_vip && !isBanker ? '<div style="text-align:right;margin-bottom:6px"><span class="badge badge-vip">VIP</span></div>' : ''}
     <div class="prediction-header">
@@ -294,7 +302,7 @@ async function loadRecentWins(containerId = 'recent-wins-list') {
   const el = document.getElementById(containerId);
   if (!el) return;
   try {
-    const r = await fetch('/api/predictions/recent-wins');
+    const r = await fetch(`/api/predictions/recent-wins?_=${Date.now()}`, { cache: 'no-store' });
     const data = await r.json();
     const wins = data.data?.wins || [];
     if (!wins.length) {
@@ -794,6 +802,7 @@ function buildPredictionRow(p, isVip = false) {
   }
 
   return `<a href="/prediction/${escapeHtml(p.slug || p.id)}" class="pred-row-vp ${resultClass}" data-id="${p.id}">
+    ${buildResultWatermark(p.result)}
     <div class="vp-team">
       ${p.home_team_logo
         ? `<img src="${escapeHtml(p.home_team_logo)}" alt="" loading="lazy" class="vp-team-logo" onerror="this.style.display='none'">`

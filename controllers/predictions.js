@@ -104,9 +104,11 @@ exports.list = asyncHandler(async (req, res) => {
 });
 
 exports.recentWins = asyncHandler(async (req, res) => {
+  res.set('Cache-Control', 'no-store, max-age=0');
   const [rows] = await pool.query(
     `SELECT p.id, p.slug, p.home_team, p.away_team, p.tip, p.market,
             p.match_date, p.home_score, p.away_score, p.home_team_logo, p.away_team_logo,
+            p.odds, p.home_form, p.away_form, p.result,
             l.name as league_name
      FROM predictions p
      LEFT JOIN leagues l ON l.id = p.league_id
