@@ -10,12 +10,22 @@
 <link rel="apple-touch-icon" href="/images/logo.png">
 <link rel="stylesheet" href="/css/style.css">
 <link rel="stylesheet" href="admin.css">
+<style>
+#dashboard-refresh-btn.is-loading .material-icons-round{animation:dashboard-spin .8s linear infinite}
+@keyframes dashboard-spin{to{transform:rotate(360deg)}}
+</style>
 </head>
 <body>
 <div id="admin-sidebar"></div>
 <div id="admin-topbar"></div>
 <main id="admin-main">
-  <h1 class="admin-section-title">Dashboard</h1>
+  <div class="flex-between mb-3">
+    <h1 class="admin-section-title mb-0">Dashboard</h1>
+    <button type="button" class="btn btn-ghost btn-sm" id="dashboard-refresh-btn">
+      <span class="material-icons-round" style="font-size:16px">refresh</span>
+      <span id="dashboard-refresh-label">Refresh</span>
+    </button>
+  </div>
 
   <!-- Stats -->
   <div class="admin-stat-grid" id="stat-grid">
@@ -81,22 +91,57 @@
 injectAdminShell('dashboard.html');
 
 document.addEventListener('DOMContentLoaded', async () => {
-  loadStats();
-  loadRecentPreds();
-  loadRecentUsers();
-  loadSysStatus();
+  document.getElementById('dashboard-refresh-btn').addEventListener('click', () => refreshDashboard(true));
+  await refreshDashboard(false);
+  window.setInterval(() => {
+    if (!document.hidden) refreshDashboard(false);
+  }, 30000);
 });
 
+let dashboardRefreshing = false;
+let recentWinsCount = 0;
+
+async function refreshDashboard(syncResultsFirst = false) {
+  if (dashboardRefreshing) return;
+  dashboardRefreshing = true;
+  const button = document.getElementById('dashboard-refresh-btn');
+  const label = document.getElementById('dashboard-refresh-label');
+  button.disabled = true;
+  button.classList.add('is-loading');
+  label.textContent = syncResultsFirst ? 'Syncing results…' : 'Refreshing…';
+  try {
+    if (syncResultsFirst) {
+      const sync = await api('/sync/dashboard-refresh', { method: 'POST' });
+      if (!sync.success) throw new Error(sync.message || 'Results sync failed');
+    }
+    await loadRecentWinsStatus();
+    await Promise.all([
+      loadStats(),
+      loadRecentPreds(),
+      loadRecentUsers(),
+      loadSysStatus(),
+    ]);
+    if (syncResultsFirst) showToast('Dashboard and recent wins updated', 'success');
+  } catch (error) {
+    showToast(error.message || 'Dashboard refresh failed', 'error');
+  } finally {
+    dashboardRefreshing = false;
+    button.disabled = false;
+    button.classList.remove('is-loading');
+    label.textContent = 'Refresh';
+  }
+}
+
 async function loadStats() {
-  const d = await api('/admin/dashboard');
+  const d = await api(`/admin/dashboard?_=${Date.now()}`, { silent:true });
   const s = d.data || {};
   const items = [
-    { icon:'sports_soccer', val:s.total_predictions||0, label:'Total Predictions', color:'' },
-    { icon:'today', val:s.today_predictions||0, label:"Today's Tips", color:'' },
-    { icon:'gps_fixed', val:(s.win_rate||0)+'%', label:'Win Rate (30d)', color:'var(--primary)' },
-    { icon:'group', val:s.total_users||0, label:'Total Users', color:'' },
-    { icon:'workspace_premium', val:s.vip_users||0, label:'VIP Subscribers', color:'var(--accent)' },
-    { icon:'payments', val:'₦'+(s.revenue_month||0).toLocaleString(), label:'Revenue This Month', color:'var(--primary)' },
+    { icon:'sports_soccer', val:s.predictions?.total||0, label:'Total Predictions', color:'' },
+    { icon:'today', val:s.predictions?.today||0, label:"Today's Tips", color:'' },
+    { icon:'gps_fixed', val:(Number(s.winRate)||0).toFixed(1)+'%', label:'Win Rate (30d)', color:'var(--primary)' },
+    { icon:'group', val:s.users?.total||0, label:'Total Users', color:'' },
+    { icon:'workspace_premium', val:s.subscribers?.active||0, label:'VIP Subscribers', color:'var(--accent)' },
+    { icon:'payments', val:'₦'+Number(s.revenue?.thisMonth||0).toLocaleString(), label:'Revenue This Month', color:'var(--primary)' },
   ];
   document.getElementById('stat-grid').innerHTML = items.map(i=>`
     <div class="admin-stat">
@@ -107,7 +152,7 @@ async function loadStats() {
 }
 
 async function loadRecentPreds() {
-  const d = await api('/predictions?limit=10&admin_view=1');
+  const d = await api(`/predictions?limit=10&admin_view=1&_=${Date.now()}`, { silent:true });
   const preds = d.data?.predictions || [];
   document.getElementById('recent-preds').innerHTML = preds.length
     ? preds.map(p=>`<tr>
@@ -123,7 +168,7 @@ async function loadRecentPreds() {
 }
 
 async function loadRecentUsers() {
-  const d = await api('/admin/users?limit=10');
+  const d = await api(`/admin/users?limit=10&_=${Date.now()}`, { silent:true });
   const users = d.data?.users || [];
   document.getElementById('recent-users').innerHTML = users.length
     ? users.map(u=>`<tr>
@@ -136,15 +181,21 @@ async function loadRecentUsers() {
 }
 
 async function loadSysStatus() {
-  const d = await api('/admin/intelligence/status');
+  const d = await api(`/admin/intelligence/status?_=${Date.now()}`, { silent:true });
   const s = d.data || {};
   document.getElementById('sys-status').innerHTML = `
     <div class="flex" style="flex-wrap:wrap;gap:12px;font-size:13px">
       <span><span class="material-icons-round" style="font-size:16px">psychology</span> Engine: <strong style="color:var(--primary)">ON</strong></span>
       <span><span class="material-icons-round" style="font-size:16px">auto_awesome</span> Generated today: <strong>${s.todayGenerated||0}</strong></span>
       <span><span class="material-icons-round" style="font-size:16px">content_paste</span> Queue: <strong>${s.queueCount||0}</strong></span>
+      <span><span class="material-icons-round" style="font-size:16px">emoji_events</span> Recent wins: <strong>${recentWinsCount}</strong></span>
       <span><span class="material-icons-round" style="font-size:16px">today</span> Last sync: <strong>${s.lastSync?fmtDateTime(s.lastSync):'Never'}</strong></span>
     </div>`;
+}
+
+async function loadRecentWinsStatus() {
+  const d = await api(`/predictions/recent-wins?_=${Date.now()}`, { silent:true });
+  recentWinsCount = d.data?.wins?.length || 0;
 }
 </script>
 </body>

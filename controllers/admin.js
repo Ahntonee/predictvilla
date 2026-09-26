@@ -139,8 +139,9 @@ exports.updateSeoSetting = asyncHandler(async (req, res) => {
 });
 
 exports.getDashboardStats = asyncHandler(async (req, res) => {
+  res.set('Cache-Control', 'no-store, max-age=0');
   const [[predTotal]] = await pool.query("SELECT COUNT(*) as cnt FROM predictions WHERE published_at IS NOT NULL");
-  const [[predToday]] = await pool.query("SELECT COUNT(*) as cnt FROM predictions WHERE DATE(created_at)=CURDATE()");
+  const [[predToday]] = await pool.query("SELECT COUNT(*) as cnt FROM predictions WHERE DATE(match_date)=CURDATE() AND published_at IS NOT NULL");
   const [[winRate]] = await pool.query("SELECT stat_value FROM accuracy_stats WHERE stat_key='overall_win_rate'");
   const [[activeVip]] = await pool.query("SELECT COUNT(*) as cnt FROM subscriptions WHERE status='active'");
   const [[totalUsers]] = await pool.query("SELECT COUNT(*) as cnt FROM users");

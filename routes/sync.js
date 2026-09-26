@@ -53,6 +53,24 @@ router.post('/scores', asyncHandler(async (req, res) => {
   return successResponse(res, null, 'Scores processed');
 }));
 
+// Full admin-dashboard refresh: pull final scores, grade predictions and update
+// accuracy data so the dashboard and public Recent Wins use the same fresh data.
+router.post('/dashboard-refresh', asyncHandler(async (req, res) => {
+  const updated = await syncResults();
+  await gradeFinished();
+  const logged = await logUntracked();
+  const stats = await recalculateStats();
+  const [[wins]] = await pool.query(
+    "SELECT COUNT(*) AS cnt FROM predictions WHERE result='won' AND published_at IS NOT NULL"
+  );
+  return successResponse(res, {
+    updated,
+    logged,
+    wins: wins.cnt,
+    ...stats,
+  }, `Dashboard refreshed: ${updated} results updated and ${wins.cnt} published wins available`);
+}));
+
 router.post('/auto-predict', asyncHandler(async (req, res) => {
   const fixtures = await autoPredictFixtures();
   const result = await runForAllToday();
