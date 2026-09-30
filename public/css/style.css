@@ -3,6 +3,9 @@
    ═══════════════════════════════════════════════════════ */
 
 /* ── CSS Variables ── */
+/* Loads the shared typeface used by every public and admin page. */
+@import url('https://fonts.googleapis.com/css2?family=KoHo:wght@400;500;600;700&display=swap');
+
 :root {
   /* Brand palette — from logo */
   --lime:    #a0d000;   /* olive-lime (logo dominant) */
@@ -38,8 +41,8 @@
   --danger: #ef4444;
   --info:       #0d1600;
 
-  --font-head: 'Jura', 'Exo 2', 'Roboto', sans-serif;
-  --font-body: 'Exo 2', 'Roboto', 'Open Sans', sans-serif;
+  --font-head: 'KoHo', sans-serif;
+  --font-body: 'KoHo', sans-serif;
   --radius:    8px;
   --radius-lg: 14px;
   --radius-xl: 20px;
@@ -2366,7 +2369,7 @@ body { animation: pageFadeIn 0.2s ease-out; }
 }
 .winrate-badge-icon { font-size: 36px; flex-shrink: 0; }
 .winrate-badge-stat { display: flex; align-items: baseline; gap: 6px; }
-.winrate-badge-num { font-family: 'Exo 2', 'Jura', sans-serif; font-size: 36px; font-weight: 900; color: var(--primary); line-height: 1; }
+.winrate-badge-num { font-family: var(--font-head); font-size: 36px; font-weight: 900; color: var(--primary); line-height: 1; }
 .winrate-badge-label { font-size: 13px; color: var(--text-soft); }
 .winrate-badge-divider { width: 1px; height: 40px; background: rgba(160,208,0,0.2); flex-shrink: 0; }
 .winrate-badge-sub { font-size: 13px; color: var(--text-soft); }
@@ -2419,7 +2422,7 @@ body { animation: pageFadeIn 0.2s ease-out; }
 .aff-odds-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 10px 12px; text-align: center; text-decoration: none; transition: background 0.2s, border-color 0.2s; display: block; }
 .aff-odds-card:hover { background: rgba(160,208,0,0.08); border-color: rgba(160,208,0,0.2); }
 .aff-odds-bookie { font-size: 11px; color: var(--text-soft); margin-bottom: 3px; }
-.aff-odds-val { font-family: 'Exo 2', sans-serif; font-weight: 800; font-size: 18px; color: var(--primary); }
+.aff-odds-val { font-family: var(--font-head); font-weight: 800; font-size: 18px; color: var(--primary); }
 [data-theme="light"] .aff-odds-card { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.07); }
 
 /* ── Live mode active state ── */
