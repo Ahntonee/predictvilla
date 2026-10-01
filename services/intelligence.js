@@ -171,6 +171,7 @@ function generateAnalysis({ homeTeam, awayTeam, homeForm, awayForm, probs, selec
 }
 
 async function runForFixture(fixtureData, options = {}) {
+  // Generate and score one stored fixture; publication is decided separately by the admin threshold.
   const { id, apiFixtureId, homeTeam, awayTeam, matchDate, homeForm, awayForm, homeCornerAvg, awayCornerAvg, leagueId, dbLeagueId } = fixtureData;
 
   // Destructuring defaults only apply to `undefined`, not `null`. MySQL NULLs
@@ -213,9 +214,7 @@ async function runForFixture(fixtureData, options = {}) {
   const unavailable = Number(fixtureData.homeInjuriesCount || 0) + Number(fixtureData.awayInjuriesCount || 0);
   confidence = clamp(confidence - Math.min(8, unavailable), 1, 99);
 
-  const minConf = parseInt(process.env.INTELLIGENCE_MIN_CONFIDENCE) || 60;
-  console.log(`[Intelligence] ${homeTeam} vs ${awayTeam} → ${selected.tip} (${selected.market}) conf=${confidence} min=${minConf} lh=${lh.toFixed(2)} la=${la.toFixed(2)}`);
-  if (confidence < minConf) return null;
+  console.log(`[Intelligence] ${homeTeam} vs ${awayTeam} → ${selected.tip} (${selected.market}) conf=${confidence} lh=${lh.toFixed(2)} la=${la.toFixed(2)}`);
 
   const analysis = generateAnalysis({
     homeTeam, awayTeam, homeForm, awayForm,
@@ -251,13 +250,18 @@ async function runForFixture(fixtureData, options = {}) {
 }
 
 async function runForAllToday(options = {}) {
+  // Process either the requested count or every eligible fixture for the selected date.
   const targetDate = options.targetDate || 'today';
+  const processAll = options.limit === 'all' || options.processAll === true;
   const limit = Math.min(Math.max(parseInt(options.limit) || 20, 1), 2000);
   const dateClause = targetDate === 'tomorrow'
     ? 'DATE(p.match_date) = CURDATE() + INTERVAL 1 DAY'
     : targetDate === 'today+tomorrow'
       ? 'DATE(p.match_date) IN (CURDATE(), CURDATE() + INTERVAL 1 DAY)'
       : 'DATE(p.match_date) = CURDATE()';
+  const queryParams = [];
+  const limitClause = processAll ? '' : 'LIMIT ?';
+  if (!processAll) queryParams.push(limit);
   const [fixtures] = await pool.query(
     `SELECT
        p.id,
@@ -288,8 +292,10 @@ async function runForAllToday(options = {}) {
        AND p.result = 'pending'
        AND p.published_at IS NULL
        AND p.source IN ('auto_sync', 'intelligence')
-     LIMIT ?`,
-    [limit]
+       AND (p.tip IS NULL OR UPPER(TRIM(p.tip)) = 'TBD' OR p.confidence_score IS NULL)
+     ORDER BY p.match_date ASC
+     ${limitClause}`,
+    queryParams
   );
 
   console.log(`[Intelligence] Found ${fixtures.length} fixtures to process`);

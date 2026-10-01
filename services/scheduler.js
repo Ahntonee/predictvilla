@@ -41,9 +41,18 @@ async function checkSubscriptionExpiry() {
 }
 
 async function gradeFinished() {
+  // Grade only published, generated selections; raw imported fixtures must remain outside accuracy data.
   const { gradeResult } = require('./accuracy');
   const [pending] = await pool.query(
-    `SELECT * FROM predictions WHERE result='pending' AND home_score IS NOT NULL AND away_score IS NOT NULL`
+    `SELECT * FROM predictions
+     WHERE result='pending'
+       AND home_score IS NOT NULL
+       AND away_score IS NOT NULL
+       AND published_at IS NOT NULL
+       AND tip IS NOT NULL
+       AND TRIM(tip) != ''
+       AND UPPER(TRIM(tip)) != 'TBD'
+       AND confidence_score IS NOT NULL`
   );
   let graded = 0;
   for (const p of pending) {

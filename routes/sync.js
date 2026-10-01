@@ -293,10 +293,13 @@ router.post('/results/by-date', asyncHandler(async (req, res) => {
 
 // Auto-predict with controls
 router.post('/auto-predict/run', asyncHandler(async (req, res) => {
+  // Sync and score a bounded fixture count or every fixture selected by the admin.
   const { targetDate = 'today', limit = 20, minConfidence = 68, autoPublish = true } = req.body || {};
+  const processAll = limit === 'all';
   const options = {
     targetDate: ['today', 'tomorrow', 'today+tomorrow'].includes(targetDate) ? targetDate : 'today',
-    limit: Math.min(Math.max(parseInt(limit) || 20, 1), 100),
+    limit: processAll ? 'all' : Math.min(Math.max(parseInt(limit) || 20, 1), 100),
+    processAll,
     minConfidence: Math.min(Math.max(parseInt(minConfidence) || 68, 1), 99),
     autoPublish: autoPublish === true,
   };

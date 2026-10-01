@@ -71,16 +71,16 @@
 
   <!-- Tabs -->
   <div class="intel-tabs">
-    <button class="intel-tab active" data-tab="accuracy" onclick="switchTab('accuracy',this)">
+    <button type="button" class="intel-tab active" data-tab="accuracy">
       <span class="material-icons-round" style="font-size:16px">bar_chart</span>Accuracy Tracker
     </button>
-    <button class="intel-tab" data-tab="league-sub" onclick="switchTab('league-sub',this)">
+    <button type="button" class="intel-tab" data-tab="league-sub">
       <span class="material-icons-round" style="font-size:16px">table_chart</span>League × Tip
     </button>
-    <button class="intel-tab" data-tab="teams" onclick="switchTab('teams',this)">
+    <button type="button" class="intel-tab" data-tab="teams">
       <span class="material-icons-round" style="font-size:16px">groups</span>Team Intelligence
     </button>
-    <button class="intel-tab" data-tab="calibration" onclick="switchTab('calibration',this)">
+    <button type="button" class="intel-tab" data-tab="calibration">
       <span class="material-icons-round" style="font-size:16px">tune</span>Calibration
     </button>
   </div>
@@ -199,14 +199,19 @@ const MARKET_TIPS = {
 let rawLeagueSub = [], rawTeams = [], rawCal = [];
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Initialize status/data requests and bind tab controls without relying on inline handlers.
   loadStatus();
   loadAccuracy();
   loadCalibration();
+  document.querySelectorAll('.intel-tab').forEach(button => {
+    button.addEventListener('click', () => switchTab(button.dataset.tab, button));
+  });
   document.getElementById('run-engine-btn').addEventListener('click', runEngine);
   document.getElementById('status-refresh-btn').addEventListener('click', loadStatus);
 });
 
 function switchTab(name, btn) {
+  // Display the selected intelligence panel and lazily load its data when needed.
   document.querySelectorAll('.intel-tab').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.intel-panel').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');

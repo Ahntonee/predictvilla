@@ -294,7 +294,10 @@
         </div>
         <div>
           <div class="sync-label">Fixtures to process</div>
-          <input type="number" class="form-control" id="ap-limit" value="20" min="1" max="100">
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="number" class="form-control" id="ap-limit" value="20" min="1" max="100" aria-label="Number of fixtures to process">
+            <button type="button" class="btn btn-sm btn-ghost" id="ap-all" aria-pressed="false" title="Process every available fixture for the selected date">All</button>
+          </div>
         </div>
         <div>
           <div class="sync-label">Min confidence to publish</div>
@@ -491,7 +494,9 @@ const ENDPOINTS = {
   'odds':             () => api('/sync/odds', { method: 'POST', body: JSON.stringify({ scope: document.getElementById('odds-scope').value }) }),
   'auto-predict':     () => api('/sync/auto-predict/run', { method: 'POST', body: JSON.stringify({
                           targetDate:    document.getElementById('ap-target').value,
-                          limit:         parseInt(document.getElementById('ap-limit').value),
+                          limit:         document.getElementById('ap-all').getAttribute('aria-pressed') === 'true'
+                            ? 'all'
+                            : parseInt(document.getElementById('ap-limit').value),
                           minConfidence: parseInt(document.getElementById('ap-confidence').value),
                           autoPublish:   document.getElementById('ap-autopublish').checked,
                         }) }),
@@ -579,6 +584,19 @@ async function runSync(type, clickedButton) {
 document.querySelectorAll('[data-sync-action]').forEach(btn => {
   btn.addEventListener('click', () => runSync(btn.dataset.syncAction, btn));
 });
+
+// Toggles between a numeric processing limit and every available fixture for the selected date.
+function toggleAllFixtures() {
+  const button = document.getElementById('ap-all');
+  const input = document.getElementById('ap-limit');
+  const enabled = button.getAttribute('aria-pressed') !== 'true';
+  button.setAttribute('aria-pressed', String(enabled));
+  button.classList.toggle('btn-primary', enabled);
+  button.classList.toggle('btn-ghost', !enabled);
+  input.disabled = enabled;
+}
+
+document.getElementById('ap-all')?.addEventListener('click', toggleAllFixtures);
 document.getElementById('refresh-api-status')?.addEventListener('click', loadApiStatus);
 document.getElementById('clear-sync-log')?.addEventListener('click', clearLog);
 log('Data Sync controls ready.');

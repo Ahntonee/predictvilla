@@ -206,9 +206,11 @@ async function getFixtureOdds(fixtureId) {
  * Live API calls only happen for teams not yet in the DB, keeping quota usage low.
  */
 async function autoPredictFixtures(options = {}) {
+  // Prepare either the requested count or every eligible fixture before intelligence scoring.
   if (!KEY) return [];
 
   const targetDate = options.targetDate || 'today';
+  const processAll = options.limit === 'all' || options.processAll === true;
   const limit = Math.min(Math.max(parseInt(options.limit) || 20, 1), 2000);
   const dateClause = targetDate === 'tomorrow'
     ? 'DATE(p.match_date) = CURDATE() + INTERVAL 1 DAY'
@@ -216,6 +218,9 @@ async function autoPredictFixtures(options = {}) {
       ? 'DATE(p.match_date) IN (CURDATE(), CURDATE() + INTERVAL 1 DAY)'
       : 'DATE(p.match_date) = CURDATE()';
 
+  const queryParams = [];
+  const limitClause = processAll ? '' : 'LIMIT ?';
+  if (!processAll) queryParams.push(limit);
   const [fixtures] = await pool.query(
     `SELECT
        p.id, p.home_team, p.away_team, p.match_date,
@@ -237,8 +242,10 @@ async function autoPredictFixtures(options = {}) {
        AND ${dateClause}
        AND p.api_fixture_id IS NOT NULL
        AND p.source IN ('auto_sync', 'intelligence')
-     LIMIT ?`,
-    [limit]
+       AND (p.tip IS NULL OR UPPER(TRIM(p.tip)) = 'TBD' OR p.confidence_score IS NULL)
+     ORDER BY p.match_date ASC
+     ${limitClause}`,
+    queryParams
   );
 
   const generated = [];

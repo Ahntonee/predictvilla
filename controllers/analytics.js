@@ -122,32 +122,52 @@ exports.revenueChurn = asyncHandler(async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 exports.accuracyTracker = asyncHandler(async (req, res) => {
+  // Measure only published, generated selections and exclude imported fixture placeholders.
   const [[overall]] = await pool.query(`
-    SELECT COUNT(*) as total, SUM(is_correct) as won, COUNT(*)-SUM(is_correct) as lost,
-    ROUND(SUM(is_correct)/NULLIF(COUNT(*),0)*100,2) as accuracy
-    FROM prediction_accuracy_log`);
+    SELECT COUNT(*) as total, SUM(pal.is_correct) as won, COUNT(*)-SUM(pal.is_correct) as lost,
+    ROUND(SUM(pal.is_correct)/NULLIF(COUNT(*),0)*100,2) as accuracy
+    FROM prediction_accuracy_log pal
+    JOIN predictions p ON p.id = pal.prediction_id
+    WHERE p.published_at IS NOT NULL AND p.confidence_score IS NOT NULL
+      AND p.tip IS NOT NULL AND TRIM(p.tip) != '' AND UPPER(TRIM(p.tip)) != 'TBD'`);
   const [byMarket] = await pool.query(`
-    SELECT market, COUNT(*) as total, SUM(is_correct) as won,
-    ROUND(SUM(is_correct)/NULLIF(COUNT(*),0)*100,1) as accuracy
-    FROM prediction_accuracy_log GROUP BY market ORDER BY total DESC`);
+    SELECT pal.market, COUNT(*) as total, SUM(pal.is_correct) as won,
+    ROUND(SUM(pal.is_correct)/NULLIF(COUNT(*),0)*100,1) as accuracy
+    FROM prediction_accuracy_log pal
+    JOIN predictions p ON p.id = pal.prediction_id
+    WHERE p.published_at IS NOT NULL AND p.confidence_score IS NOT NULL
+      AND p.tip IS NOT NULL AND TRIM(p.tip) != '' AND UPPER(TRIM(p.tip)) != 'TBD'
+    GROUP BY pal.market ORDER BY total DESC`);
   const [byBand] = await pool.query(`
-    SELECT CONCAT(FLOOR(confidence_score/5)*5,'–',FLOOR(confidence_score/5)*5+4,'%') as band,
-    FLOOR(confidence_score/5)*5 as band_start,
-    COUNT(*) as total, SUM(is_correct) as won,
-    ROUND(SUM(is_correct)/NULLIF(COUNT(*),0)*100,1) as accuracy
-    FROM prediction_accuracy_log WHERE confidence_score IS NOT NULL
+    SELECT CONCAT(FLOOR(pal.confidence_score/5)*5,'–',FLOOR(pal.confidence_score/5)*5+4,'%') as band,
+    FLOOR(pal.confidence_score/5)*5 as band_start,
+    COUNT(*) as total, SUM(pal.is_correct) as won,
+    ROUND(SUM(pal.is_correct)/NULLIF(COUNT(*),0)*100,1) as accuracy
+    FROM prediction_accuracy_log pal
+    JOIN predictions p ON p.id = pal.prediction_id
+    WHERE pal.confidence_score IS NOT NULL AND p.published_at IS NOT NULL
+      AND p.tip IS NOT NULL AND TRIM(p.tip) != '' AND UPPER(TRIM(p.tip)) != 'TBD'
     GROUP BY band_start, band ORDER BY band_start DESC`);
   const [byTip] = await pool.query(`
-    SELECT market, tip, COUNT(*) as total, SUM(is_correct) as won,
-    ROUND(SUM(is_correct)/NULLIF(COUNT(*),0)*100,1) as accuracy
-    FROM prediction_accuracy_log
-    GROUP BY market, tip ORDER BY market, accuracy DESC`);
+    SELECT pal.market, pal.tip, COUNT(*) as total, SUM(pal.is_correct) as won,
+    ROUND(SUM(pal.is_correct)/NULLIF(COUNT(*),0)*100,1) as accuracy
+    FROM prediction_accuracy_log pal
+    JOIN predictions p ON p.id = pal.prediction_id
+    WHERE p.published_at IS NOT NULL AND p.confidence_score IS NOT NULL
+      AND p.tip IS NOT NULL AND TRIM(p.tip) != '' AND UPPER(TRIM(p.tip)) != 'TBD'
+    GROUP BY pal.market, pal.tip ORDER BY pal.market, accuracy DESC`);
   return successResponse(res, { overall, byMarket, byBand, byTip });
 });
 
 exports.leagueSubmarket = asyncHandler(async (req, res) => {
+  // Break down accuracy by league and tip using published selections only.
   const market = req.query.market || '';
-  let where = ['pal.is_correct IS NOT NULL'];
+  let where = [
+    'pal.is_correct IS NOT NULL',
+    'p.published_at IS NOT NULL',
+    'p.confidence_score IS NOT NULL',
+    "p.tip IS NOT NULL AND TRIM(p.tip) != '' AND UPPER(TRIM(p.tip)) != 'TBD'",
+  ];
   const params = [];
   if (market) { where.push('pal.market = ?'); params.push(market); }
   const [rows] = await pool.query(`
@@ -165,9 +185,15 @@ exports.leagueSubmarket = asyncHandler(async (req, res) => {
 });
 
 exports.teamConsistency = asyncHandler(async (req, res) => {
+  // Compare team performance only across real selections that were published.
   const market = req.query.market || '';
   const tip = req.query.tip || '';
-  const where = ['pal.is_correct IS NOT NULL'];
+  const where = [
+    'pal.is_correct IS NOT NULL',
+    'p.published_at IS NOT NULL',
+    'p.confidence_score IS NOT NULL',
+    "p.tip IS NOT NULL AND TRIM(p.tip) != '' AND UPPER(TRIM(p.tip)) != 'TBD'",
+  ];
   const params = [];
   if (market) { where.push('pal.market = ?'); params.push(market); }
   if (tip)    { where.push('pal.tip = ?');    params.push(tip); }
@@ -193,16 +219,20 @@ exports.teamConsistency = asyncHandler(async (req, res) => {
 });
 
 exports.calibration = asyncHandler(async (req, res) => {
+  // Calibrate confidence bands against published selections, excluding raw fixture placeholders.
   const [rows] = await pool.query(`
-    SELECT market, tip,
-    CONCAT(FLOOR(confidence_score/5)*5,'–',FLOOR(confidence_score/5)*5+4,'%') as band,
-    FLOOR(confidence_score/5)*5 as band_start,
-    COUNT(*) as total, SUM(is_correct) as won,
-    ROUND(SUM(is_correct)/NULLIF(COUNT(*),0)*100,1) as accuracy,
-    MAX(logged_at) as last_updated
-    FROM prediction_accuracy_log WHERE confidence_score IS NOT NULL
-    GROUP BY market, tip, band_start, band HAVING total >= 5
-    ORDER BY market, tip, band_start DESC`);
+    SELECT pal.market, pal.tip,
+    CONCAT(FLOOR(pal.confidence_score/5)*5,'–',FLOOR(pal.confidence_score/5)*5+4,'%') as band,
+    FLOOR(pal.confidence_score/5)*5 as band_start,
+    COUNT(*) as total, SUM(pal.is_correct) as won,
+    ROUND(SUM(pal.is_correct)/NULLIF(COUNT(*),0)*100,1) as accuracy,
+    MAX(pal.logged_at) as last_updated
+    FROM prediction_accuracy_log pal
+    JOIN predictions p ON p.id = pal.prediction_id
+    WHERE pal.confidence_score IS NOT NULL AND p.published_at IS NOT NULL
+      AND p.tip IS NOT NULL AND TRIM(p.tip) != '' AND UPPER(TRIM(p.tip)) != 'TBD'
+    GROUP BY pal.market, pal.tip, band_start, band HAVING total >= 5
+    ORDER BY pal.market, pal.tip, band_start DESC`);
   return successResponse(res, { rows });
 });
 

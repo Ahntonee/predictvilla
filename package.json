@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node config/migrate.js && node config/migrate_auth.js && node server.js",
     "dev": "nodemon server.js",
-    "audit": "node scripts/audit_frontend.js && node scripts/audit_routes.js"
+    "audit": "node scripts/audit_frontend.js && node scripts/audit_routes.js",
+    "repair:intelligence": "node scripts/repair_intelligence_accuracy.js"
   },
   "dependencies": {
     "axios": "^1.16.0",

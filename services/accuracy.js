@@ -1,10 +1,19 @@
 const { pool } = require('../config/db');
 
 async function logUntracked() {
+  // Log only real, published selections; imported TBD fixtures are data records, not predictions.
   const [resolved] = await pool.query(
     `SELECT p.* FROM predictions p
      LEFT JOIN prediction_accuracy_log pal ON pal.prediction_id = p.id
-     WHERE p.result IN ('won','lost') AND pal.id IS NULL AND p.home_score IS NOT NULL`
+     WHERE p.result IN ('won','lost')
+       AND pal.id IS NULL
+       AND p.home_score IS NOT NULL
+       AND p.away_score IS NOT NULL
+       AND p.published_at IS NOT NULL
+       AND p.tip IS NOT NULL
+       AND TRIM(p.tip) != ''
+       AND UPPER(TRIM(p.tip)) != 'TBD'
+       AND p.confidence_score IS NOT NULL`
   );
 
   let logged = 0;
@@ -43,6 +52,7 @@ async function logUntracked() {
 }
 
 function gradeResult(p) {
+  // Grade supported prediction markets; unknown/import placeholder tips remain ungraded.
   const h   = p.home_score;
   const a   = p.away_score;
   if (h === null || a === null) return null;
@@ -96,13 +106,21 @@ function gradeResult(p) {
   // Return null — they'll be graded separately when corner data is available.
   if (cat?.startsWith('corners_')) return null;
 
-  // Fallback
-  return p.result === 'won';
+  // Unsupported tips (including imported TBD fixtures) are not predictions and must not be losses.
+  return null;
 }
 
 async function recalculateStats() {
+  // Rebuild headline and market statistics from published, valid selections only.
   const [rows] = await pool.query(
-    `SELECT COUNT(*) as total, SUM(is_correct) as correct FROM prediction_accuracy_log`
+    `SELECT COUNT(*) as total, SUM(pal.is_correct) as correct
+     FROM prediction_accuracy_log pal
+     JOIN predictions p ON p.id = pal.prediction_id
+     WHERE p.published_at IS NOT NULL
+       AND p.confidence_score IS NOT NULL
+       AND p.tip IS NOT NULL
+       AND TRIM(p.tip) != ''
+       AND UPPER(TRIM(p.tip)) != 'TBD'`
   );
   const { total, correct } = rows[0];
   const winRate = total > 0 ? ((correct || 0) / total * 100).toFixed(2) : 0;
@@ -116,7 +134,12 @@ async function recalculateStats() {
   const [vipRows] = await pool.query(
     `SELECT COUNT(*) as total, SUM(pal.is_correct) as correct
      FROM prediction_accuracy_log pal JOIN predictions p ON p.id = pal.prediction_id
-     WHERE p.is_vip = 1`
+     WHERE p.is_vip = 1
+       AND p.published_at IS NOT NULL
+       AND p.confidence_score IS NOT NULL
+       AND p.tip IS NOT NULL
+       AND TRIM(p.tip) != ''
+       AND UPPER(TRIM(p.tip)) != 'TBD'`
   );
   const vipWinRate = vipRows[0].total > 0
     ? ((vipRows[0].correct || 0) / vipRows[0].total * 100).toFixed(2)
@@ -133,8 +156,16 @@ async function recalculateStats() {
 
   // Per-market win rates
   const [marketRows] = await pool.query(
-    `SELECT market, category, COUNT(*) as total, SUM(is_correct) as correct, AVG(confidence_score) as avg_conf
-     FROM prediction_accuracy_log GROUP BY market, category`
+    `SELECT pal.market, pal.category, COUNT(*) as total, SUM(pal.is_correct) as correct,
+            AVG(pal.confidence_score) as avg_conf
+     FROM prediction_accuracy_log pal
+     JOIN predictions p ON p.id = pal.prediction_id
+     WHERE p.published_at IS NOT NULL
+       AND p.confidence_score IS NOT NULL
+       AND p.tip IS NOT NULL
+       AND TRIM(p.tip) != ''
+       AND UPPER(TRIM(p.tip)) != 'TBD'
+     GROUP BY pal.market, pal.category`
   );
   for (const row of marketRows) {
     const wr = row.total > 0 ? (row.correct / row.total * 100).toFixed(2) : 0;
