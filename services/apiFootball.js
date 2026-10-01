@@ -3,6 +3,7 @@ const { pool } = require('../config/db');
 const { generatePredictionSlug } = require('../utils/helpers');
 const quota = require('./apiQuota');
 const { storeResponse } = require('./apiFootballArchive');
+const memoryCache = require('./memoryCache');
 
 const BASE = process.env.API_FOOTBALL_BASE_URL || 'https://v3.football.api-sports.io';
 const KEY = process.env.API_FOOTBALL_KEY;
@@ -24,11 +25,21 @@ const api = axios.create({
 
 // All external API calls go through here — enforces the 2500/day cap
 async function trackedGet(endpoint, params) {
-  quota.checkAndIncrement(endpoint);
-  const response = await api.get(endpoint, { params });
-  await storeResponse(endpoint.replace(/^\//, ''), params, response.data?.response)
-    .catch(err => console.error(`[ApiFootball] archive ${endpoint}:`, err.message));
-  return response;
+  // Reuses stable reference data in this worker while keeping fixture/result calls fresh.
+  const cacheTtl = endpoint === '/odds' ? 2 * 60 * 1000
+    : ['/teams/statistics', '/fixtures/headtohead', '/injuries', '/standings'].includes(endpoint)
+      ? 6 * 60 * 60 * 1000
+      : 0;
+  const load = async () => {
+    quota.checkAndIncrement(endpoint);
+    const response = await api.get(endpoint, { params });
+    await storeResponse(endpoint.replace(/^\//, ''), params, response.data?.response)
+      .catch(err => console.error(`[ApiFootball] archive ${endpoint}:`, err.message));
+    return response.data;
+  };
+  if (!cacheTtl) return { data: await load() };
+  const data = await memoryCache.remember(memoryCache.stableKey(`api-football${endpoint}`, params), cacheTtl, load);
+  return { data };
 }
 
 async function getLeagueIds() {

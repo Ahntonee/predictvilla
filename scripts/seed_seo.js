@@ -38,13 +38,13 @@ Our engine runs three times daily. For each upcoming fixture it:
 
 | Feature | Free | VIP |
 |---|---|---|
-| Daily tips | ✅ | ✅ |
-| Confidence score | ✅ | ✅ |
-| Form dots | ✅ | ✅ |
-| Bookie odds | ✅ | ✅ |
-| Banker picks | ❌ | ✅ |
-| AI analysis text | ❌ | ✅ |
-| Early fixture access | ❌ | ✅ |
+| Daily tips | Yes | Yes |
+| Confidence score | Yes | Yes |
+| Form dots | Yes | Yes |
+| Bookie odds | Yes | Yes |
+| Banker picks | No | Yes |
+| AI analysis text | No | Yes |
+| Early fixture access | No | Yes |
 
 Our free tier is genuinely free — no credit card, no trial. We show real tips with real confidence scores because we believe transparency builds trust.
 
@@ -253,7 +253,7 @@ const compSites = [
   ['Predictvilla vs PredictZ — Which Site Covers More Leagues?', 'PredictZ covers 50+ leagues; Predictvilla covers 160+. See how broader coverage translates into more profitable opportunities.', 'Predictvilla vs PredictZ, football prediction sites, most leagues covered'],
 ];
 compSites.forEach(([t, m, k]) => add(t, m, k,
-  `## ${t}\n\n${m}\n\n### Our Methodology Is Fully Transparent\nUnlike many comparison sites, Predictvilla publishes every prediction before kick-off, grades every result automatically, and displays the running accuracy record publicly.\n\n### Free vs Paid Tier Breakdown\n\n| Feature | Predictvilla Free | Predictvilla VIP |\n|---|---|---|\n| Daily tips | ✅ | ✅ |\n| Confidence score | ✅ | ✅ |\n| Banker picks | ❌ | ✅ |\n| AI analysis | ❌ | ✅ |\n\n[Try Predictvilla Free Today →](/)\n\n[Upgrade to VIP →](/pricing.html)`,
+  `## ${t}\n\n${m}\n\n### Our Methodology Is Fully Transparent\nUnlike many comparison sites, Predictvilla publishes every prediction before kick-off, grades every result automatically, and displays the running accuracy record publicly.\n\n### Free vs Paid Tier Breakdown\n\n| Feature | Predictvilla Free | Predictvilla VIP |\n|---|---|---|\n| Daily tips | Yes | Yes |\n| Confidence score | Yes | Yes |\n| Banker picks | No | Yes |\n| AI analysis | No | Yes |\n\n[Try Predictvilla Free Today](/)\n\n[Upgrade to VIP](/pricing.html)`,
   'comparison'
 ));
 
@@ -599,7 +599,7 @@ mvRTitles.forEach(t => add(
   t,
   `${t} — fair, data-driven analysis from Predictvilla's football experts.`,
   'Messi vs Ronaldo, GOAT debate, Messi Ronaldo comparison, best footballer',
-  `## ${t}\n\nThe Messi vs Ronaldo debate is the defining argument of the football generation. At Predictvilla we don't take sides — we compare the data.\n\n### The Core Numbers (Career to 2025)\n| Metric | Messi | Ronaldo |\n|---|---|---|\n| Club Goals | 720+ | 820+ |\n| International Goals | 100+ | 130+ |\n| Ballon d'Or | 8 | 5 |\n| Champions League | 4 | 5 |\n| World Cup | 1 🏆 | 0 |\n\n### The Verdict?\nNeither is objectively superior — they are different types of genius. Messi is the playmaker-finisher; Ronaldo the power-athlete-finisher. Football is richer for having had both in the same era.\n\n### Does It Affect Predictions?\nTeams built around a Messi-style playmaker tend to have higher possession but fewer direct goals; Ronaldo-style setups generate more aerial threats and set-piece danger. Our model accounts for these tactical fingerprints.\n\n[See today's football predictions →](/)`,
+  `## ${t}\n\nThe Messi vs Ronaldo debate is the defining argument of the football generation. At Predictvilla we don't take sides — we compare the data.\n\n### The Core Numbers (Career to 2025)\n| Metric | Messi | Ronaldo |\n|---|---|---|\n| Club Goals | 720+ | 820+ |\n| International Goals | 100+ | 130+ |\n| Ballon d'Or | 8 | 5 |\n| Champions League | 4 | 5 |\n| World Cup | 1 | 0 |\n\n### The Verdict?\nNeither is objectively superior — they are different types of genius. Messi is the playmaker-finisher; Ronaldo the power-athlete-finisher. Football is richer for having had both in the same era.\n\n### Does It Affect Predictions?\nTeams built around a Messi-style playmaker tend to have higher possession but fewer direct goals; Ronaldo-style setups generate more aerial threats and set-piece danger. Our model accounts for these tactical fingerprints.\n\n[See today's football predictions](/)`,
   'goat-debate'
 ));
 
@@ -652,7 +652,7 @@ async function run() {
      ON DUPLICATE KEY UPDATE content = VALUES(content), updated_at = NOW()`,
     [HOMEPAGE_ARTICLE]
   );
-  console.log('✅ Homepage article updated');
+  console.log('Homepage article updated');
 
   // 2. Insert SEO articles in batches of 50
   let inserted = 0;
@@ -672,7 +672,7 @@ async function run() {
     console.log(`  … ${Math.min(i + BATCH, ARTICLES.length)}/${ARTICLES.length} articles processed`);
   }
 
-  console.log(`✅ ${inserted} SEO articles seeded into seo_article_pages`);
+  console.log(`${inserted} SEO articles seeded into seo_article_pages`);
   await pool.end();
   console.log('Done.');
 }

@@ -11,12 +11,15 @@ const { refreshTeamStatistics, refreshLeagueStatistics, refreshMarketStats } = r
 const { gradeFinished } = require('../services/scheduler');
 const apiQuota = require('../services/apiQuota');
 const { pool } = require('../config/db');
+const memoryCache = require('../services/memoryCache');
 
 router.use(authenticate, requireAdmin);
 router.use((req, res, next) => {
   if (req.method !== 'GET') {
     res.on('finish', () => {
       if (res.statusCode < 400) {
+        // Makes newly imported, graded or published predictions visible without waiting for TTL expiry.
+        memoryCache.del('predictions:', true);
         pool.query(
           `INSERT INTO site_settings (setting_key, setting_value) VALUES ('last_sync_action', NOW())
            ON DUPLICATE KEY UPDATE setting_value=NOW()`

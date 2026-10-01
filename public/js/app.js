@@ -219,7 +219,7 @@ function buildScoreDivider(p) {
 // ── Prediction Card ───────────────────────────────────────────────────────────
 function buildPredictionCard(p, isVip = false) {
   if (p.source === 'daily_special' && p.market === 'Accumulator') return buildAccaCard(p);
-  const isLocked = p.is_vip && !isVip && (p.tip === '🔒 VIP Pick' || p.tip === 'VIP Pick');
+  const isLocked = p.is_vip && !isVip && p.tip === 'VIP Pick';
   const isBanker = p.is_banker;
   const bookies = (() => { try { return JSON.parse(p.bookies_available || '[]'); } catch { return []; } })();
   const isLive = LIVE_STATUS_SET.has(p.fixture_status) && p.home_score !== null;
@@ -320,7 +320,9 @@ async function loadRecentWins(containerId = 'recent-wins-list') {
       const matchDate = new Date(w.match_date);
       const dateLabel = matchDate.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
       const timeLabel = matchDate.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
-      const wonLabel  = isJustWon ? '⚡ Just Won' : 'WON 🏆';
+      const wonLabel  = isJustWon
+        ? '<span class="material-icons-round" aria-hidden="true">bolt</span> Just Won'
+        : 'WON <span class="material-icons-round" aria-hidden="true">emoji_events</span>';
       const homeLogo  = w.home_team_logo
         ? `<img src="${escapeHtml(w.home_team_logo)}" alt="${escapeHtml(w.home_team)}" class="rw-logo" loading="lazy" onerror="this.style.display='none'">`
         : `<div class="rw-logo-fallback">${escapeHtml(w.home_team[0]||'?')}</div>`;
@@ -528,7 +530,7 @@ async function injectHeader() {
         </a>
         <div style="flex:1"></div>
         <a href="/pricing.html" class="vip-premium-btn">
-          <span class="prem-top">★ Go Premium</span>
+          <span class="prem-top"><span class="material-icons-round" aria-hidden="true">star</span> Go Premium</span>
           <span class="prem-sub">GET STARTED FOR FREE</span>
         </a>
         <div class="topbar-auth-links">${desktopAuthHtml}</div>
@@ -606,14 +608,14 @@ async function injectFooter() {
   const backlinks = backlinksRes?.data?.backlinks || [];
 
   const socialIcons = {
-    social_twitter:  { icon: '𝕏', label: 'X' },
-    social_telegram: { icon: '✈', label: 'Telegram' },
-    social_facebook: { icon: 'f', label: 'Facebook' },
-    social_whatsapp: { icon: '📱', label: 'WhatsApp' },
+    social_twitter:  { icon: 'alternate_email', label: 'X' },
+    social_telegram: { icon: 'send', label: 'Telegram' },
+    social_facebook: { icon: 'public', label: 'Facebook' },
+    social_whatsapp: { icon: 'chat', label: 'WhatsApp' },
   };
   const socialHtml = Object.entries(links).filter(([,v])=>v).map(([k,v]) => {
-    const s = socialIcons[k] || { icon: '🔗', label: k };
-    return `<a href="${escapeHtml(v)}" target="_blank" rel="noopener" class="footer-social-icon" title="${s.label}">${s.icon}</a>`;
+    const s = socialIcons[k] || { icon: 'link', label: k };
+    return `<a href="${escapeHtml(v)}" target="_blank" rel="noopener" class="footer-social-icon" title="${s.label}"><span class="material-icons-round" aria-hidden="true">${s.icon}</span></a>`;
   }).join('');
 
   const settings = window._siteSettings || {};
@@ -818,7 +820,7 @@ function buildPredictionRow(p, isVip = false) {
       <div class="vp-odds-tips">
         ${oddVal ? `<div class="vp-odds-pill"><span class="vp-odds-label">ODDS</span><span class="vp-odds-val">${oddVal}</span></div>` : ''}
         ${isLocked
-          ? `<div class="vp-locked-pill">🔒 VIP</div>`
+          ? `<div class="vp-locked-pill"><span class="material-icons-round" aria-hidden="true">lock</span> VIP</div>`
           : `<div class="vp-tips-pill">${escapeHtml(tipText)}</div>`}
       </div>
     </div>
@@ -1347,7 +1349,7 @@ async function renderWinrateBadge(container) {
     const pct = Math.round(accuracy);
     container.innerHTML = `
       <div class="winrate-badge">
-        <div class="winrate-badge-icon">🏆</div>
+        <div class="winrate-badge-icon"><span class="material-icons-round" aria-hidden="true">emoji_events</span></div>
         <div>
           <div class="winrate-badge-stat">
             <span class="winrate-badge-num">${pct}%</span>
@@ -1384,9 +1386,9 @@ function buildVoteBar(votes, predId, userVote) {
   if (total === 0 && !userVote) {
     return `<div class="vote-bar-wrap" id="votes-${predId}">
       <div class="vote-actions">
-        <button class="vote-btn" onclick="castVote(${predId},'home',this)">🏠 Home</button>
-        <button class="vote-btn" onclick="castVote(${predId},'draw',this)">🤝 Draw</button>
-        <button class="vote-btn" onclick="castVote(${predId},'away',this)">✈️ Away</button>
+        <button class="vote-btn" onclick="castVote(${predId},'home',this)"><span class="material-icons-round" aria-hidden="true">home</span> Home</button>
+        <button class="vote-btn" onclick="castVote(${predId},'draw',this)"><span class="material-icons-round" aria-hidden="true">handshake</span> Draw</button>
+        <button class="vote-btn" onclick="castVote(${predId},'away',this)"><span class="material-icons-round" aria-hidden="true">flight</span> Away</button>
       </div>
     </div>`;
   }
@@ -1395,16 +1397,16 @@ function buildVoteBar(votes, predId, userVote) {
   const aw = 100 - hw - dw;
   const vc = userVote ? `voted-${userVote}` : '';
   return `<div class="vote-bar-wrap" id="votes-${predId}">
-    <div class="vote-bar-label"><span>🏠 ${hw}%</span><span>🤝 ${dw}%</span><span>✈️ ${aw}%</span></div>
+    <div class="vote-bar-label"><span><span class="material-icons-round" aria-hidden="true">home</span> ${hw}%</span><span><span class="material-icons-round" aria-hidden="true">handshake</span> ${dw}%</span><span><span class="material-icons-round" aria-hidden="true">flight</span> ${aw}%</span></div>
     <div class="vote-bar-track">
       <div class="vote-home" style="width:${hw}%"></div>
       <div class="vote-draw" style="width:${dw}%"></div>
       <div class="vote-away" style="width:${aw}%"></div>
     </div>
     <div class="vote-actions">
-      <button class="vote-btn ${userVote==='home'?'voted-home':''}" onclick="castVote(${predId},'home',this)">🏠 Home</button>
-      <button class="vote-btn ${userVote==='draw'?'voted-draw':''}" onclick="castVote(${predId},'draw',this)">🤝 Draw</button>
-      <button class="vote-btn ${userVote==='away'?'voted-away':''}" onclick="castVote(${predId},'away',this)">✈️ Away</button>
+      <button class="vote-btn ${userVote==='home'?'voted-home':''}" onclick="castVote(${predId},'home',this)"><span class="material-icons-round" aria-hidden="true">home</span> Home</button>
+      <button class="vote-btn ${userVote==='draw'?'voted-draw':''}" onclick="castVote(${predId},'draw',this)"><span class="material-icons-round" aria-hidden="true">handshake</span> Draw</button>
+      <button class="vote-btn ${userVote==='away'?'voted-away':''}" onclick="castVote(${predId},'away',this)"><span class="material-icons-round" aria-hidden="true">flight</span> Away</button>
     </div>
     ${total > 0 ? `<div style="font-size:11px;color:var(--text-soft);margin-top:4px;text-align:center">${total} community pick${total===1?'':'s'}</div>` : ''}
   </div>`;
@@ -1471,7 +1473,7 @@ function showPwaBanner() {
   const banner = document.createElement('div');
   banner.id = 'pwa-install-banner';
   banner.innerHTML = `
-    <div class="pwa-icon">⚽</div>
+    <div class="pwa-icon"><span class="material-icons-round" aria-hidden="true">sports_soccer</span></div>
     <div class="pwa-text">
       <div class="pwa-title">Add Predictvilla to Home Screen</div>
       <div class="pwa-sub">Get instant tips without opening a browser</div>
@@ -1512,11 +1514,11 @@ if ('serviceWorker' in navigator) {
 
 // ── League tabs config ─────────────────────────────────
 const LEAGUE_TABS = [
-  { id: 39,  name: 'England',  flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
-  { id: 140, name: 'Spain',    flag: '🇪🇸' },
-  { id: 78,  name: 'Germany',  flag: '🇩🇪' },
-  { id: 135, name: 'Italy',    flag: '🇮🇹' },
-  { id: 61,  name: 'France',   flag: '🇫🇷' },
+  { id: 39,  name: 'England',  icon: 'public' },
+  { id: 140, name: 'Spain',    icon: 'public' },
+  { id: 78,  name: 'Germany',  icon: 'public' },
+  { id: 135, name: 'Italy',    icon: 'public' },
+  { id: 61,  name: 'France',   icon: 'public' },
 ];
 
 // ── League Table Widget ────────────────────────────────
@@ -1524,7 +1526,7 @@ async function renderLeagueTableWidget(container) {
   if (!container) return;
   container.innerHTML = `
     <div class="lw-league-tabs">
-      ${LEAGUE_TABS.map((l, i) => `<button class="lw-tab${i===0?' active':''}" data-league="${l.id}">${l.flag} ${l.name}</button>`).join('')}
+      ${LEAGUE_TABS.map((l, i) => `<button class="lw-tab${i===0?' active':''}" data-league="${l.id}"><span class="material-icons-round" aria-hidden="true">${l.icon}</span> ${l.name}</button>`).join('')}
     </div>
     <div class="lw-table-wrap"><div class="skeleton" style="height:200px;border-radius:8px"></div></div>`;
   container.querySelectorAll('.lw-tab').forEach(btn => {
@@ -1575,7 +1577,7 @@ async function renderTopScorersWidget(container) {
   if (!container) return;
   container.innerHTML = `
     <div class="lw-league-tabs">
-      ${LEAGUE_TABS.map((l, i) => `<button class="lw-tab ts-tab${i===0?' active':''}" data-league="${l.id}">${l.flag} ${l.name}</button>`).join('')}
+      ${LEAGUE_TABS.map((l, i) => `<button class="lw-tab ts-tab${i===0?' active':''}" data-league="${l.id}"><span class="material-icons-round" aria-hidden="true">${l.icon}</span> ${l.name}</button>`).join('')}
     </div>
     <div class="ts-table-wrap"><div class="skeleton" style="height:160px;border-radius:8px"></div></div>`;
   container.querySelectorAll('.ts-tab').forEach(btn => {
@@ -1600,7 +1602,7 @@ async function _loadTopScorers(container, leagueId) {
       return;
     }
     wrap.innerHTML = `<table class="ts-table">
-      <thead><tr><th>#</th><th>Player</th><th>MP</th><th>⚽</th></tr></thead>
+      <thead><tr><th>#</th><th>Player</th><th>MP</th><th><span class="material-icons-round" aria-label="Goals">sports_soccer</span></th></tr></thead>
       <tbody>${data.data.players.map((p, i) => `<tr>
         <td>${i+1}</td>
         <td><div class="ts-player">

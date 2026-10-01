@@ -36,7 +36,7 @@ function brandedEmail(title, body) {
 <div style="padding:24px 16px">
 <div class="wrap">
   <div class="header">
-    <h1>⚡ Predictvilla</h1>
+    <h1>Predictvilla</h1>
     <p>Data-Driven Picks. Proven Results.</p>
   </div>
   <div class="body">${body}</div>
@@ -52,9 +52,9 @@ function brandedEmail(title, body) {
 async function sendWelcomeEmail({ name, email }) {
   await transport.sendMail({
     from: FROM, to: email,
-    subject: 'Welcome to Predictvilla! 🎯',
+    subject: 'Welcome to Predictvilla!',
     html: brandedEmail('Welcome to Predictvilla', `
-      <h2>Welcome, ${name}! 🎉</h2>
+      <h2>Welcome, ${name}!</h2>
       <p>You're now part of the Predictvilla community — where data meets football intelligence.</p>
       <p>Start exploring today's free predictions and consider upgrading to VIP for our highest-confidence picks.</p>
       <a class="btn" href="${SITE_URL}/predictions.html">View Today's Tips</a>
@@ -110,9 +110,9 @@ async function sendExpiryReminderEmail({ name, email, plan, expiresAt }) {
 async function sendVipWelcomeEmail({ name, email, plan, telegramLink }) {
   await transport.sendMail({
     from: FROM, to: email,
-    subject: '🏆 Welcome to Predictvilla VIP!',
+    subject: 'Welcome to Predictvilla VIP!',
     html: brandedEmail('VIP Access Activated', `
-      <h2>You're now a VIP member! 🏆</h2>
+      <h2>You're now a VIP member!</h2>
       <p>Hi ${name},</p>
       <p>Your <strong>${plan}</strong> VIP subscription is now active. You have full access to:</p>
       <ul>

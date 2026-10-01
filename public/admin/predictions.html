@@ -351,7 +351,7 @@ async function loadPreds(page = 1) {
     const needsResult = currentView === 'finished' && (!p.result || p.result === 'pending') && p.home_score == null;
     const isQueueRow = isQueue;
     const rowClass = needsResult ? 'needs-result' : (isQueueRow ? 'queue-row' : '');
-    const needsTag = needsResult ? '<span style="font-size:10px;color:#ef4444;font-weight:700;margin-left:4px">⚠ NEEDS RESULT</span>' : '';
+    const needsTag = needsResult ? '<span style="font-size:10px;color:#ef4444;font-weight:700;margin-left:4px"><span class="material-icons-round" style="font-size:12px;vertical-align:middle">warning</span> NEEDS RESULT</span>' : '';
     return `
     <tr class="${rowClass}">
       <td><input type="checkbox" class="row-chk" value="${p.id}"></td>

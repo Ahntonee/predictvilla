@@ -471,7 +471,7 @@ function buildSlipText() {
   const payout = stake * combined;
 
   const lines = [
-    `🎯 Predictvilla Accumulator — ${new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short'})}`,
+    `Predictvilla Accumulator — ${new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short'})}`,
     '',
     ...selected.map((g,i) => {
       const ko = g.match_date ? new Date(g.match_date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '';
@@ -481,7 +481,7 @@ function buildSlipText() {
     `Combined Odds: ${combined.toFixed(2)}`,
     `Stake: $${stake.toFixed(2)} → Potential: $${payout.toFixed(2)}`,
     '',
-    '🔗 predictvilla.com/bet-builder',
+    'predictvilla.com/bet-builder',
   ];
 
   return lines.join('\n');

@@ -1,9 +1,15 @@
 const { pool } = require('../config/db');
 const { successResponse, errorResponse, asyncHandler, parsePagination, paginate, generatePredictionSlug, sanitiseText } = require('../utils/helpers');
+const memoryCache = require('../services/memoryCache');
+
+// Clears cached public prediction responses after any prediction mutation.
+function invalidatePredictionCache() {
+  memoryCache.del('predictions:', true);
+}
 
 function redactVip(pred, user) {
   if (pred.is_vip && (!user || (user.role !== 'vip' && user.role !== 'admin'))) {
-    return { ...pred, tip: '🔒 VIP Pick', analysis: null, odds: null, intelligence_score: null, bookies_available: null };
+    return { ...pred, tip: 'VIP Pick', analysis: null, odds: null, intelligence_score: null, bookies_available: null };
   }
   return pred;
 }
@@ -89,15 +95,20 @@ exports.list = asyncHandler(async (req, res) => {
   if (search) { where.push('(home_team LIKE ? OR away_team LIKE ?)'); params.push(`%${search}%`, `%${search}%`); }
 
   const whereStr = where.length ? 'WHERE ' + where.join(' AND ') : '';
-  const [countRows] = await pool.query(`SELECT COUNT(*) as cnt FROM predictions ${whereStr}`, params);
-  const total = countRows[0].cnt;
-
-  const [rows] = await pool.query(
-    `SELECT p.*, l.name as league_name, l.logo_url as league_logo
-     FROM predictions p LEFT JOIN leagues l ON l.id = p.league_id
-     ${whereStr} ORDER BY CASE WHEN p.league_id = 1 THEN 0 ELSE 1 END ASC, p.match_date ASC LIMIT ? OFFSET ?`,
-    [...params, limit, offset]
-  );
+  // Public list requests are served from a short-lived worker cache after the first database read.
+  const loadRows = async () => {
+    const [countRows] = await pool.query(`SELECT COUNT(*) as cnt FROM predictions ${whereStr}`, params);
+    const [rows] = await pool.query(
+      `SELECT p.*, l.name as league_name, l.logo_url as league_logo
+       FROM predictions p LEFT JOIN leagues l ON l.id = p.league_id
+       ${whereStr} ORDER BY CASE WHEN p.league_id = 1 THEN 0 ELSE 1 END ASC, p.match_date ASC LIMIT ? OFFSET ?`,
+      [...params, limit, offset]
+    );
+    return { total: countRows[0].cnt, rows };
+  };
+  const cacheKey = memoryCache.stableKey('predictions:list', { whereStr, params, page, limit, offset });
+  const loaded = adminView ? await loadRows() : await memoryCache.remember(cacheKey, 60000, loadRows);
+  const { total, rows } = loaded;
 
   const predictions = rows.map(p => redactVip(p, req.user));
   return successResponse(res, { predictions, pagination: paginate(total, page, limit) });
@@ -105,17 +116,20 @@ exports.list = asyncHandler(async (req, res) => {
 
 exports.recentWins = asyncHandler(async (req, res) => {
   res.set('Cache-Control', 'no-store, max-age=0');
-  const [rows] = await pool.query(
-    `SELECT p.id, p.slug, p.home_team, p.away_team, p.tip, p.market,
+  const rows = await memoryCache.remember('predictions:recent-wins', 60000, async () => {
+    const [result] = await pool.query(
+      `SELECT p.id, p.slug, p.home_team, p.away_team, p.tip, p.market,
             p.match_date, p.home_score, p.away_score, p.home_team_logo, p.away_team_logo,
             p.odds, p.home_form, p.away_form, p.result,
             l.name as league_name
-     FROM predictions p
-     LEFT JOIN leagues l ON l.id = p.league_id
-     WHERE p.result = 'won' AND p.published_at IS NOT NULL
-     ORDER BY p.match_date DESC
-     LIMIT 50`
-  );
+       FROM predictions p
+       LEFT JOIN leagues l ON l.id = p.league_id
+       WHERE p.result = 'won' AND p.published_at IS NOT NULL
+       ORDER BY p.match_date DESC
+       LIMIT 50`
+    );
+    return result;
+  });
   return successResponse(res, { wins: rows });
 });
 
@@ -214,13 +228,19 @@ exports.getDetail = asyncHandler(async (req, res) => {
   if (pred.api_league_id && process.env.API_FOOTBALL_KEY) {
     try {
       const axios = require('axios');
+      const { storeResponse } = require('../services/apiFootballArchive');
       const season = new Date().getFullYear();
-      const r = await axios.get('https://v3.football.api-sports.io/standings', {
-        headers: { 'x-apisports-key': process.env.API_FOOTBALL_KEY },
-        params: { league: pred.api_league_id, season },
-        timeout: 5000,
+      const params = { league: pred.api_league_id, season };
+      const standingData = await memoryCache.remember(memoryCache.stableKey('historical:standings', params), 6 * 60 * 60 * 1000, async () => {
+        const response = await axios.get('https://v3.football.api-sports.io/standings', {
+          headers: { 'x-apisports-key': process.env.API_FOOTBALL_KEY },
+          params,
+          timeout: 5000,
+        });
+        await storeResponse('standings', params, response.data?.response).catch(() => {});
+        return response.data;
       });
-      const table = r.data?.response?.[0]?.league?.standings?.[0] || [];
+      const table = standingData?.response?.[0]?.league?.standings?.[0] || [];
       standings = table.map(t => ({
         rank: t.rank, team: t.team.name, logo: t.team.logo,
         played: t.all.played, won: t.all.win, drawn: t.all.draw, lost: t.all.lose,
@@ -391,6 +411,7 @@ exports.create = asyncHandler(async (req, res) => {
      home_goals_conceded_avg || null, away_goals_conceded_avg || null,
      bookiesJson, api_fixture_id || null, publishedAt]
   );
+  invalidatePredictionCache();
   return successResponse(res, { id: result.insertId, slug }, 'Prediction created', 201);
 });
 
@@ -424,11 +445,13 @@ exports.update = asyncHandler(async (req, res) => {
   if (!updates.length) return errorResponse(res, 'No fields to update', 400);
   params.push(id);
   await pool.query(`UPDATE predictions SET ${updates.join(', ')} WHERE id = ?`, params);
+  invalidatePredictionCache();
   return successResponse(res, null, 'Prediction updated');
 });
 
 exports.remove = asyncHandler(async (req, res) => {
   await pool.query('DELETE FROM predictions WHERE id = ?', [req.params.id]);
+  invalidatePredictionCache();
   return successResponse(res, null, 'Prediction deleted');
 });
 
@@ -438,6 +461,7 @@ exports.setResult = asyncHandler(async (req, res) => {
     'UPDATE predictions SET result=?, home_score=?, away_score=? WHERE id=?',
     [result, home_score ?? null, away_score ?? null, req.params.id]
   );
+  invalidatePredictionCache();
   return successResponse(res, null, 'Result updated');
 });
 
@@ -446,6 +470,7 @@ exports.togglePublish = asyncHandler(async (req, res) => {
   if (!rows.length) return errorResponse(res, 'Not found', 404);
   const nowPublished = rows[0].published_at ? null : new Date();
   await pool.query('UPDATE predictions SET published_at=? WHERE id=?', [nowPublished, req.params.id]);
+  invalidatePredictionCache();
   return successResponse(res, { published: !!nowPublished }, nowPublished ? 'Published' : 'Unpublished');
 });
 
@@ -461,12 +486,14 @@ exports.toggleBanker = asyncHandler(async (req, res) => {
     if (bankerCount[0].cnt >= 2) return errorResponse(res, 'Maximum 2 bankers per day', 400);
   }
   await pool.query('UPDATE predictions SET is_banker=? WHERE id=?', [current ? 0 : 1, id]);
+  invalidatePredictionCache();
   return successResponse(res, null, current ? 'Banker removed' : 'Banker set');
 });
 
 exports.setCategory = asyncHandler(async (req, res) => {
   const { category } = req.body;
   await pool.query('UPDATE predictions SET category=? WHERE id=?', [category, req.params.id]);
+  invalidatePredictionCache();
   return successResponse(res, null, 'Category updated');
 });
 

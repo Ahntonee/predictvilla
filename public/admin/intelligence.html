@@ -382,7 +382,7 @@ function filterCalibration() {
         const bandMid = r.band_start + 2.5;
         const diff = r.accuracy - bandMid;
         const calibLabel = Math.abs(diff) <= 5
-          ? `<span style="color:#22c55e;font-size:11px">✓ Calibrated</span>`
+          ? `<span style="color:#22c55e;font-size:11px"><span class="material-icons-round" style="font-size:12px;vertical-align:middle">check</span> Calibrated</span>`
           : diff > 0
             ? `<span style="color:#22c55e;font-size:11px">+${diff.toFixed(1)}% over</span>`
             : `<span style="color:#ef4444;font-size:11px">${diff.toFixed(1)}% under</span>`;

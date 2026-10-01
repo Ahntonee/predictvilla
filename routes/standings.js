@@ -1,6 +1,8 @@
 const router = require('express').Router();
 const axios = require('axios');
 const quota = require('../services/apiQuota');
+const { storeResponse } = require('../services/apiFootballArchive');
+const memoryCache = require('../services/memoryCache');
 
 const API_KEY = process.env.API_FOOTBALL_KEY;
 const API_BASE = 'https://v3.football.api-sports.io';
@@ -10,29 +12,29 @@ function currentSeason() {
   return now.getMonth() < 6 ? now.getFullYear() - 1 : now.getFullYear();
 }
 
-const _cache = new Map();
 const CACHE_TTL = 3600000;
 
-async function apiFetch(path) {
-  if (_cache.has(path) && Date.now() - _cache.get(path).ts < CACHE_TTL) {
-    return _cache.get(path).data;
-  }
-  quota.checkAndIncrement(`standings:${path}`);
-  const { data } = await axios.get(`${API_BASE}${path}`, {
-    headers: {
-      'x-apisports-key': API_KEY,
-    },
-    timeout: 10000,
+// Loads standings widgets from the worker cache and archives fresh API responses in MySQL.
+async function apiFetch(endpoint, params) {
+  const cleanEndpoint = endpoint.replace(/^\//, '');
+  return memoryCache.remember(memoryCache.stableKey(`historical:${cleanEndpoint}`, params), CACHE_TTL, async () => {
+    quota.checkAndIncrement(`standings:${cleanEndpoint}`);
+    const { data } = await axios.get(`${API_BASE}${endpoint}`, {
+      params,
+      headers: { 'x-apisports-key': API_KEY },
+      timeout: 10000,
+    });
+    await storeResponse(cleanEndpoint, params, data?.response)
+      .catch(error => console.error(`[Standings] archive ${cleanEndpoint}:`, error.message));
+    return data;
   });
-  _cache.set(path, { ts: Date.now(), data });
-  return data;
 }
 
 router.get('/standings', async (req, res) => {
   try {
     const leagueId = parseInt(req.query.league) || 39;
     const season = parseInt(req.query.season) || currentSeason();
-    const data = await apiFetch(`/standings?league=${leagueId}&season=${season}`);
+    const data = await apiFetch('/standings', { league: leagueId, season });
     const league = data.response?.[0]?.league || {};
     const standings = league.standings?.[0] || [];
     res.json({
@@ -68,7 +70,7 @@ router.get('/topscorers', async (req, res) => {
   try {
     const leagueId = parseInt(req.query.league) || 39;
     const season = parseInt(req.query.season) || currentSeason();
-    const data = await apiFetch(`/players/topscorers?league=${leagueId}&season=${season}`);
+    const data = await apiFetch('/players/topscorers', { league: leagueId, season });
     const players = (data.response || []).slice(0, 10);
     res.json({
       success: true,

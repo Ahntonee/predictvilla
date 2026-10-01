@@ -2528,7 +2528,9 @@ body { animation: pageFadeIn 0.2s ease-out; }
   #pwa-install-banner.pwa-open { right: 0; cursor: default; }
   /* pull tab that peeks out from right edge */
   #pwa-install-banner::before {
-    content: '📲';
+    content: 'install_mobile';
+    font-family: 'Material Icons Round';
+    font-size: 24px;
     position: absolute;
     left: -40px;
     top: 50%;

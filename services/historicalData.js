@@ -1,5 +1,7 @@
 const axios = require('axios');
 const { pool } = require('../config/db');
+const { storeResponse } = require('./apiFootballArchive');
+const memoryCache = require('./memoryCache');
 
 const BASE = process.env.API_FOOTBALL_BASE_URL || 'https://v3.football.api-sports.io';
 const KEY  = process.env.API_FOOTBALL_KEY;
@@ -18,6 +20,17 @@ function currentSeason() {
 }
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// Archives every historical API response and reuses identical requests in this worker.
+async function historicalGet(endpoint, params, ttlMs = 12 * 60 * 60 * 1000) {
+  const cleanEndpoint = endpoint.replace(/^\//, '');
+  return memoryCache.remember(memoryCache.stableKey(`historical:${cleanEndpoint}`, params), ttlMs, async () => {
+    const response = await api.get(endpoint, { params, timeout: 25000 });
+    await storeResponse(cleanEndpoint, params, response.data?.response)
+      .catch(error => console.error(`[HistoricalData] archive ${cleanEndpoint}:`, error.message));
+    return response.data;
+  });
+}
 
 /**
  * Fetch and store team statistics for all active leagues.
@@ -38,22 +51,18 @@ async function syncAllTeamStats() {
   for (const league of leagues) {
     try {
       // Get all teams in this league/season
-      const teamsResp = await api.get('/teams', {
-        params: { league: league.api_league_id, season },
-      });
+      const teamsData = await historicalGet('/teams', { league: league.api_league_id, season });
       await sleep(300);
 
-      const teams = teamsResp.data?.response || [];
+      const teams = teamsData?.response || [];
       if (!teams.length) continue;
 
       for (const { team } of teams) {
         try {
-          const sr = await api.get('/teams/statistics', {
-            params: { team: team.id, league: league.api_league_id, season },
-          });
+          const statsData = await historicalGet('/teams/statistics', { team: team.id, league: league.api_league_id, season });
           await sleep(300);
 
-          const s = sr.data?.response;
+          const s = statsData?.response;
           if (!s) continue;
 
           const goals    = s.goals   || {};
@@ -149,12 +158,10 @@ async function syncCornerStats() {
   for (const t of teams) {
     try {
       // Fetch last 10 fixtures for this team
-      const resp = await api.get('/fixtures', {
-        params: { team: t.api_team_id, league: t.api_league_id, season, last: 10 },
-      });
+      const fixturesData = await historicalGet('/fixtures', { team: t.api_team_id, league: t.api_league_id, season, last: 10 });
       await sleep(300);
 
-      const fixtures = resp.data?.response || [];
+      const fixtures = fixturesData?.response || [];
       if (!fixtures.length) continue;
 
       let homeCorners = [], awayCorners = [];
@@ -165,12 +172,10 @@ async function syncCornerStats() {
         if (!['FT','AET','PEN'].includes(status)) continue;
 
         try {
-          const sr = await api.get('/fixtures/statistics', {
-            params: { fixture: fx.fixture.id, type: 'Corner Kicks' },
-          });
+          const statsData = await historicalGet('/fixtures/statistics', { fixture: fx.fixture.id, type: 'Corner Kicks' });
           await sleep(200);
 
-          const stats = sr.data?.response || [];
+          const stats = statsData?.response || [];
           for (const teamStat of stats) {
             if (!teamStat.statistics?.[0]) continue;
             const corners = parseInt(teamStat.statistics[0].value) || 0;
@@ -230,20 +235,18 @@ async function syncH2HForUpcoming() {
   for (const f of fixtures) {
     try {
       // Resolve team IDs from the fixture
-      const fxResp = await api.get('/fixtures', { params: { id: f.api_fixture_id } });
+      const fixtureData = await historicalGet('/fixtures', { id: f.api_fixture_id });
       await sleep(300);
-      const fxData = fxResp.data?.response?.[0];
+      const fxData = fixtureData?.response?.[0];
       if (!fxData) continue;
 
       const homeId = fxData.teams.home.id;
       const awayId = fxData.teams.away.id;
 
-      const h2hResp = await api.get('/fixtures/headtohead', {
-        params: { h2h: `${homeId}-${awayId}`, last: 10 },
-      });
+      const h2hData = await historicalGet('/fixtures/headtohead', { h2h: `${homeId}-${awayId}`, last: 10 });
       await sleep(300);
 
-      const matches = h2hResp.data?.response || [];
+      const matches = h2hData?.response || [];
 
       // Persist raw H2H to h2h_history
       for (const m of matches) {
@@ -309,12 +312,9 @@ async function seedHistoricalFixtures(leagueApiId, dbLeagueId, season) {
 
   let fixtures = [];
   try {
-    const resp = await api.get('/fixtures', {
-      params: { league: leagueApiId, season, status: 'FT' },
-      timeout: 25000,
-    });
+    const fixtureData = await historicalGet('/fixtures', { league: leagueApiId, season, status: 'FT' }, 24 * 60 * 60 * 1000);
     await sleep(400);
-    fixtures = resp.data?.response || [];
+    fixtures = fixtureData?.response || [];
   } catch (err) {
     console.error(`[HistoricalData] fixtures ${leagueApiId}/${season}:`, err.message);
     return { fixtures: 0, teams: 0 };

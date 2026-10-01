@@ -91,7 +91,7 @@
           </div>
           <!-- Category Select (mobile only) -->
           <select id="category-select" class="category-select-mobile" style="display:none">
-            <option value="" disabled>🎯 Filter by tip type</option>
+            <option value="" disabled>Filter by tip type</option>
             <option value="">All Categories</option>
             <option value="free">Free Tips</option>
             <option value="over_1_5">Over 1.5 Goals</option>
@@ -338,7 +338,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     .forEach(([v, l]) => csMarket.addOpt(v, l, () => applyFilters()));
 
   csResult = makeCustomSelect('result-filter-wrap', 'All Results', false);
-  [['', 'All Results'], ['pending', 'Pending'], ['won', 'Won ✅'], ['lost', 'Lost ❌']]
+  [['', 'All Results'], ['pending', 'Pending'], ['won', 'Won'], ['lost', 'Lost']]
     .forEach(([v, l]) => csResult.addOpt(v, l, () => applyFilters()));
 
   buildDateStrip();

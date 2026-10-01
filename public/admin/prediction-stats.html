@@ -437,7 +437,7 @@ async function loadBestPicks() {
       lTbody.innerHTML = '<tr><td colspan="7" class="loading-cell">No data yet (need ≥5 graded predictions per combo).</td></tr>';
     } else {
       lTbody.innerHTML = lRows.map((r, i) => {
-        const rank = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}.`;
+        const rank = i < 3 ? `<span class="material-icons-round" aria-label="Rank ${i + 1}">workspace_premium</span>` : `${i+1}.`;
         return `<tr>
           <td><span style="margin-right:6px">${rank}</span>${esc(r.league_name)}<br><span class="text-soft" style="font-size:11px">${esc(r.country)}</span></td>
           <td class="text-soft">${esc(r.market)}</td>
@@ -457,7 +457,7 @@ async function loadBestPicks() {
       tTbody.innerHTML = '<tr><td colspan="4" class="loading-cell">No data yet.</td></tr>';
     } else {
       tTbody.innerHTML = tRows.map((r, i) => {
-        const rank = i < 3 ? ['🥇','🥈','🥉'][i] : `${i+1}.`;
+        const rank = i < 3 ? `<span class="material-icons-round" aria-label="Rank ${i + 1}">workspace_premium</span>` : `${i+1}.`;
         return `<tr>
           <td><span style="margin-right:6px">${rank}</span><strong>${esc(r.team)}</strong></td>
           <td class="num">${r.total}</td>
