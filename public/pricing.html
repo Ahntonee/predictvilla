@@ -23,6 +23,41 @@
 <meta name="theme-color" content="#a0d000">
 <link rel="apple-touch-icon" href="/images/logo.png">
 <link rel="stylesheet" href="/css/style.css">
+<style>
+/* Sliding authentication card used by the existing login and registration flows. */
+.auth-shell{max-width:900px;margin:0 auto 40px;padding:0 16px}
+.auth-card{position:relative;display:grid;grid-template-columns:1fr 1fr;min-height:500px;overflow:hidden;border:1px solid var(--border);border-radius:var(--radius-xl);background:var(--card);box-shadow:0 22px 55px rgba(13,22,0,.16)}
+.auth-form-panel{display:flex;align-items:center;justify-content:center;padding:46px;transition:opacity .35s ease,transform .55s cubic-bezier(.22,.61,.36,1)}
+.auth-form-inner{width:100%;max-width:330px}
+.auth-form-inner h2{margin-bottom:6px;text-align:center;font-size:30px}
+.auth-form-copy{text-align:center;color:var(--text-soft);font-size:14px;margin-bottom:24px}
+.auth-login-panel{grid-column:1}
+.auth-register-panel{grid-column:2;opacity:0;pointer-events:none;transform:translateX(24px)}
+.auth-card.register-mode .auth-login-panel{opacity:0;pointer-events:none;transform:translateX(-24px)}
+.auth-card.register-mode .auth-register-panel{opacity:1;pointer-events:auto;transform:translateX(0)}
+.auth-slider{position:absolute;z-index:3;top:0;right:0;width:50%;height:100%;display:flex;align-items:center;justify-content:center;padding:46px;text-align:center;color:#0d1600;background:linear-gradient(145deg,var(--accent),var(--primary));transition:transform .65s cubic-bezier(.22,.61,.36,1);overflow:hidden}
+.auth-card.register-mode .auth-slider{transform:translateX(-100%)}
+.auth-slider::before,.auth-slider::after{content:"";position:absolute;border-radius:50%;background:rgba(255,255,255,.13)}
+.auth-slider::before{width:260px;height:260px;top:-145px;right:-90px}
+.auth-slider::after{width:190px;height:190px;bottom:-105px;left:-55px}
+.auth-slider-content{position:relative;z-index:1;transition:opacity .25s ease,transform .45s ease}
+.auth-slider-content h2{font-size:32px;margin-bottom:12px}
+.auth-slider-content p{margin:0 auto 22px;max-width:290px;line-height:1.65;font-weight:500}
+.auth-slider-register{display:none}
+.auth-card.register-mode .auth-slider-login{display:none}
+.auth-card.register-mode .auth-slider-register{display:block}
+.auth-switch-btn{border-color:rgba(13,22,0,.65);color:#0d1600;background:rgba(255,255,255,.12);min-width:132px}
+.auth-switch-btn:hover{background:rgba(255,255,255,.3);color:#0d1600}
+@media(max-width:720px){
+  .auth-card{display:block;min-height:670px;padding-top:190px}
+  .auth-form-panel{position:absolute;top:190px;left:0;width:100%;padding:30px 22px}
+  .auth-register-panel{transform:translateX(30px)}
+  .auth-slider{top:0;left:0;right:auto;width:100%;height:190px;padding:26px;transform:none}
+  .auth-card.register-mode .auth-slider{transform:none}
+  .auth-slider-content h2{font-size:26px}
+  .auth-slider-content p{margin-bottom:14px}
+}
+</style>
 <script src="https://js.paystack.co/v2/inline.js"></script>
 <link rel="alternate" hreflang="en" href="https://predictvilla.com/pricing.html">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://predictvilla.com"},{"@type":"ListItem","position":2,"name":"VIP Subscription","item":"https://predictvilla.com/pricing.html"}]}</script>
@@ -54,29 +89,48 @@
 
   <!-- Auth Forms (shown when not logged in) -->
   <div id="auth-section" style="display:none">
-    <div class="container" style="max-width:440px;margin-bottom:32px">
-      <div class="card">
-        <div class="flex gap-2 mb-3">
-          <button class="btn btn-outline w-full" id="tab-login" onclick="showTab('login')">Login</button>
-          <button class="btn btn-primary w-full" id="tab-register" onclick="showTab('register')">Register</button>
+    <div class="auth-shell">
+      <div class="auth-card" id="auth-card">
+        <div class="auth-form-panel auth-login-panel">
+          <div class="auth-form-inner" id="login-form">
+            <h2>Sign In</h2>
+            <p class="auth-form-copy">Sign in with your email and password</p>
+            <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-control" id="login-email" placeholder="you@example.com" autocomplete="email"></div>
+            <div class="form-group"><label class="form-label">Password</label><input type="password" class="form-control" id="login-pass" placeholder="••••••••" autocomplete="current-password"></div>
+            <button class="btn btn-primary w-full" onclick="doLogin()">Login</button>
+            <p class="text-center mt-2" style="font-size:13px;color:var(--text-soft)"><a href="/reset-password.html">Forgot password?</a></p>
+          </div>
         </div>
-        <div id="login-form">
-          <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-control" id="login-email" placeholder="you@example.com"></div>
-          <div class="form-group"><label class="form-label">Password</label><input type="password" class="form-control" id="login-pass" placeholder="••••••••"></div>
-          <button class="btn btn-primary w-full" onclick="doLogin()">Login</button>
-          <p class="text-center mt-2" style="font-size:13px;color:var(--text-soft)"><a href="/reset-password.html">Forgot password?</a></p>
+        <div class="auth-form-panel auth-register-panel">
+          <div class="auth-form-inner">
+            <div id="register-form">
+              <h2>Create Account</h2>
+              <p class="auth-form-copy">Register with your email</p>
+              <div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-control" id="reg-name" placeholder="Your name" autocomplete="name"></div>
+              <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-control" id="reg-email" placeholder="you@example.com" autocomplete="email"></div>
+              <div class="form-group"><label class="form-label">Password</label><input type="password" class="form-control" id="reg-pass" placeholder="Min 8 chars, 1 uppercase, 1 number, 1 special" autocomplete="new-password"></div>
+              <div class="form-group"><label class="form-label">Country</label><input type="text" class="form-control" id="reg-country" placeholder="Nigeria" autocomplete="country-name"></div>
+              <button class="btn btn-primary w-full" onclick="doRegister()">Create Account</button>
+            </div>
+            <div id="otp-form" style="display:none">
+              <h2>Verify Email</h2>
+              <p class="auth-form-copy">Enter the 6-digit code sent to your email.</p>
+              <div class="form-group"><label class="form-label">Verification Code</label><input type="text" class="form-control" id="otp-code" placeholder="123456" maxlength="6" inputmode="numeric" autocomplete="one-time-code"></div>
+              <button class="btn btn-primary w-full" onclick="doVerify()">Verify Email</button>
+            </div>
+          </div>
         </div>
-        <div id="register-form" style="display:none">
-          <div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-control" id="reg-name" placeholder="Your name"></div>
-          <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-control" id="reg-email" placeholder="you@example.com"></div>
-          <div class="form-group"><label class="form-label">Password</label><input type="password" class="form-control" id="reg-pass" placeholder="Min 8 chars, 1 uppercase, 1 number, 1 special"></div>
-          <div class="form-group"><label class="form-label">Country</label><input type="text" class="form-control" id="reg-country" placeholder="Nigeria"></div>
-          <button class="btn btn-primary w-full" onclick="doRegister()">Create Account</button>
-        </div>
-        <div id="otp-form" style="display:none">
-          <p class="text-soft mb-2" style="font-size:14px">Enter the 6-digit code sent to your email.</p>
-          <div class="form-group"><label class="form-label">Verification Code</label><input type="text" class="form-control" id="otp-code" placeholder="123456" maxlength="6"></div>
-          <button class="btn btn-primary w-full" onclick="doVerify()">Verify Email</button>
+        <div class="auth-slider" aria-live="polite">
+          <div class="auth-slider-content auth-slider-login">
+            <h2>Hello!</h2>
+            <p>New to Predictvilla? Create an account and enjoy smarter football predictions.</p>
+            <button class="btn btn-outline auth-switch-btn" id="tab-register" onclick="showTab('register')">Register</button>
+          </div>
+          <div class="auth-slider-content auth-slider-register">
+            <h2>Welcome Back!</h2>
+            <p>Already have an account? Sign in to continue to your predictions and VIP access.</p>
+            <button class="btn btn-outline auth-switch-btn" id="tab-login" onclick="showTab('login')">Login</button>
+          </div>
         </div>
       </div>
     </div>
@@ -213,11 +267,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function showTab(tab) {
-  document.getElementById('login-form').style.display = tab === 'login' ? 'block' : 'none';
-  document.getElementById('register-form').style.display = tab === 'register' ? 'block' : 'none';
+  // Slides the branded panel while preserving the existing login and registration forms.
+  document.getElementById('auth-card').classList.toggle('register-mode', tab === 'register');
+  document.getElementById('login-form').style.display = 'block';
+  document.getElementById('register-form').style.display = 'block';
   document.getElementById('otp-form').style.display = 'none';
-  document.getElementById('tab-login').className = `btn ${tab==='login'?'btn-primary':'btn-outline'} w-full`;
-  document.getElementById('tab-register').className = `btn ${tab==='register'?'btn-primary':'btn-outline'} w-full`;
 }
 
 async function doLogin() {

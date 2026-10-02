@@ -46,6 +46,7 @@ const apiLimiter = rateLimit({
   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 200,
   standardHeaders: true, legacyHeaders: false,
   message: { success: false, message: 'Too many requests, please slow down.' },
+  skip: (req) => req.path.startsWith('/admin/') || req.path.startsWith('/api/admin/'),
 });
 app.use('/api/', apiLimiter);
 
@@ -692,6 +693,9 @@ app.get('/prediction/:slug', async (req, res) => {
 <script type="application/ld+json">${ldJson}</script>
 <script type="application/ld+json">${breadcrumbLd}</script>`
     );
+    // Also replace any stale OG/canonical from the template that may have survived
+    html = html.replace(/<meta property="og:url" content="[^"]*predictions\.html[^"]*">/i, `<meta property="og:url" content="${canonical}">`);
+    html = html.replace(/<meta property="og:type" content="website">/i, `<meta property="og:type" content="article">`);
 
     // Fix 3: SSR prediction body so Google reads actual content
     const matchDate = new Date(p.match_date);
@@ -743,20 +747,29 @@ app.get('/blog/:slug', async (req, res) => {
     const description = p.meta_description || p.excerpt || `Read ${p.title} on the Predictvilla football predictions blog.`;
     const image = p.featured_image && !p.featured_image.startsWith('data:') ? p.featured_image : `${base}/images/logo.png`;
     let html = readHtmlFile(path.join(__dirname, 'public', 'blog-post.html'));
-    html = html.replace(
-      '<title>Blog — Predictvilla</title>',
-      `<title>${esc(title)}</title>
-<meta name="description" content="${esc(description)}">
-<link rel="canonical" href="${canonical}">
-<meta property="og:title" content="${esc(title)}">
-<meta property="og:description" content="${esc(description)}">
-<meta property="og:url" content="${canonical}">
-<meta property="og:type" content="article">
-<meta property="og:image" content="${esc(image)}">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="${esc(title)}">
-<meta name="twitter:description" content="${esc(description)}">`
-    );
+    html = html.replace(/<title>[^<]*<\/title>/, `<title>${esc(title)}</title>`);
+    html = html.replace(/<link rel="canonical"[^>]*>/i, `<link rel="canonical" href="${canonical}">`);
+    html = html.replace(/<link rel="alternate" hreflang[^>]*>/i, `<link rel="alternate" hreflang="en" href="${canonical}">`);
+    html = html.replace(/<meta name="description"[^>]*>/i, `<meta name="description" content="${esc(description)}">`);
+    html = html.replace(/<meta property="og:title"[^>]*>/i, `<meta property="og:title" content="${esc(title)}">`);
+    html = html.replace(/<meta property="og:description"[^>]*>/i, `<meta property="og:description" content="${esc(description)}">`);
+    html = html.replace(/<meta property="og:url"[^>]*>/i, `<meta property="og:url" content="${canonical}">`);
+    html = html.replace(/<meta property="og:image"[^>]*>/i, `<meta property="og:image" content="${esc(image)}">`);
+    html = html.replace(/<meta name="twitter:title"[^>]*>/i, `<meta name="twitter:title" content="${esc(title)}">`);
+    html = html.replace(/<meta name="twitter:description"[^>]*>/i, `<meta name="twitter:description" content="${esc(description)}">`);
+    // Add Article schema for Googlebot
+    const articleLd = JSON.stringify({
+      '@context': 'https://schema.org', '@type': 'Article',
+      headline: p.meta_title || p.title,
+      description,
+      image,
+      author: { '@type': 'Person', name: p.author_name || 'Predictvilla' },
+      publisher: { '@type': 'Organization', name: 'Predictvilla', logo: { '@type': 'ImageObject', url: `${base}/images/logo.png` } },
+      datePublished: p.published_at,
+      url: canonical,
+    });
+    html = html.replace('</head>', `<script type="application/ld+json">${articleLd}</script>\n</head>`);
+    html = await injectStaticShell(html, req.path);
     res.type('html').send(html);
   } catch {
     res.sendFile(path.join(__dirname, 'public', 'blog-post.html'));
@@ -780,19 +793,23 @@ app.get('/tips/:slug', async (req, res) => {
     const title = `${p.title} | Predictvilla`;
     const description = p.meta_description || `${p.title} — Football predictions and tips from Predictvilla.`;
     let html = readHtmlFile(path.join(__dirname, 'public', 'seo-article.html'));
-    html = html.replace(
-      '<title>Predictvilla — Football Intelligence Predictions</title>',
-      `<title>${esc(title)}</title>
-<meta name="description" content="${esc(description)}">
-${p.meta_keywords ? `<meta name="keywords" content="${esc(p.meta_keywords)}">` : ''}
-<link rel="canonical" href="${canonical}">
-<meta property="og:title" content="${esc(title)}">
-<meta property="og:description" content="${esc(description)}">
-<meta property="og:url" content="${canonical}">
-<meta property="og:type" content="article">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="${esc(title)}">`
-    );
+    // Replace title using regex so it matches whatever the template contains
+    html = html.replace(/<title>[^<]*<\/title>/, `<title>${esc(title)}</title>`);
+    // Replace existing canonical (template has wrong href — must be overwritten)
+    html = html.replace(/<link rel="canonical"[^>]*>/i, `<link rel="canonical" href="${canonical}">`);
+    // Replace existing OG/Twitter meta that have wrong defaults in the template
+    html = html.replace(/<meta name="description"[^>]*>/i, `<meta name="description" content="${esc(description)}">`);
+    html = html.replace(/<meta property="og:title"[^>]*>/i, `<meta property="og:title" content="${esc(title)}">`);
+    html = html.replace(/<meta property="og:description"[^>]*>/i, `<meta property="og:description" content="${esc(description)}">`);
+    html = html.replace(/<meta property="og:url"[^>]*>/i, `<meta property="og:url" content="${canonical}">`);
+    html = html.replace(/<meta name="twitter:title"[^>]*>/i, `<meta name="twitter:title" content="${esc(title)}">`);
+    html = html.replace(/<meta name="twitter:description"[^>]*>/i, `<meta name="twitter:description" content="${esc(description)}">`);
+    if (p.meta_keywords) {
+      html = html.replace('</head>', `<meta name="keywords" content="${esc(p.meta_keywords)}">\n<link rel="alternate" hreflang="en" href="${canonical}">\n</head>`);
+    } else {
+      html = html.replace('</head>', `<link rel="alternate" hreflang="en" href="${canonical}">\n</head>`);
+    }
+    html = await injectStaticShell(html, req.path);
     res.type('html').send(html);
   } catch {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
