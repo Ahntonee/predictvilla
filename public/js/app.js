@@ -898,7 +898,7 @@ function buildPredictionRow(p, isVip = false) {
     <div class="vp-center">
       ${centerTop}
       <div class="vp-odds-tips">
-        ${oddVal ? `<div class="vp-odds-pill"><span class="vp-odds-label">ODDS</span><span class="vp-odds-val">${oddVal}</span></div>` : ''}
+        ${oddVal ? `<div class="vp-odds-pill"><img src="/images/logo.svg" class="vp-odds-logo" alt="Predictvilla" loading="lazy" onerror="this.style.display='none'"><span class="vp-odds-val">${oddVal}</span></div>` : ''}
         ${isLocked
           ? `<div class="vp-locked-pill"><span class="material-icons-round" aria-hidden="true">lock</span> VIP</div>`
           : `<div class="vp-tips-pill">${escapeHtml(tipText)}</div>`}
