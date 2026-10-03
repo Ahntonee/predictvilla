@@ -836,6 +836,103 @@ function initTelegramPopup() {
   }, 30000);
 }
 
+// ── Popup Ad System ───────────────────────────────────────────────────────────
+// Fetches all active popup-position ads (newest first), then fires them in sequence:
+// first at 15 s, every subsequent one 30 s after the previous appeared.
+async function initPopupAds() {
+  try {
+    const r = await fetch('/api/ads/position/popup');
+    if (!r.ok) return;
+    const data = await r.json();
+    // API already returns newest-first (ORDER BY created_at DESC)
+    const ads = (data?.data?.ads || []).filter(ad =>
+      !localStorage.getItem(`popup_never_${ad.id}`) &&
+      !sessionStorage.getItem(`popup_seen_${ad.id}`)
+    );
+    if (!ads.length) return;
+
+    const FIRST_DELAY = 15000;   // 15 s before first popup
+    const BETWEEN    = 30000;   // 30 s gap between each subsequent popup
+
+    ads.forEach((ad, i) => {
+      setTimeout(() => _showPopupAd(ad), FIRST_DELAY + i * BETWEEN);
+    });
+  } catch {}
+}
+
+function _showPopupAd(ad) {
+  // Only one popup visible at a time — quietly skip if one is still open
+  if (document.getElementById('ad-popup-wrap')) return;
+
+  sessionStorage.setItem(`popup_seen_${ad.id}`, '1');
+  trackAdClick; // ensure function is reachable (no-op reference)
+
+  const AUTODISMISS_MS = 12000;
+
+  let adBody = '';
+  if (ad.type === 'code') {
+    adBody = `<div class="ad-popup-code">${ad.code}</div>`;
+  } else if (ad.type === 'banner' && ad.image_url) {
+    adBody = `<a href="${ad.link_url || '#'}" target="_blank" rel="nofollow noopener" onclick="trackAdClick(${ad.id})" class="ad-popup-img-link">
+      <img src="${ad.image_url}" alt="${ad.alt_text || ad.name}" class="ad-popup-banner-img" loading="lazy">
+    </a>`;
+  } else if (ad.type === 'native') {
+    adBody = `<a href="${ad.link_url || '#'}" target="_blank" rel="nofollow noopener" class="ad-popup-native" onclick="trackAdClick(${ad.id})">
+      ${ad.image_url ? `<img src="${ad.image_url}" alt="${ad.alt_text || ad.name}" class="ad-popup-native-img" loading="lazy">` : ''}
+      <div class="ad-popup-native-text">
+        <span class="ad-popup-native-name">${escapeHtml(ad.name)}</span>
+        ${ad.alt_text ? `<span class="ad-popup-native-sub">${escapeHtml(ad.alt_text)}</span>` : ''}
+      </div>
+    </a>`;
+  } else {
+    adBody = `<a href="${ad.link_url || '#'}" target="_blank" rel="nofollow noopener" class="btn btn-primary w-full ad-popup-btn" onclick="trackAdClick(${ad.id})">${escapeHtml(ad.name)}</a>`;
+  }
+
+  const wrap = document.createElement('div');
+  wrap.id = 'ad-popup-wrap';
+  wrap.className = 'ad-popup-wrap';
+  wrap.innerHTML = `
+    <div class="ad-popup" role="dialog" aria-label="Advertisement">
+      <div class="ad-popup-header">
+        <span class="ad-popup-sponsored-label">Sponsored</span>
+        <div class="ad-popup-header-actions">
+          <button class="ad-popup-never-btn" title="Don't show again" onclick="_neverShowPopup(${ad.id})">
+            <span class="material-icons-round">do_not_disturb_on</span>
+          </button>
+          <button class="ad-popup-close-btn" title="Close" onclick="_closePopup()">
+            <span class="material-icons-round">close</span>
+          </button>
+        </div>
+      </div>
+      <div class="ad-popup-body">${adBody}</div>
+      <div class="ad-popup-progress-track">
+        <div class="ad-popup-progress-bar" style="animation-duration:${AUTODISMISS_MS}ms"></div>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+
+  // Animate in (tiny delay so CSS transition fires after paint)
+  requestAnimationFrame(() => requestAnimationFrame(() => wrap.classList.add('ad-popup-visible')));
+
+  // Auto-dismiss
+  wrap._autoDismiss = setTimeout(() => _closePopup(), AUTODISMISS_MS);
+}
+
+function _closePopup() {
+  const wrap = document.getElementById('ad-popup-wrap');
+  if (!wrap) return;
+  clearTimeout(wrap._autoDismiss);
+  wrap.classList.remove('ad-popup-visible');
+  wrap.addEventListener('transitionend', () => wrap.remove(), { once: true });
+  // Safety fallback
+  setTimeout(() => wrap.remove(), 400);
+}
+
+function _neverShowPopup(id) {
+  localStorage.setItem(`popup_never_${id}`, '1');
+  _closePopup();
+}
+
 // ── Page Init ─────────────────────────────────────────────────────────────────
 let _initPageDone = false;
 async function initPage() {
@@ -857,6 +954,7 @@ async function initPage() {
   await injectFooter();
   injectAdSense();
   initTelegramPopup();
+  initPopupAds();
 }
 
 // ── Prediction Row (VP-style 3-column layout) ─────────────────────────────────

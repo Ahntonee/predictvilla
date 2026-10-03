@@ -3067,3 +3067,148 @@ img, video, iframe, embed, object, canvas, svg { max-width: 100%; height: auto; 
   background: rgba(0,0,0,0.03);
   color: var(--text-soft);
 }
+
+/* ── Popup Ad System ──────────────────────────────────────────────────────────
+   Positioned bottom-left (desktop) so it doesn't clash with the Telegram popup
+   which sits bottom-right. On mobile it rises as a full-width bottom sheet.
+   ─────────────────────────────────────────────────────────────────────────── */
+.ad-popup-wrap {
+  position: fixed;
+  bottom: clamp(12px, 3vw, 28px);
+  left: clamp(12px, 3vw, 28px);
+  z-index: 9500;
+  max-width: clamp(260px, 90vw, 360px);
+  width: 100%;
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.28s ease, transform 0.28s ease;
+  pointer-events: none;
+}
+.ad-popup-wrap.ad-popup-visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.ad-popup {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 16px 48px rgba(0,0,0,.45), 0 2px 8px rgba(0,0,0,.2);
+}
+
+/* Header row: Sponsored label + action buttons */
+.ad-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(8px, 1.5vw, 12px) clamp(10px, 2vw, 14px) 0;
+}
+.ad-popup-sponsored-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2px 8px;
+}
+.ad-popup-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.ad-popup-close-btn,
+.ad-popup-never-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-soft);
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+.ad-popup-close-btn:hover { color: var(--text); background: var(--bg-2); }
+.ad-popup-never-btn:hover { color: rgba(255,71,87,.8); background: rgba(255,71,87,.08); }
+.ad-popup-close-btn .material-icons-round { font-size: clamp(16px, 2vw, 20px); }
+.ad-popup-never-btn .material-icons-round { font-size: clamp(14px, 1.8vw, 17px); }
+
+/* Ad content area */
+.ad-popup-body {
+  padding: clamp(10px, 2vw, 14px);
+}
+.ad-popup-banner-img {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  display: block;
+  max-height: 200px;
+  object-fit: cover;
+}
+.ad-popup-img-link { display: block; }
+.ad-popup-native {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  text-decoration: none;
+  color: var(--text);
+  padding: 4px 0;
+}
+.ad-popup-native-img {
+  width: clamp(44px, 10vw, 60px);
+  height: clamp(44px, 10vw, 60px);
+  object-fit: cover;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+.ad-popup-native-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ad-popup-native-name { font-size: clamp(12px, 1.6vw, 14px); font-weight: 700; color: var(--text); }
+.ad-popup-native-sub  { font-size: clamp(11px, 1.3vw, 12px); color: var(--text-soft); }
+.ad-popup-code { font-size: 13px; }
+.ad-popup-btn { display: block; text-align: center; }
+
+/* Auto-dismiss progress bar — shrinks from 100 % to 0 over animation-duration */
+.ad-popup-progress-track {
+  height: 3px;
+  background: var(--bg-2);
+  border-radius: 0 0 16px 16px;
+  overflow: hidden;
+}
+.ad-popup-progress-bar {
+  height: 100%;
+  width: 100%;
+  background: var(--primary);
+  transform-origin: left center;
+  animation: adPopupShrink linear forwards;
+}
+@keyframes adPopupShrink {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
+/* Mobile: full-width bottom sheet */
+@media (max-width: 520px) {
+  .ad-popup-wrap {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-width: 100%;
+    transform: translateY(100%);
+  }
+  .ad-popup-wrap.ad-popup-visible { transform: translateY(0); }
+  .ad-popup {
+    border-radius: 20px 20px 0 0;
+    border-bottom: none;
+  }
+}
+
+/* Light-mode adjustments */
+[data-theme="light"] .ad-popup {
+  box-shadow: 0 8px 32px rgba(0,0,0,.18), 0 2px 6px rgba(0,0,0,.1);
+}
+[data-theme="light"] .ad-popup-never-btn:hover { background: rgba(255,71,87,.06); }
