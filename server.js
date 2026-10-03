@@ -319,7 +319,8 @@ app.get('/sitemap.xml', async (req, res) => {
   const today = new Date().toISOString();
   const staticPriorities = {
     '': '1.0', '/predictions.html': '0.9', '/pricing.html': '0.85',
-    '/statistics.html': '0.8', '/blog.html': '0.8', '/about.html': '0.6',
+    '/statistics.html': '0.8', '/blog.html': '0.8',
+    '/bet-builder.html': '0.75', '/about.html': '0.6',
   };
   const staticUrls = Object.entries(staticPriorities);
   const marketUrls = Object.keys(MARKET_PAGES).map(slug =>
@@ -348,6 +349,7 @@ const SEO_PAGE_MAP = {
   '/blog.html': 'blog', '/pricing.html': 'pricing',
   '/about.html': 'about', '/contact.html': 'contact',
   '/terms.html': 'terms', '/privacy.html': 'privacy',
+  '/bet-builder.html': 'bet-builder',
 };
 let _seoCache = { data: null, at: 0 };
 async function getSeoMeta(pageKey) {
@@ -795,15 +797,15 @@ app.get('/tips/:slug', async (req, res) => {
     let html = readHtmlFile(path.join(__dirname, 'public', 'seo-article.html'));
     // Replace title using regex so it matches whatever the template contains
     html = html.replace(/<title>[^<]*<\/title>/, `<title>${esc(title)}</title>`);
-    // Replace existing canonical (template has wrong href — must be overwritten)
-    html = html.replace(/<link rel="canonical"[^>]*>/i, `<link rel="canonical" href="${canonical}">`);
-    // Replace existing OG/Twitter meta that have wrong defaults in the template
+    // Replace existing canonical — preserve id="art-canonical" so client JS can still update it
+    html = html.replace(/<link rel="canonical"[^>]*>/i, `<link rel="canonical" id="art-canonical" href="${canonical}">`);
+    // Replace existing OG/Twitter meta — preserve element ids so client JS can still reference them
     html = html.replace(/<meta name="description"[^>]*>/i, `<meta name="description" content="${esc(description)}">`);
-    html = html.replace(/<meta property="og:title"[^>]*>/i, `<meta property="og:title" content="${esc(title)}">`);
-    html = html.replace(/<meta property="og:description"[^>]*>/i, `<meta property="og:description" content="${esc(description)}">`);
-    html = html.replace(/<meta property="og:url"[^>]*>/i, `<meta property="og:url" content="${canonical}">`);
-    html = html.replace(/<meta name="twitter:title"[^>]*>/i, `<meta name="twitter:title" content="${esc(title)}">`);
-    html = html.replace(/<meta name="twitter:description"[^>]*>/i, `<meta name="twitter:description" content="${esc(description)}">`);
+    html = html.replace(/<meta property="og:title"[^>]*>/i, `<meta property="og:title" id="art-og-title" content="${esc(title)}">`);
+    html = html.replace(/<meta property="og:description"[^>]*>/i, `<meta property="og:description" id="art-og-desc" content="${esc(description)}">`);
+    html = html.replace(/<meta property="og:url"[^>]*>/i, `<meta property="og:url" id="art-og-url" content="${canonical}">`);
+    html = html.replace(/<meta name="twitter:title"[^>]*>/i, `<meta name="twitter:title" id="art-tw-title" content="${esc(title)}">`);
+    html = html.replace(/<meta name="twitter:description"[^>]*>/i, `<meta name="twitter:description" id="art-tw-desc" content="${esc(description)}">`);
     if (p.meta_keywords) {
       html = html.replace('</head>', `<meta name="keywords" content="${esc(p.meta_keywords)}">\n<link rel="alternate" hreflang="en" href="${canonical}">\n</head>`);
     } else {

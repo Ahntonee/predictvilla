@@ -137,9 +137,9 @@ async function loadSidebarTopPicks() {
     const picks = data?.data?.predictions || [];
     if (!picks.length) { el.innerHTML = '<p style="color:var(--text-soft);font-size:13px">No tips yet today.</p>'; return; }
     el.innerHTML = picks.map(p => `
-      <a href="/prediction-detail.html?id=${p.id}" class="sidebar-pick">
+      <a href="/prediction/${p.slug||p.id}" class="sidebar-pick">
         <span class="sidebar-pick-teams">${p.home_team} vs ${p.away_team}</span>
-        <span class="sidebar-pick-tip">${p.predicted_outcome||''}</span>
+        <span class="sidebar-pick-tip">${p.tip||p.predicted_outcome||''}</span>
       </a>`).join('');
   } catch {}
 }
