@@ -280,9 +280,18 @@
           <div class="auth-form-inner" id="login-form">
             <h2>Sign In</h2>
             <p class="auth-form-copy">Sign in with your email and password</p>
-            <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-control" id="login-email" placeholder="you@example.com" autocomplete="email"></div>
-            <div class="form-group"><label class="form-label">Password</label><input type="password" class="form-control" id="login-pass" placeholder="••••••••" autocomplete="current-password"></div>
-            <button class="btn btn-primary w-full" onclick="doLogin()">Login</button>
+            <div class="auth-input-wrap">
+              <input type="email" class="auth-input" id="login-email" placeholder="Email Address" autocomplete="email" aria-label="Email Address">
+              <span class="material-icons-round auth-input-icon">person</span>
+            </div>
+            <div class="auth-input-wrap">
+              <input type="password" class="auth-input" id="login-pass" placeholder="Password" autocomplete="current-password" aria-label="Password">
+              <span class="material-icons-round auth-input-icon clickable" onclick="togglePassInline('login-pass',this)" title="Show / hide">lock</span>
+            </div>
+            <div id="login-error-inline" class="auth-error" style="margin-bottom:10px"></div>
+            <button class="auth-btn" onclick="doLogin()">
+              <span class="material-icons-round">login</span> Login
+            </button>
             <p class="text-center mt-2" style="font-size:13px;color:var(--text-soft)"><a href="/reset-password.html">Forgot password?</a></p>
           </div>
         </div>
@@ -291,17 +300,42 @@
             <div id="register-form">
               <h2>Create Account</h2>
               <p class="auth-form-copy">Register with your email</p>
-              <div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-control" id="reg-name" placeholder="Your name" autocomplete="name"></div>
-              <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-control" id="reg-email" placeholder="you@example.com" autocomplete="email"></div>
-              <div class="form-group"><label class="form-label">Password</label><input type="password" class="form-control" id="reg-pass" placeholder="Min 8 chars, 1 uppercase, 1 number, 1 special" autocomplete="new-password"></div>
-              <div class="form-group"><label class="form-label">Country</label><select class="form-control" id="reg-country" autocomplete="country-name"><option value="">Select your country</option></select></div>
-              <button class="btn btn-primary w-full" onclick="doRegister()">Create Account</button>
+              <div class="auth-input-wrap">
+                <input type="text" class="auth-input" id="reg-name" placeholder="Full Name" autocomplete="name" aria-label="Full Name">
+                <span class="material-icons-round auth-input-icon">badge</span>
+              </div>
+              <div class="auth-input-wrap">
+                <input type="email" class="auth-input" id="reg-email" placeholder="Email Address" autocomplete="email" aria-label="Email Address">
+                <span class="material-icons-round auth-input-icon">email</span>
+              </div>
+              <div class="auth-input-wrap">
+                <input type="password" class="auth-input" id="reg-pass" placeholder="Password" autocomplete="new-password" aria-label="Password">
+                <span class="material-icons-round auth-input-icon clickable" onclick="togglePassInline('reg-pass',this)" title="Show / hide">lock</span>
+              </div>
+              <div class="auth-input-wrap">
+                <select class="auth-input auth-select" id="reg-country" autocomplete="country-name" aria-label="Country">
+                  <option value="">Country (optional)</option>
+                </select>
+                <span class="material-icons-round auth-input-icon" style="pointer-events:none">public</span>
+              </div>
+              <div id="reg-error-inline" class="auth-error" style="margin-bottom:10px"></div>
+              <button class="auth-btn" onclick="doRegister()">
+                <span class="material-icons-round">person_add</span> Create Account
+              </button>
             </div>
             <div id="otp-form" style="display:none">
               <h2>Verify Email</h2>
-              <p class="auth-form-copy">Enter the 6-digit code sent to your email.</p>
-              <div class="form-group"><label class="form-label">Verification Code</label><input type="text" class="form-control" id="otp-code" placeholder="123456" maxlength="6" inputmode="numeric" autocomplete="one-time-code"></div>
-              <button class="btn btn-primary w-full" onclick="doVerify()">Verify Email</button>
+              <p class="auth-form-copy" id="otp-sub-inline">Enter the 6-digit code sent to your email.</p>
+              <div class="auth-input-wrap">
+                <input type="text" class="auth-input otp-input" id="otp-code" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code" aria-label="Verification Code">
+              </div>
+              <div id="otp-countdown-inline" class="otp-countdown">
+                Code expires in <strong id="countdown-num-inline">2:59</strong>
+              </div>
+              <div id="otp-error-inline" class="auth-error" style="margin-bottom:10px"></div>
+              <button class="auth-btn" onclick="doVerify()">
+                <span class="material-icons-round">verified</span> Verify Email
+              </button>
             </div>
           </div>
         </div>
@@ -552,31 +586,80 @@ function showTab(tab) {
   document.getElementById('register-form').style.display = 'block';
   document.getElementById('otp-form').style.display = 'none';
 }
+function togglePassInline(inputId, icon) {
+  const inp = document.getElementById(inputId);
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  icon.textContent = show ? 'lock_open' : 'lock';
+}
+function setInlineErr(id, msg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.toggle('visible', !!msg);
+}
 async function doLogin() {
-  const email = document.getElementById('login-email').value;
+  setInlineErr('login-error-inline', '');
+  const email    = document.getElementById('login-email').value.trim().toLowerCase();
   const password = document.getElementById('login-pass').value;
-  const r = await fetch('/api/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email,password}) });
-  const data = await r.json();
-  if (data.success) { setUser(data.data.user); currentUser = data.data.user; location.href = '/dashboard.html'; }
-  else showToast(data.message,'error');
+  if (!email)    return setInlineErr('login-error-inline', 'Please enter your email.');
+  if (!password) return setInlineErr('login-error-inline', 'Please enter your password.');
+  try {
+    const r = await fetch('/api/auth/login', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email,password}) });
+    const data = await r.json();
+    if (data.success) { setUser(data.data.user); currentUser = data.data.user; location.href = '/dashboard.html'; }
+    else setInlineErr('login-error-inline', data.message || 'Invalid email or password.');
+  } catch { setInlineErr('login-error-inline', 'Network error — please try again.'); }
 }
 let regEmail = '';
 async function doRegister() {
-  const name = document.getElementById('reg-name').value;
-  const email = document.getElementById('reg-email').value;
+  setInlineErr('reg-error-inline', '');
+  const name     = document.getElementById('reg-name').value.trim();
+  const email    = document.getElementById('reg-email').value.trim().toLowerCase();
   const password = document.getElementById('reg-pass').value;
-  const country = document.getElementById('reg-country').value;
-  const r = await fetch('/api/auth/register', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name,email,password,country}) });
-  const data = await r.json();
-  if (data.success) { regEmail = email; document.getElementById('register-form').style.display='none'; document.getElementById('otp-form').style.display='block'; showToast('Check your email for a verification code','info'); }
-  else showToast(data.message,'error');
+  const country  = document.getElementById('reg-country').value.trim();
+  if (!name)    return setInlineErr('reg-error-inline', 'Full name is required.');
+  if (!email)   return setInlineErr('reg-error-inline', 'Email is required.');
+  if (!password || password.length < 8) return setInlineErr('reg-error-inline', 'Password must be at least 8 characters.');
+  try {
+    const r = await fetch('/api/auth/register', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name,email,password,country:country||undefined}) });
+    const data = await r.json();
+    if (data.success) {
+      regEmail = email;
+      document.getElementById('otp-sub-inline').textContent = `Enter the 6-digit code sent to ${email}.`;
+      document.getElementById('register-form').style.display = 'none';
+      document.getElementById('otp-form').style.display = 'block';
+      startInlineCountdown(179);
+    } else setInlineErr('reg-error-inline', data.message || 'Registration failed.');
+  } catch { setInlineErr('reg-error-inline', 'Network error — please try again.'); }
 }
 async function doVerify() {
-  const token = document.getElementById('otp-code').value;
-  const r = await fetch('/api/auth/register/verify', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:regEmail,token}) });
-  const data = await r.json();
-  if (data.success) { setUser(data.data.user); currentUser = data.data.user; location.href = '/dashboard.html'; }
-  else showToast(data.message,'error');
+  setInlineErr('otp-error-inline', '');
+  const token = document.getElementById('otp-code').value.trim();
+  if (!token || token.length !== 6) return setInlineErr('otp-error-inline', 'Enter the 6-digit code.');
+  try {
+    const r = await fetch('/api/auth/register/verify', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:regEmail,token}) });
+    const data = await r.json();
+    if (data.success) { setUser(data.data.user); currentUser = data.data.user; location.href = '/dashboard.html'; }
+    else setInlineErr('otp-error-inline', data.message || 'Invalid or expired code.');
+  } catch { setInlineErr('otp-error-inline', 'Network error — please try again.'); }
+}
+let inlineCountdownTimer = null;
+function startInlineCountdown(seconds) {
+  if (inlineCountdownTimer) clearInterval(inlineCountdownTimer);
+  let remaining = seconds;
+  const numEl = document.getElementById('countdown-num-inline');
+  const wrap  = document.getElementById('otp-countdown-inline');
+  if (wrap) wrap.style.display = 'block';
+  function tick() {
+    if (!numEl) return;
+    const m = Math.floor(remaining / 60), s = remaining % 60;
+    numEl.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    if (remaining <= 0) { clearInterval(inlineCountdownTimer); if (wrap) wrap.style.display = 'none'; }
+    remaining--;
+  }
+  tick();
+  inlineCountdownTimer = setInterval(tick, 1000);
 }
 
 // ── FAQ ────────────────────────────────────────────────────────────────────────

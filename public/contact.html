@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -15,7 +15,7 @@
 <meta name="twitter:description" content="Get in touch with the Predictvilla team for support or partnerships.">
 <meta name="twitter:image" content="https://predictvilla.com/images/logo.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Jura:wght@400;500;600;700&family=Exo+2:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=KoHo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 <link rel="icon" href="/images/logo.svg" type="image/svg+xml"><link rel="icon" href="/images/logo.png" type="image/png">
 <link rel="manifest" href="/manifest.json">
@@ -24,6 +24,31 @@
 <link rel="stylesheet" href="/css/style.css">
 <script src="https://cdn.jsdelivr.net/npm/marked@4/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+<style>
+/* Contact form pill-input overrides inside the normal card layout */
+.contact-form-wrap .auth-input-wrap { margin-bottom: 12px; }
+.contact-form-wrap .auth-input { font-size: 14px; }
+.contact-form-wrap .auth-input.auth-select { padding-right: 46px; appearance: none; -webkit-appearance: none; cursor: pointer; }
+.contact-form-wrap textarea.auth-input {
+  border-radius: 18px;
+  padding-top: 14px;
+  padding-bottom: 14px;
+  min-height: 120px;
+  resize: vertical;
+  line-height: 1.5;
+}
+.contact-form-wrap .auth-input-icon.top { top: 18px; transform: none; }
+.contact-success {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 14px; padding: 12px 18px;
+  border-radius: 50px;
+  background: rgba(160,208,0,0.10);
+  border: 1px solid rgba(160,208,0,0.35);
+  color: var(--primary);
+  font-size: 14px; font-weight: 600;
+}
+.contact-success .material-icons-round { font-size: 18px; }
+</style>
 </head>
 <body>
 <div id="header-placeholder"></div>
@@ -31,6 +56,7 @@
   <section>
     <div class="container" style="max-width:860px">
       <div class="grid-2" style="gap:40px;align-items:flex-start">
+
         <!-- Left: dynamic page content -->
         <div>
           <div id="page-content"><div class="skeleton" style="height:300px;border-radius:14px"></div></div>
@@ -39,25 +65,57 @@
             <div id="social-icons" class="flex gap-2" style="flex-wrap:wrap"></div>
           </div>
         </div>
+
         <!-- Right: contact form -->
-        <div class="card">
+        <div class="card contact-form-wrap">
           <h2 class="mb-1">Send a Message</h2>
           <p class="text-soft mb-3" style="font-size:13px">We typically respond within 24 hours.</p>
-          <div class="form-group"><label class="form-label">Name</label><input type="text" class="form-control" id="c-name" placeholder="Your name"></div>
-          <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-control" id="c-email" placeholder="your@email.com"></div>
-          <div class="form-group"><label class="form-label">Subject</label>
-            <select class="form-control" id="c-subject">
-              <option>General Enquiry</option>
-              <option>VIP Subscription</option>
-              <option>Prediction Dispute</option>
-              <option>Technical Issue</option>
-              <option>Partnership / Advertising</option>
-            </select>
+
+          <div class="auth-input-wrap">
+            <input type="text" class="auth-input" id="c-name"
+                   placeholder="Your Name"
+                   autocomplete="name" maxlength="80"
+                   aria-label="Your Name">
+            <span class="material-icons-round auth-input-icon">person</span>
           </div>
-          <div class="form-group"><label class="form-label">Message</label><textarea class="form-control" id="c-message" rows="5" placeholder="Your message…" style="resize:vertical"></textarea></div>
-          <button class="btn btn-primary w-full" onclick="sendContact()">Send Message</button>
-          <div id="form-success" class="alert" style="display:none;margin-top:16px;background:rgba(160,208,0,0.1);border:1px solid var(--primary);color:var(--primary)"><span class="material-icons-round" style="font-size:16px;vertical-align:middle">check_circle</span> Message sent! We'll get back to you shortly.</div>
+
+          <div class="auth-input-wrap">
+            <input type="email" class="auth-input" id="c-email"
+                   placeholder="Email Address"
+                   autocomplete="email" maxlength="120"
+                   aria-label="Email Address">
+            <span class="material-icons-round auth-input-icon">email</span>
+          </div>
+
+          <div class="auth-input-wrap">
+            <select class="auth-input auth-select" id="c-subject" aria-label="Subject">
+              <option value="General Enquiry">General Enquiry</option>
+              <option value="VIP Subscription">VIP Subscription</option>
+              <option value="Prediction Dispute">Prediction Dispute</option>
+              <option value="Technical Issue">Technical Issue</option>
+              <option value="Partnership / Advertising">Partnership / Advertising</option>
+            </select>
+            <span class="material-icons-round auth-input-icon" style="pointer-events:none">topic</span>
+          </div>
+
+          <div class="auth-input-wrap">
+            <textarea class="auth-input" id="c-message"
+                      placeholder="Your message…"
+                      maxlength="2000"
+                      aria-label="Your message"></textarea>
+            <span class="material-icons-round auth-input-icon top" style="pointer-events:none">chat_bubble_outline</span>
+          </div>
+
+          <button class="auth-btn" id="contact-btn" onclick="sendContact()">
+            <span class="material-icons-round">send</span> Send Message
+          </button>
+
+          <div id="form-success" class="contact-success" style="display:none">
+            <span class="material-icons-round">check_circle</span>
+            Message sent! We'll get back to you shortly.
+          </div>
         </div>
+
       </div>
     </div>
   </section>
@@ -82,40 +140,57 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Social links
   try {
     const links = await fetchSocialLinks();
-    const icons = {};
-    const entries = Object.entries(links).filter(([,v])=>v);
+    const entries = Object.entries(links).filter(([,v]) => v);
     if (entries.length) {
       document.getElementById('social-links').style.display = 'block';
-      document.getElementById('social-icons').innerHTML = entries.map(([k,v])=>`<a href="${escapeHtml(v)}" target="_blank" rel="noopener" class="btn btn-ghost btn-sm" style="gap:6px">${k.charAt(0).toUpperCase()+k.slice(1)}</a>`).join('');
+      document.getElementById('social-icons').innerHTML = entries.map(([k,v]) =>
+        `<a href="${escapeHtml(v)}" target="_blank" rel="noopener" class="btn btn-ghost btn-sm" style="gap:6px">${k.charAt(0).toUpperCase()+k.slice(1)}</a>`
+      ).join('');
     }
   } catch {}
 
-  // Pre-fill email if logged in
+  // Pre-fill if logged in
   const u = getUser();
-  if (u) { document.getElementById('c-name').value = u.name || ''; document.getElementById('c-email').value = u.email || ''; }
+  if (u) {
+    if (u.name)  document.getElementById('c-name').value  = u.name;
+    if (u.email) document.getElementById('c-email').value = u.email;
+  }
 });
 
 async function sendContact() {
-  // Validates and submits the public contact form to the support email endpoint.
-  const name = document.getElementById('c-name').value.trim();
-  const email = document.getElementById('c-email').value.trim();
+  const name    = document.getElementById('c-name').value.trim();
+  const email   = document.getElementById('c-email').value.trim();
   const subject = document.getElementById('c-subject').value;
   const message = document.getElementById('c-message').value.trim();
-  if (!name || !email || !message) { showToast('Please fill in all fields', 'error'); return; }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Enter a valid email', 'error'); return; }
-  if (message.length < 10) { showToast('Message too short', 'error'); return; }
 
-  const btn = document.querySelector('button[onclick="sendContact()"]');
-  btn.disabled = true; btn.textContent = 'Sending…';
+  if (!name)    return showToast('Please enter your name', 'error');
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showToast('Please enter a valid email', 'error');
+  if (!message || message.length < 10) return showToast('Message is too short', 'error');
+
+  const btn = document.getElementById('contact-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-icons-round">hourglass_top</span> Sending…';
+
   try {
-    const r = await fetch('/api/contact', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name,email,subject,message}) });
+    const r = await fetch('/api/contact', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, subject, message }),
+    });
     const data = await r.json();
     if (data.success || r.status === 200) {
-      document.getElementById('form-success').style.display = 'block';
+      document.getElementById('form-success').style.display = 'flex';
       document.getElementById('c-message').value = '';
       btn.style.display = 'none';
-    } else { showToast(data.message||'Failed to send. Try again.','error'); btn.disabled=false; btn.textContent='Send Message'; }
-  } catch { showToast('Network error. Please try again.','error'); btn.disabled=false; btn.textContent='Send Message'; }
+    } else {
+      showToast(data.message || 'Failed to send. Try again.', 'error');
+      btn.disabled = false;
+      btn.innerHTML = '<span class="material-icons-round">send</span> Send Message';
+    }
+  } catch {
+    showToast('Network error. Please try again.', 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-icons-round">send</span> Send Message';
+  }
 }
 </script>
 </body>
