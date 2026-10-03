@@ -18,6 +18,12 @@ exports.paystackVerify = asyncHandler(async (req, res) => {
   if (!reference || !plan) return errorResponse(res, 'reference and plan required', 400);
   if (!DURATIONS[plan]) return errorResponse(res, 'Invalid plan', 400);
 
+  // Prevent duplicate activation of the same reference
+  const [[dupRef]] = await pool.query(
+    'SELECT id FROM subscriptions WHERE paystack_reference=?', [reference]
+  );
+  if (dupRef) return errorResponse(res, 'This payment reference has already been processed', 400);
+
   try {
     const response = await axios.get(
       `https://api.paystack.co/transaction/verify/${reference}`,
@@ -26,7 +32,39 @@ exports.paystackVerify = asyncHandler(async (req, res) => {
     const txn = response.data.data;
     if (txn.status !== 'success') return errorResponse(res, 'Payment not successful', 400);
 
-    const expiresAt = new Date(Date.now() + DURATIONS[plan] * 24 * 60 * 60 * 1000);
+    // Verify currency
+    const expectedCurrency = (process.env.PAYSTACK_CURRENCY || 'NGN').toUpperCase();
+    if (txn.currency && txn.currency.toUpperCase() !== expectedCurrency) {
+      return errorResponse(res, `Invalid payment currency. Expected ${expectedCurrency}`, 400);
+    }
+
+    // Verify amount (allow 1% tolerance for rounding)
+    const planAmounts = {
+      monthly:   parseFloat(process.env.PAYSTACK_PLAN_MONTHLY_AMOUNT)   || 0,
+      quarterly: parseFloat(process.env.PAYSTACK_PLAN_QUARTERLY_AMOUNT) || 0,
+      annual:    parseFloat(process.env.PAYSTACK_PLAN_ANNUAL_AMOUNT)     || 0,
+    };
+    const expectedAmount = planAmounts[plan];
+    if (expectedAmount > 0 && txn.amount / 100 < expectedAmount * 0.99) {
+      return errorResponse(res, 'Payment amount does not match the selected plan price', 400);
+    }
+
+    // Verify plan label in metadata matches (if Paystack sends it)
+    if (txn.metadata?.plan && txn.metadata.plan !== plan) {
+      return errorResponse(res, 'Payment plan mismatch', 400);
+    }
+
+    // Extension logic: extend from current expiry if still active, else start from now
+    const now = new Date();
+    const [[currentSub]] = await pool.query(
+      "SELECT expires_at FROM subscriptions WHERE user_id=? AND status='active' ORDER BY expires_at DESC LIMIT 1",
+      [req.user.id]
+    );
+    const baseDate = (currentSub && new Date(currentSub.expires_at) > now)
+      ? new Date(currentSub.expires_at)
+      : now;
+    const expiresAt = new Date(baseDate.getTime() + DURATIONS[plan] * 24 * 60 * 60 * 1000);
+
     await pool.query(
       `INSERT INTO subscriptions (user_id, plan, status, provider, paystack_reference, amount, currency, expires_at)
        VALUES (?,?,'active','paystack',?,?,?,?)`,
@@ -45,12 +83,22 @@ exports.paystackVerify = asyncHandler(async (req, res) => {
 });
 
 exports.cancel = asyncHandler(async (req, res) => {
+  // Mark as cancelled but keep role=vip until expires_at — expiry middleware will downgrade on next request
   await pool.query(
     "UPDATE subscriptions SET status='cancelled' WHERE user_id=? AND status='active'",
     [req.user.id]
   );
-  await pool.query("UPDATE users SET role='user' WHERE id=?", [req.user.id]);
-  return successResponse(res, null, 'Subscription cancelled');
+  // Check if there's still time left on the cancelled plan
+  const [[remaining]] = await pool.query(
+    "SELECT expires_at FROM subscriptions WHERE user_id=? AND status='cancelled' AND expires_at > NOW() ORDER BY expires_at DESC LIMIT 1",
+    [req.user.id]
+  );
+  if (!remaining) {
+    await pool.query("UPDATE users SET role='user' WHERE id=?", [req.user.id]);
+    return successResponse(res, null, 'Subscription cancelled');
+  }
+  return successResponse(res, { expires_at: remaining.expires_at },
+    'Subscription cancelled. You keep VIP access until your billing period ends.');
 });
 
 // Admin

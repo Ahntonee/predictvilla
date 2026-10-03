@@ -14,6 +14,21 @@ async function authenticate(req, res, next) {
     if (!rows.length) return errorResponse(res, 'User not found', 401);
     const user = rows[0];
     if (user.is_banned) return errorResponse(res, 'Account suspended', 403);
+
+    // Check subscription expiry — downgrade role if VIP plan has lapsed
+    if (user.role === 'vip') {
+      try {
+        const [[sub]] = await pool.query(
+          "SELECT expires_at FROM subscriptions WHERE user_id=? AND (status='active' OR status='cancelled') ORDER BY expires_at DESC LIMIT 1",
+          [user.id]
+        );
+        if (!sub || new Date(sub.expires_at) <= new Date()) {
+          await pool.query("UPDATE users SET role='user' WHERE id=?", [user.id]);
+          user.role = 'user';
+        }
+      } catch {}
+    }
+
     req.user = user;
     next();
   } catch {

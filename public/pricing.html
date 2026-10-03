@@ -279,7 +279,7 @@ async function doLogin() {
   const password = document.getElementById('login-pass').value;
   const r = await fetch('/api/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email,password}) });
   const data = await r.json();
-  if (data.success) { setUser(data.data.user); currentUser = data.data.user; document.getElementById('auth-section').style.display='none'; showToast('Logged in!','success'); location.reload(); }
+  if (data.success) { setUser(data.data.user); currentUser = data.data.user; location.href = '/dashboard.html'; }
   else showToast(data.message,'error');
 }
 
@@ -299,19 +299,14 @@ async function doVerify() {
   const token = document.getElementById('otp-code').value;
   const r = await fetch('/api/auth/register/verify', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email:regEmail,token}) });
   const data = await r.json();
-  if (data.success) { setUser(data.data.user); currentUser = data.data.user; document.getElementById('auth-section').style.display='none'; showToast('Account created! Welcome!','success'); location.reload(); }
+  if (data.success) { setUser(data.data.user); currentUser = data.data.user; location.href = '/dashboard.html'; }
   else showToast(data.message,'error');
 }
 
 function startPayment(plan, amount) {
   if (!currentUser) {
     showToast('Please login or register to continue','info');
-    const authSec = document.getElementById('auth-section');
-    authSec.style.display = 'block';
-    authSec.style.outline = '2px solid var(--primary)';
-    authSec.style.borderRadius = '12px';
-    authSec.scrollIntoView({behavior:'smooth', block:'start'});
-    setTimeout(() => { authSec.style.outline = ''; authSec.style.borderRadius = ''; }, 2000);
+    setTimeout(() => { location.href = '/login.html?redirect=/pricing.html'; }, 1200);
     return;
   }
   if (!paystackKey || paystackKey.includes('YOUR_PAYSTACK')) {

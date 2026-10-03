@@ -16,6 +16,26 @@ function getUser() {
 function setUser(u) { localStorage.setItem('ol_user', JSON.stringify(u)); }
 function clearUser() { localStorage.removeItem('ol_user'); }
 
+// ── Error Modal ───────────────────────────────────────────────────────────────
+function showErrorModal(message, title = 'Something went wrong') {
+  let modal = document.getElementById('global-error-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'global-error-modal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.65);padding:16px;animation:fadeIn .2s';
+    modal.innerHTML = `<div style="background:var(--card);border:1px solid var(--border);border-radius:16px;max-width:420px;width:100%;padding:28px 24px;box-shadow:0 24px 64px rgba(0,0,0,.4);text-align:center;position:relative">
+      <span class="material-icons-round" style="font-size:42px;color:var(--danger,#ff4757);display:block;margin-bottom:10px">error_outline</span>
+      <h3 id="gem-title" style="margin-bottom:8px;font-size:18px"></h3>
+      <p id="gem-msg" style="color:var(--text-soft);font-size:14px;line-height:1.6;margin-bottom:20px"></p>
+      <button onclick="document.getElementById('global-error-modal').remove()" class="btn btn-primary" style="min-width:100px">OK</button>
+    </div>`;
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    document.body.appendChild(modal);
+  }
+  document.getElementById('gem-title').textContent = title;
+  document.getElementById('gem-msg').textContent = message;
+}
+
 // ── Toast ─────────────────────────────────────────────────────────────────────
 function showToast(message, type = 'info', duration = 4000) {
   let container = document.querySelector('.toast-container');
@@ -332,6 +352,9 @@ async function loadRecentWins(containerId = 'recent-wins-list') {
       const homeForm  = w.home_form ? buildFormDots(w.home_form, 5) : '';
       const awayForm  = w.away_form ? buildFormDots(w.away_form, 5) : '';
 
+      const vipStar = (w.is_vip || w.is_banker)
+        ? `<span title="VIP Pick" style="color:#f5c518;font-size:14px;vertical-align:middle;margin-right:4px">&#9733;</span>`
+        : '';
       return `<a href="/prediction/${escapeHtml(w.slug)}" class="rw-card">
         <div class="rw-teams-row">
           <div class="rw-team rw-home">
@@ -356,7 +379,7 @@ async function loadRecentWins(containerId = 'recent-wins-list') {
         </div>
         <div class="rw-picks-row">
           ${odds ? `<span class="rw-pill rw-odds">Odds: <strong>${odds}</strong></span>` : ''}
-          <span class="rw-pill rw-tip"><span class="rw-s">S</span> Tip: ${escapeHtml(tip)}</span>
+          <span class="rw-pill rw-tip">${vipStar}Tip: ${escapeHtml(tip)}</span>
         </div>
       </a>`;
     }).join('');
@@ -473,8 +496,8 @@ async function injectHeader() {
       <button class="snav-link w-full" id="sidebar-logout" style="background:none;border:none;text-align:left;cursor:pointer;color:rgba(255,71,87,0.8)">
         <span class="material-icons-round">logout</span>Logout
       </button>`
-    : `<a href="/pricing.html#login" class="snav-link"><span class="material-icons-round">login</span>Login</a>
-       <a href="/pricing.html#register" class="snav-link" style="color:var(--primary)"><span class="material-icons-round">person_add</span>Register</a>`;
+    : `<a href="/login.html" class="snav-link"><span class="material-icons-round">login</span>Login</a>
+       <a href="/register.html" class="snav-link" style="color:var(--primary)"><span class="material-icons-round">person_add</span>Register</a>`;
 
   // Build sidebar
   const sidebar = document.createElement('div');
@@ -518,7 +541,7 @@ async function injectHeader() {
   if (target) {
     const desktopAuthHtml = user
       ? `<a href="${isAdmin ? '/admin/dashboard.html' : '/dashboard.html'}">${escapeHtml(user.name?.split(' ')[0] || 'Account')}</a>`
-      : `<a href="/pricing.html#login">Login</a><span class="tb-divider">|</span><a href="/pricing.html#register">Register</a>`;
+      : `<a href="/login.html">Login</a><span class="tb-divider">|</span><a href="/register.html">Register</a>`;
 
     target.className = 'topbar';
     target.innerHTML = `
@@ -534,7 +557,7 @@ async function injectHeader() {
           <span class="prem-sub">GET STARTED FOR FREE</span>
         </a>
         <div class="topbar-auth-links">${desktopAuthHtml}</div>
-        <a href="${user ? (isAdmin ? '/admin/dashboard.html' : '/dashboard.html') : '/pricing.html#login'}" class="topbar-auth-icon">
+        <a href="${user ? (isAdmin ? '/admin/dashboard.html' : '/dashboard.html') : '/login.html'}" class="topbar-auth-icon">
           <span class="material-icons-round">${user ? 'account_circle' : 'login'}</span>
         </a>
       </div>`;
@@ -758,16 +781,40 @@ async function injectAdSense() {
   } catch {}
 }
 
+// ── Telegram Popup ────────────────────────────────────────────────────────────
+function initTelegramPopup() {
+  // Show 30 seconds after load for users who haven't joined and haven't dismissed
+  if (sessionStorage.getItem('tg_popup_dismissed')) return;
+  setTimeout(() => {
+    const user = getUser();
+    // Only show to logged-in users who haven't joined Telegram yet
+    if (!user || user.telegram_invited) return;
+    const telegramLink = window._TELEGRAM_LINK || 'https://t.me/predictvilla';
+    let popup = document.getElementById('tg-popup');
+    if (popup) return;
+    popup = document.createElement('div');
+    popup.id = 'tg-popup';
+    popup.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:8888;background:var(--card);border:1px solid rgba(160,208,0,.35);border-radius:16px;padding:18px 20px;max-width:320px;box-shadow:0 12px 40px rgba(0,0,0,.35);animation:slideUp .3s ease';
+    popup.innerHTML = `<button onclick="document.getElementById('tg-popup').remove();sessionStorage.setItem('tg_popup_dismissed','1')" style="position:absolute;top:10px;right:12px;background:none;border:none;cursor:pointer;color:var(--text-soft);font-size:20px;line-height:1">×</button>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+        <span style="font-size:28px">📣</span>
+        <strong style="font-size:15px;color:var(--text)">Join Our Telegram Channel</strong>
+      </div>
+      <p style="font-size:13px;color:var(--text-soft);margin-bottom:14px;line-height:1.5">Get live tips, alerts, and exclusive VIP picks straight to your phone.</p>
+      <a href="${telegramLink}" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-full" style="font-size:13px" onclick="sessionStorage.setItem('tg_popup_dismissed','1')">
+        <span class="material-icons-round" style="font-size:15px;vertical-align:middle">send</span> Join Telegram →
+      </a>`;
+    document.body.appendChild(popup);
+  }, 30000);
+}
+
 // ── Page Init ─────────────────────────────────────────────────────────────────
 let _initPageDone = false;
 async function initPage() {
   if (_initPageDone) return;
   _initPageDone = true;
-  await injectHeader();
-  await injectFooter();
-  injectAdSense();
 
-  // Fetch auth state from server to sync localStorage
+  // Fetch auth state FIRST so the header renders with correct login state (prevents stale-data flicker)
   try {
     const r = await fetch('/api/auth/me');
     if (r.ok) {
@@ -777,6 +824,11 @@ async function initPage() {
       clearUser();
     }
   } catch {}
+
+  await injectHeader();
+  await injectFooter();
+  injectAdSense();
+  initTelegramPopup();
 }
 
 // ── Prediction Row (VP-style 3-column layout) ─────────────────────────────────

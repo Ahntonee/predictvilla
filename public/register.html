@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#a0d000">
+<title>Create Account — Predictvilla</title>
+<meta name="description" content="Create your free Predictvilla account for AI-powered football predictions.">
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jura:wght@400;500;600;700&family=Exo+2:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+<link rel="icon" href="/images/logo.svg" type="image/svg+xml"><link rel="icon" href="/images/logo.png" type="image/png">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+.auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 16px}
+.auth-box{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:40px 36px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.auth-logo{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:28px}
+.auth-logo img{width:40px;height:40px;object-fit:contain}
+.auth-logo span{font-size:20px;font-weight:900;color:var(--primary);font-family:'Exo 2',sans-serif}
+.auth-title{font-size:26px;font-weight:900;text-align:center;margin-bottom:6px}
+.auth-sub{font-size:14px;color:var(--text-soft);text-align:center;margin-bottom:28px}
+.pw-rules{margin-top:8px;display:flex;flex-direction:column;gap:4px}
+.pw-rule{font-size:12px;color:var(--text-soft);display:flex;align-items:center;gap:6px;transition:color .2s}
+.pw-rule.met{color:#4caf50}
+.pw-rule .rule-icon{font-size:14px;transition:color .2s}
+.pw-rule.met .rule-icon{color:#4caf50}
+.countdown-wrap{text-align:center;margin:14px 0;font-size:14px;color:var(--text-soft)}
+.countdown-num{color:var(--primary);font-weight:700;font-size:16px}
+.resend-btn{display:none}
+.form-error{color:var(--danger,#ff4757);font-size:13px;margin-top:6px;display:none}
+</style>
+</head>
+<body>
+<div id="header-placeholder"></div>
+<main>
+<div class="auth-page">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <img src="/images/logo.png" alt="Predictvilla">
+      <span>Predictvilla</span>
+    </div>
+
+    <!-- Step 1: Registration form -->
+    <div id="step-register">
+      <h1 class="auth-title">Create Account</h1>
+      <p class="auth-sub">Get free football predictions today</p>
+
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input type="text" class="form-control" id="reg-name" placeholder="Your name" autocomplete="name" maxlength="80">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input type="email" class="form-control" id="reg-email" placeholder="you@example.com" autocomplete="email" maxlength="120">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" class="form-control" id="reg-pass" placeholder="Create a strong password" autocomplete="new-password" maxlength="128" oninput="checkPassword(this.value)">
+        <div class="pw-rules" id="pw-rules">
+          <div class="pw-rule" id="rule-len"><span class="material-icons-round rule-icon">radio_button_unchecked</span>At least 8 characters</div>
+          <div class="pw-rule" id="rule-upper"><span class="material-icons-round rule-icon">radio_button_unchecked</span>One uppercase letter</div>
+          <div class="pw-rule" id="rule-num"><span class="material-icons-round rule-icon">radio_button_unchecked</span>One number</div>
+          <div class="pw-rule" id="rule-special"><span class="material-icons-round rule-icon">radio_button_unchecked</span>One special character</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Country <span style="font-size:12px;color:var(--text-soft)">(optional)</span></label>
+        <input type="text" class="form-control" id="reg-country" placeholder="Nigeria" autocomplete="country-name" maxlength="60">
+      </div>
+      <div id="reg-error" class="form-error"></div>
+      <button class="btn btn-primary w-full mt-2" id="reg-btn" onclick="doRegister()">
+        <span class="material-icons-round" style="font-size:16px;vertical-align:middle">person_add</span> Create Account
+      </button>
+      <p class="text-center mt-3" style="font-size:13px;color:var(--text-soft)">
+        Already have an account? <a href="/login.html" style="color:var(--primary)">Log in →</a>
+      </p>
+    </div>
+
+    <!-- Step 2: OTP verification -->
+    <div id="step-otp" style="display:none">
+      <h1 class="auth-title">Verify Your Email</h1>
+      <p class="auth-sub" id="otp-sub">Enter the 6-digit code sent to your email.</p>
+
+      <div class="form-group">
+        <label class="form-label">Verification Code</label>
+        <input type="text" class="form-control" id="otp-code" placeholder="123456" maxlength="6" inputmode="numeric" autocomplete="one-time-code" style="letter-spacing:8px;font-size:22px;text-align:center;font-weight:700">
+      </div>
+
+      <div class="countdown-wrap" id="countdown-wrap">
+        Code expires in <span class="countdown-num" id="countdown-num">2:59</span>
+      </div>
+
+      <div id="otp-error" class="form-error"></div>
+      <button class="btn btn-primary w-full" id="otp-btn" onclick="doVerify()">
+        <span class="material-icons-round" style="font-size:16px;vertical-align:middle">verified</span> Verify Email
+      </button>
+      <div class="text-center mt-3">
+        <button class="btn btn-ghost btn-sm resend-btn" id="resend-btn" onclick="doResend()">
+          <span class="material-icons-round" style="font-size:14px;vertical-align:middle">refresh</span> Resend Code
+        </button>
+      </div>
+      <p class="text-center mt-2" style="font-size:13px;color:var(--text-soft)">
+        <a href="/register.html" style="color:var(--text-soft)">← Start over</a>
+      </p>
+    </div>
+  </div>
+</div>
+</main>
+
+<div id="footer-placeholder"></div>
+<script src="/js/app.js"></script>
+<script>
+let regEmail = '', countdownTimer = null;
+
+// Redirect if already logged in
+(async () => {
+  try {
+    const r = await fetch('/api/auth/me');
+    if (r.ok) { location.href = '/dashboard.html'; }
+  } catch {}
+})();
+
+function checkPassword(val) {
+  const rules = {
+    'rule-len':     val.length >= 8,
+    'rule-upper':   /[A-Z]/.test(val),
+    'rule-num':     /[0-9]/.test(val),
+    'rule-special': /[^A-Za-z0-9]/.test(val),
+  };
+  Object.entries(rules).forEach(([id, met]) => {
+    const el = document.getElementById(id);
+    const icon = el.querySelector('.rule-icon');
+    el.classList.toggle('met', met);
+    icon.textContent = met ? 'check_circle' : 'radio_button_unchecked';
+  });
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+function clearError(id) {
+  const el = document.getElementById(id);
+  el.textContent = '';
+  el.style.display = 'none';
+}
+
+async function doRegister() {
+  clearError('reg-error');
+  const name     = document.getElementById('reg-name').value.trim();
+  const email    = document.getElementById('reg-email').value.trim().toLowerCase();
+  const password = document.getElementById('reg-pass').value;
+  const country  = document.getElementById('reg-country').value.trim();
+
+  if (!name)     return showError('reg-error', 'Full name is required.');
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showError('reg-error', 'Please enter a valid email address.');
+  if (password.length < 8)       return showError('reg-error', 'Password must be at least 8 characters.');
+  if (!/[A-Z]/.test(password))   return showError('reg-error', 'Password must contain at least one uppercase letter.');
+  if (!/[0-9]/.test(password))   return showError('reg-error', 'Password must contain at least one number.');
+  if (!/[^A-Za-z0-9]/.test(password)) return showError('reg-error', 'Password must contain at least one special character.');
+
+  const btn = document.getElementById('reg-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending code…';
+
+  try {
+    const r = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password, country: country || undefined }),
+    });
+    const data = await r.json();
+    if (!data.success) {
+      showError('reg-error', data.message || 'Registration failed. Please try again.');
+      btn.disabled = false;
+      btn.innerHTML = '<span class="material-icons-round" style="font-size:16px;vertical-align:middle">person_add</span> Create Account';
+      return;
+    }
+    regEmail = email;
+    document.getElementById('otp-sub').textContent = `Enter the 6-digit code sent to ${email}.`;
+    document.getElementById('step-register').style.display = 'none';
+    document.getElementById('step-otp').style.display = 'block';
+    document.getElementById('otp-code').focus();
+    startCountdown(179); // 2:59
+  } catch {
+    showError('reg-error', 'Network error — please check your connection and try again.');
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-icons-round" style="font-size:16px;vertical-align:middle">person_add</span> Create Account';
+  }
+}
+
+async function doVerify() {
+  clearError('otp-error');
+  const token = document.getElementById('otp-code').value.trim();
+  if (!token || token.length !== 6 || !/^\d+$/.test(token)) {
+    return showError('otp-error', 'Please enter the 6-digit verification code.');
+  }
+
+  const btn = document.getElementById('otp-btn');
+  btn.disabled = true;
+  btn.textContent = 'Verifying…';
+
+  try {
+    const r = await fetch('/api/auth/register/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: regEmail, token }),
+    });
+    const data = await r.json();
+    if (!data.success) {
+      showError('otp-error', data.message || 'Invalid or expired code. Please try again.');
+      btn.disabled = false;
+      btn.innerHTML = '<span class="material-icons-round" style="font-size:16px;vertical-align:middle">verified</span> Verify Email';
+      return;
+    }
+    if (countdownTimer) clearInterval(countdownTimer);
+    if (data.data?.user) setUser(data.data.user);
+    location.href = '/dashboard.html';
+  } catch {
+    showError('otp-error', 'Network error — please check your connection and try again.');
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-icons-round" style="font-size:16px;vertical-align:middle">verified</span> Verify Email';
+  }
+}
+
+async function doResend() {
+  clearError('otp-error');
+  const name     = document.getElementById('reg-name')?.value?.trim() || 'User';
+  const email    = regEmail;
+  const password = document.getElementById('reg-pass')?.value || '';
+  if (!email) { location.href = '/register.html'; return; }
+
+  const resendBtn = document.getElementById('resend-btn');
+  resendBtn.disabled = true;
+  resendBtn.textContent = 'Sending…';
+
+  try {
+    const r = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password }),
+    });
+    const data = await r.json();
+    if (data.success) {
+      resendBtn.style.display = 'none';
+      startCountdown(179);
+      showToast('New code sent!', 'success');
+    } else {
+      showError('otp-error', data.message || 'Could not resend code.');
+      resendBtn.disabled = false;
+      resendBtn.innerHTML = '<span class="material-icons-round" style="font-size:14px;vertical-align:middle">refresh</span> Resend Code';
+    }
+  } catch {
+    showError('otp-error', 'Network error.');
+    resendBtn.disabled = false;
+    resendBtn.innerHTML = '<span class="material-icons-round" style="font-size:14px;vertical-align:middle">refresh</span> Resend Code';
+  }
+}
+
+function startCountdown(seconds) {
+  if (countdownTimer) clearInterval(countdownTimer);
+  let remaining = seconds;
+  const countdownEl = document.getElementById('countdown-num');
+  const countdownWrap = document.getElementById('countdown-wrap');
+  const resendBtn = document.getElementById('resend-btn');
+  resendBtn.style.display = 'none';
+  countdownWrap.style.display = 'block';
+
+  function update() {
+    const m = Math.floor(remaining / 60);
+    const s = remaining % 60;
+    countdownEl.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    if (remaining <= 0) {
+      clearInterval(countdownTimer);
+      countdownWrap.style.display = 'none';
+      resendBtn.style.display = 'inline-flex';
+      resendBtn.disabled = false;
+      resendBtn.innerHTML = '<span class="material-icons-round" style="font-size:14px;vertical-align:middle">refresh</span> Resend Code';
+    }
+    remaining--;
+  }
+  update();
+  countdownTimer = setInterval(update, 1000);
+}
+
+// Allow Enter key
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if (document.getElementById('step-otp').style.display !== 'none') doVerify();
+  else doRegister();
+});
+</script>
+</body>
+</html>

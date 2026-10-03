@@ -120,7 +120,7 @@ exports.recentWins = asyncHandler(async (req, res) => {
     const [result] = await pool.query(
       `SELECT p.id, p.slug, p.home_team, p.away_team, p.tip, p.market,
             p.match_date, p.home_score, p.away_score, p.home_team_logo, p.away_team_logo,
-            p.odds, p.home_form, p.away_form, p.result,
+            p.odds, p.home_form, p.away_form, p.result, p.is_vip, p.is_banker,
             l.name as league_name
        FROM predictions p
        LEFT JOIN leagues l ON l.id = p.league_id

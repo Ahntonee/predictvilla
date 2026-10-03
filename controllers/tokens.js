@@ -17,8 +17,8 @@ exports.checkin = asyncHandler(async (req, res) => {
   if (result.alreadyCheckedIn) return errorResponse(res, 'Already checked in today — come back tomorrow!', 409);
   return successResponse(res, result,
     result.bonus
-      ? `+${result.tokens} ODLT! ${result.bonus} (Day ${result.streakDay})`
-      : `+${result.tokens} ODLT — Day ${result.streakDay} streak!`
+      ? `+${result.tokens} PVT! ${result.bonus} (Day ${result.streakDay})`
+      : `+${result.tokens} PVT — Day ${result.streakDay} streak!`
   );
 });
 
@@ -32,7 +32,7 @@ exports.placeBet = asyncHandler(async (req, res) => {
   const { prediction_id, amount, direction } = req.body;
   if (!prediction_id || !amount || !direction) return errorResponse(res, 'prediction_id, amount, direction required', 400);
   const result = await tokens.placeBet(req.user.id, parseInt(prediction_id), parseInt(amount), direction);
-  return successResponse(res, result, `Bet placed — ${amount} ODLT ${direction} this prediction`, 201);
+  return successResponse(res, result, `Bet placed — ${amount} PVT ${direction} this prediction`, 201);
 });
 
 exports.getUserBets = asyncHandler(async (req, res) => {

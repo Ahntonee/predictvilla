@@ -3,7 +3,7 @@ const { pool } = require('../config/db');
 const REWARDS = {
   SIGNUP:       100,
   VIP_UPGRADE:  500,
-  DAILY_CHECKIN: 10,
+  DAILY_CHECKIN: 20,
   STREAK_7:      50,
   STREAK_30:    200,
   WIN_BOOKMARK:   5,
@@ -61,7 +61,7 @@ async function deductTokens(userId, amount, reason, refId = null, refType = null
     );
     if ((bal?.balance || 0) < amount) {
       await conn.rollback();
-      throw new Error('Insufficient ODLT balance');
+      throw new Error('Insufficient PVT balance');
     }
     await conn.query(
       `UPDATE token_balances SET balance = balance - ? WHERE user_id = ?`, [amount, userId]
@@ -148,7 +148,7 @@ async function getTransactions(userId, limit = 30) {
 
 async function placeBet(userId, predictionId, amount, direction) {
   if (!['for', 'against'].includes(direction)) throw new Error('direction must be "for" or "against"');
-  if (amount < 10) throw new Error('Minimum bet is 10 ODLT');
+  if (amount < 10) throw new Error('Minimum bet is 10 PVT');
 
   const [[pred]] = await pool.query(
     `SELECT id, result, tip FROM predictions WHERE id = ? AND result = 'pending' AND published_at IS NOT NULL`,

@@ -30,7 +30,7 @@ exports.initiateRegister = asyncHandler(async (req, res) => {
 
   const password_hash = await bcrypt.hash(password, 12);
   const token = String(Math.floor(100000 + Math.random() * 900000));
-  const expires_at = new Date(Date.now() + 15 * 60 * 1000);
+  const expires_at = new Date(Date.now() + 3 * 60 * 1000);
 
   await pool.query(
     `INSERT INTO pending_registrations (email, name, password_hash, country, token, expires_at)
@@ -96,6 +96,8 @@ exports.login = asyncHandler(async (req, res) => {
   const jwtToken = generateToken({ id: user.id, role: user.role });
   setTokenCookie(res, jwtToken);
 
+  try { await awardTokens(user.id, REWARDS.DAILY_CHECKIN, 'Login reward'); } catch {}
+
   return successResponse(res, { user: { id: user.id, name: user.name, email: user.email, role: user.role } }, 'Login successful');
 });
 
@@ -115,18 +117,19 @@ exports.me = asyncHandler(async (req, res) => {
 exports.forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
   const [rows] = await pool.query('SELECT id, name FROM users WHERE email = ?', [email]);
-  if (rows.length) {
-    const rawToken = crypto.randomBytes(32).toString('hex');
-    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
-    const expires = new Date(Date.now() + 60 * 60 * 1000);
-    await pool.query(
-      'UPDATE users SET password_reset_token = ?, password_reset_expires = ? WHERE email = ?',
-      [hashedToken, expires, email]
-    );
-    const resetUrl = `${process.env.SITE_URL}/reset-password.html?token=${rawToken}`;
-    try { await sendPasswordResetEmail({ name: rows[0].name, email, resetUrl }); } catch {}
+  if (!rows.length) {
+    return errorResponse(res, 'Email not registered. Please register or provide the email address you signed up with.', 404);
   }
-  return successResponse(res, null, 'If that email exists, a reset link has been sent');
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+  const expires = new Date(Date.now() + 60 * 60 * 1000);
+  await pool.query(
+    'UPDATE users SET password_reset_token = ?, password_reset_expires = ? WHERE email = ?',
+    [hashedToken, expires, email]
+  );
+  const resetUrl = `${process.env.SITE_URL}/reset-password.html?token=${rawToken}`;
+  try { await sendPasswordResetEmail({ name: rows[0].name, email, resetUrl }); } catch {}
+  return successResponse(res, null, 'Password reset link has been sent to your email');
 });
 
 exports.resetPassword = asyncHandler(async (req, res) => {

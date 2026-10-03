@@ -196,8 +196,8 @@ function buildStaticHeader(currentPath = '/') {
       </div>
     </nav>
     <div class="header-actions">
-      <a href="/pricing.html#login" class="btn btn-ghost btn-sm">Login</a>
-      <a href="/pricing.html#register" class="btn btn-primary btn-sm">Register</a>
+      <a href="/login.html" class="btn btn-ghost btn-sm">Login</a>
+      <a href="/register.html" class="btn btn-primary btn-sm">Register</a>
     </div>
   </div></div>
 </header>`;
@@ -644,6 +644,7 @@ app.get('/prediction/:slug', async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT p.home_team, p.away_team, p.tip, p.odds, p.market, p.match_date, p.slug,
+              p.is_vip, p.is_banker, p.result,
               l.name AS league_name
        FROM predictions p LEFT JOIN leagues l ON l.id = p.league_id
        WHERE p.slug = ? AND p.published_at IS NOT NULL LIMIT 1`,
@@ -652,9 +653,13 @@ app.get('/prediction/:slug', async (req, res) => {
     if (!rows.length) return res.sendFile(path.join(__dirname, 'public', 'prediction-detail.html'));
     const p = rows[0];
     const base = process.env.SITE_URL || 'https://www.predictvilla.com';
+    const vipLabel = p.is_banker ? 'Banker' : p.is_vip ? 'VIP' : 'Free';
     const title = `${p.home_team} vs ${p.away_team} Prediction — ${p.league_name || 'Football'} | Predictvilla`;
-    const tipStr = p.tip && p.tip !== 'TBD' ? ` Tip: ${p.tip}${p.odds ? ` @ ${p.odds}` : ''}.` : '';
-    const description = `${p.home_team} vs ${p.away_team} prediction for ${new Date(p.match_date).toDateString()}.${tipStr} Free football tips from Predictvilla.`;
+    // Don't expose VIP tips/odds in public metadata
+    const tipStr = (p.tip && p.tip !== 'TBD' && p.tip !== 'VIP Pick' && !p.is_vip)
+      ? ` Tip: ${p.tip}${p.odds ? ` @ ${p.odds}` : ''}.`
+      : '';
+    const description = `${p.home_team} vs ${p.away_team} ${vipLabel} prediction for ${new Date(p.match_date).toDateString()}.${tipStr} Football predictions from Predictvilla.`;
     const canonical = `${base}/prediction/${p.slug}`;
     const ldJson = JSON.stringify({
       '@context': 'https://schema.org', '@type': 'SportsEvent',

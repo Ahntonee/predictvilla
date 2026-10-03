@@ -36,9 +36,9 @@
 
       <!-- Tabs -->
       <div class="tab-row mb-3">
-        <button class="category-tab active" onclick="switchTab('bookmarks',this)"><span class="material-icons-round">bookmarks</span> Bookmarks</button>
+        <button class="category-tab active" onclick="switchTab('bookmarks',this)"><span class="material-icons-round">sports_soccer</span> Predictions</button>
         <button class="category-tab" onclick="switchTab('bets',this)"><span class="material-icons-round">bar_chart</span> Bet History</button>
-        <button class="category-tab" id="tokens-tab-btn" onclick="switchTab('tokens',this)"><span class="material-icons-round">toll</span> ODLT Tokens</button>
+        <button class="category-tab" id="tokens-tab-btn" onclick="switchTab('tokens',this)"><span class="material-icons-round">toll</span> PVT Tokens</button>
         <button class="category-tab" onclick="switchTab('settings',this)"><span class="material-icons-round">settings</span> Settings</button>
       </div>
 
@@ -60,7 +60,7 @@
         </table></div>
       </div>
 
-      <!-- ODLT Tokens Tab -->
+      <!-- PVT Tokens Tab -->
       <div id="tab-tokens" style="display:none">
         <!-- Balance + Check-in row -->
         <div class="grid-2 mb-3">
@@ -68,12 +68,12 @@
             <div class="flex gap-3 mb-3" style="align-items:center">
               <span class="material-icons-round" style="font-size:36px;color:var(--primary)">toll</span>
               <div>
-                <p class="text-soft" style="font-size:12px;margin-bottom:2px">ODLT Balance</p>
+                <p class="text-soft" style="font-size:12px;margin-bottom:2px">PVT Balance</p>
                 <h2 id="odlt-balance-big" style="font-size:28px;font-weight:900;color:var(--primary)">—</h2>
               </div>
             </div>
-            <p class="text-soft" style="font-size:12px">Total earned: <strong id="odlt-total-earned">—</strong> ODLT &nbsp;|&nbsp; Spent: <strong id="odlt-total-spent">—</strong> ODLT</p>
-            <p class="text-soft mt-2" style="font-size:11px">Tokens are platform-only credits — not redeemable for cash.</p>
+            <p class="text-soft" style="font-size:12px">Total earned: <strong id="odlt-total-earned">—</strong> PVT &nbsp;|&nbsp; Spent: <strong id="odlt-total-spent">—</strong> PVT</p>
+            <p class="text-soft mt-2" style="font-size:11px">PVT tokens are platform-only credits — not redeemable for cash.</p>
           </div>
           <div class="card" style="border-color:rgba(160,208,0,0.15)" id="checkin-card">
             <h3 class="mb-2"><span class="material-icons-round" style="vertical-align:middle;font-size:18px">today</span> Daily Check-in</h3>
@@ -84,7 +84,7 @@
             </div>
             <div id="checkin-milestone" class="text-soft mb-3" style="font-size:12px"></div>
             <button class="btn btn-primary w-full" id="checkin-btn" onclick="doCheckin()">
-              <span class="material-icons-round">check_circle</span> Check In (+10 ODLT)
+              <span class="material-icons-round">check_circle</span> Check In (+20 PVT)
             </button>
           </div>
         </div>
@@ -155,7 +155,7 @@ let userData = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   const r = await fetch('/api/auth/me');
-  if (!r.ok) { location.href = '/pricing.html#login'; return; }
+  if (!r.ok) { location.href = '/login.html'; return; }
   const data = await r.json();
   userData = data.data?.user;
   const sub = data.data?.subscription;
@@ -214,18 +214,27 @@ async function joinTelegram() {
 async function loadBookmarks() {
   const grid = document.getElementById('bookmarks-grid');
   try {
-    const r = await fetch('/api/users/bookmarks');
+    const userData = getUser();
+    const isVip = userData?.role === 'vip' || userData?.role === 'admin';
+    const endpoint = isVip ? '/api/predictions?include_vip=1&limit=20' : '/api/predictions?limit=20';
+    const r = await fetch(endpoint);
     const data = await r.json();
-    const bm = data.data?.bookmarks || [];
-    if (!bm.length) { grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon"><span class="material-icons-round" style="font-size:48px">bookmarks</span></div><h3>No bookmarks yet</h3><p>Bookmark predictions from the predictions page</p></div>`; return; }
-    grid.innerHTML = bm.map(p => `
+    const predictions = data.data?.predictions || [];
+    if (!predictions.length) { grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon"><span class="material-icons-round" style="font-size:48px">sports_soccer</span></div><h3>No predictions yet</h3><p>Predictions will appear here once available</p></div>`; return; }
+    grid.innerHTML = predictions.map(p => `
       <div class="prediction-card">
-        <div class="flex-between mb-2"><strong style="font-size:14px">${escapeHtml(p.home_team)} vs ${escapeHtml(p.away_team)}</strong><span class="badge badge-${p.result||'pending'}">${(p.result||'pending').toUpperCase()}</span></div>
-        <p class="text-soft" style="font-size:13px">${escapeHtml(p.tip||'')}</p>
+        <div class="flex-between mb-2">
+          <strong style="font-size:14px">${escapeHtml(p.home_team)} vs ${escapeHtml(p.away_team)}</strong>
+          <span style="display:flex;gap:4px;align-items:center">
+            ${p.is_vip ? `<span class="badge" style="background:rgba(245,197,24,.15);color:#f5c518;border:1px solid rgba(245,197,24,.3)"><span style="font-size:10px">★</span> VIP</span>` : ''}
+            <span class="badge badge-${p.result||'pending'}">${(p.result||'pending').toUpperCase()}</span>
+          </span>
+        </div>
+        <p class="text-soft" style="font-size:13px">${p.is_vip && !isVip ? 'VIP Pick' : escapeHtml(p.tip||'')}</p>
         <div class="flex-between mt-2"><span class="text-muted" style="font-size:12px">${formatDate(p.match_date)}</span>
           <a href="/prediction/${p.slug}" class="btn btn-sm btn-outline">View →</a></div>
       </div>`).join('');
-  } catch { grid.innerHTML = `<p class="text-soft">Failed to load bookmarks.</p>`; }
+  } catch { grid.innerHTML = `<p class="text-soft">Failed to load predictions.</p>`; }
 }
 
 async function loadBets() {
@@ -294,7 +303,7 @@ async function loadCheckinStatus() {
         statusEl.textContent = `Come back tomorrow to keep your streak going!`;
       } else {
         btn.disabled = false;
-        btn.innerHTML = '<span class="material-icons-round">check_circle</span> Check In (+10 ODLT)';
+        btn.innerHTML = '<span class="material-icons-round">check_circle</span> Check In (+20 PVT)';
         statusEl.textContent = `Check in daily to earn tokens and grow your streak.`;
       }
       const milestone = document.getElementById('checkin-milestone');
@@ -305,7 +314,7 @@ async function loadCheckinStatus() {
         milestone.textContent = `7-day streak! +50 bonus earned. Next milestone: day 30.`;
       } else {
         const daysTo7 = 7 - streak;
-        milestone.textContent = `${daysTo7} more day(s) to hit the 7-day streak bonus (+50 ODLT).`;
+        milestone.textContent = `${daysTo7} more day(s) to hit the 7-day streak bonus (+50 PVT).`;
       }
     }
   } catch {}
@@ -319,7 +328,7 @@ async function doCheckin() {
     const d = await r.json();
     if (d.success) {
       const td = d.data;
-      showToast(`+${td.tokens || td.awarded || 10} ODLT earned! Streak: ${td.streakDay || td.streak || 1} day(s)`, 'success');
+      showToast(`+${td.tokens || td.awarded || 20} PVT earned! Streak: ${td.streakDay || td.streak || 1} day(s)`, 'success');
       await loadTokensTab();
     } else {
       showToast(d.message || 'Check-in failed', 'error');
@@ -341,7 +350,7 @@ async function loadOdltTransactions() {
         <td style="font-size:12px">${formatDate(t.created_at)}</td>
         <td style="font-size:13px">${escapeHtml(t.reason || '—')}</td>
         <td style="color:${isCredit ? 'var(--primary)' : 'var(--danger)'}">
-          ${isCredit ? '+' : '-'}${parseInt(t.amount).toLocaleString()} ODLT
+          ${isCredit ? '+' : '-'}${parseInt(t.amount).toLocaleString()} PVT
         </td>
         <td><span class="badge badge-${isCredit ? 'won' : 'lost'}" style="text-transform:capitalize">${t.type}</span></td>
       </tr>`;
@@ -355,15 +364,15 @@ async function loadOdltBets() {
     const r = await fetch('/api/tokens/bets');
     const d = await r.json();
     const bets = d.data?.bets || [];
-    if (!bets.length) { tbody.innerHTML = `<tr><td colspan="5" class="text-center text-soft" style="padding:20px">No prediction bets yet — bet FOR or AGAINST predictions to earn more ODLT</td></tr>`; return; }
+    if (!bets.length) { tbody.innerHTML = `<tr><td colspan="5" class="text-center text-soft" style="padding:20px">No prediction bets yet — bet FOR or AGAINST predictions to earn more PVT</td></tr>`; return; }
     tbody.innerHTML = bets.map(b => {
       const outcome = b.outcome || 'pending';
       const statusColor = outcome === 'won' ? 'var(--primary)' : outcome === 'lost' ? 'var(--danger)' : 'var(--text-soft)';
       return `<tr>
         <td style="font-size:13px">${escapeHtml(b.home_team || '—')} vs ${escapeHtml(b.away_team || '—')}</td>
         <td><span class="badge badge-${b.direction === 'for' ? 'won' : 'lost'}" style="text-transform:uppercase">${b.direction}</span></td>
-        <td>${parseInt(b.amount).toLocaleString()} ODLT</td>
-        <td style="color:var(--primary)">${outcome === 'won' && b.tokens_returned ? '+' + parseInt(b.tokens_returned).toLocaleString() + ' ODLT' : '—'}</td>
+        <td>${parseInt(b.amount).toLocaleString()} PVT</td>
+        <td style="color:var(--primary)">${outcome === 'won' && b.tokens_returned ? '+' + parseInt(b.tokens_returned).toLocaleString() + ' PVT' : '—'}</td>
         <td><span style="color:${statusColor};font-weight:600;text-transform:capitalize">${outcome}</span></td>
       </tr>`;
     }).join('');

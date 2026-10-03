@@ -286,6 +286,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('auto-btn').addEventListener('click', autoGenerate);
   document.getElementById('clear-btn').addEventListener('click', () => { selectedIds.clear(); updateSlip(); renderGames(); });
+
+  // Mark VIP-only confidence options
+  const user = typeof getUser === 'function' ? getUser() : null;
+  const isVip = user?.role === 'vip' || user?.role === 'admin';
+  if (!isVip) {
+    document.querySelectorAll('#auto-conf option').forEach(opt => {
+      if (parseInt(opt.value) > 65) opt.textContent += ' (VIP)';
+    });
+  }
   document.getElementById('stake-input').addEventListener('input', updatePayout);
   document.getElementById('copy-btn').addEventListener('click', copySlip);
   document.getElementById('img-btn').addEventListener('click', exportSlipImage);
@@ -333,6 +342,9 @@ function renderGames() {
     return;
   }
 
+  const user = typeof getUser === 'function' ? getUser() : null;
+  const isVip = user?.role === 'vip' || user?.role === 'admin';
+
   document.getElementById('games-list').innerHTML = games.map(g => {
     const isSelected = selectedIds.has(g.id);
     const conf = g.confidence_score || 0;
@@ -340,6 +352,49 @@ function renderGames() {
     const odds = confToOdds(conf);
     const ko = g.match_date ? new Date(g.match_date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '—';
     const league = g.league_name || '';
+
+    // Item 26: VIP picks are locked for free users
+    if (!isVip && g.is_vip) {
+      return `<div class="game-card" style="opacity:.7;cursor:default;position:relative;overflow:hidden" onclick="location.href='/pricing.html'">
+        <div style="position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;gap:8px;border-radius:inherit">
+          <span class="material-icons-round" style="color:#f5c518;font-size:18px">lock</span>
+          <span style="color:#f5c518;font-weight:600;font-size:13px">VIP Pick — <a href="/pricing.html" style="color:#f5c518;text-decoration:underline">Join VIP</a></span>
+        </div>
+        <div class="game-info" style="filter:blur(3px);pointer-events:none">
+          <div class="game-match">${escapeHtml(g.home_team)} <span style="color:var(--text-soft);font-weight:400">vs</span> ${escapeHtml(g.away_team)}</div>
+          <div class="game-meta">${league ? `<span>${escapeHtml(league)}</span> · ` : ''}<span>KO ${ko}</span></div>
+        </div>
+        <div class="game-pick" style="filter:blur(3px);pointer-events:none">
+          <div class="game-tip">VIP</div>
+          <div class="game-odds">—</div>
+        </div>
+      </div>`;
+    }
+
+    // Item 27: confidence > 65 shows upgrade prompt for free users
+    if (!isVip && conf > 65) {
+      return `<div class="game-card" style="cursor:pointer" onclick="location.href='/pricing.html'">
+        <div class="game-chk" style="opacity:.3">
+          <span class="material-icons-round game-chk-icon" style="font-size:14px;font-weight:900">lock</span>
+        </div>
+        <div class="game-info">
+          <div class="game-match">${escapeHtml(g.home_team)} <span style="color:var(--text-soft);font-weight:400">vs</span> ${escapeHtml(g.away_team)}</div>
+          <div class="game-meta">
+            ${league ? `<span>${escapeHtml(league)}</span> · ` : ''}
+            <span>KO ${ko}</span>
+            · <span style="color:var(--primary)"><span class="conf-dot" style="background:var(--primary)"></span>${conf}% conf.</span>
+          </div>
+          <div style="font-size:11px;color:var(--primary);margin-top:4px">
+            <span class="material-icons-round" style="font-size:11px;vertical-align:middle">star</span>
+            Join VIP to get confidence tips up to 85%
+          </div>
+        </div>
+        <div class="game-pick">
+          <div class="game-tip" style="filter:blur(4px);user-select:none">—</div>
+          <div class="game-odds" style="filter:blur(4px);user-select:none">—</div>
+        </div>
+      </div>`;
+    }
 
     return `<div class="game-card${isSelected?' selected':''}" data-id="${g.id}" onclick="toggleGame(${g.id})">
       <div class="game-chk">
@@ -377,9 +432,26 @@ function autoGenerate() {
   const count  = parseInt(document.getElementById('auto-count').value);
   const minConf = parseInt(document.getElementById('auto-conf').value);
 
+  const user = typeof getUser === 'function' ? getUser() : null;
+  const isVip = user?.role === 'vip' || user?.role === 'admin';
+
+  const effectiveMaxConf = isVip ? Infinity : 65;
+
   const pool = [...allPredictions.today, ...allPredictions.tomorrow]
-    .filter(g => (g.confidence_score||0) >= minConf && g.tip && g.tip !== 'TBD')
+    .filter(g => {
+      const conf = g.confidence_score || 0;
+      if (!isVip && g.is_vip) return false;
+      if (conf > effectiveMaxConf) return false;
+      return conf >= minConf && g.tip && g.tip !== 'TBD';
+    })
     .sort((a,b) => (b.confidence_score||0)-(a.confidence_score||0));
+
+  if (!isVip && minConf > 65) {
+    if (typeof showErrorModal === 'function') {
+      showErrorModal('Join VIP to get confidence tips up to 85%. Free users can access picks up to 65% confidence.', 'VIP Feature');
+    }
+    return;
+  }
 
   selectedIds.clear();
   pool.slice(0, count).forEach(g => selectedIds.add(g.id));
