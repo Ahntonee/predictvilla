@@ -652,6 +652,16 @@ async function injectFooter() {
       ${backlinks.map(l => `<a href="${escapeHtml(l.url)}" target="_blank" rel="noopener nofollow" class="footer-backlink">${escapeHtml(l.keyword)}</a>`).join('')}
     </div>` : '';
 
+  // Build date-specific "Predictions by Day" links for the next 7 days
+  const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const todayD = new Date();
+  const byDayLinks = Array.from({length:7}, (_,i) => {
+    const d = new Date(todayD); d.setDate(todayD.getDate() + i);
+    const ymd = d.toISOString().slice(0,10);
+    const dayLabel = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : dayNames[d.getDay()];
+    return `<a href="/predictions.html?date=${ymd}">${dayLabel}'s Football Predictions</a>`;
+  }).join('');
+
   target.innerHTML = `<footer class="site-footer">
     <div class="footer-main">
       <div class="container">
@@ -659,47 +669,50 @@ async function injectFooter() {
 
           <div class="footer-brand-col">
             <img src="/images/logo.svg" alt="Predictvilla" class="footer-logo" onerror="this.style.display='none'">
-            <p class="footer-desc">Predictvilla is an online service that provides the most accurate football prediction, soccer betting tips as well as news to its users.</p>
+            <p class="footer-desc">Predictvilla delivers AI-powered football predictions, soccer betting tips, VIP picks and match analysis across 160+ leagues worldwide.</p>
             <div class="footer-socials">${socialHtml}</div>
           </div>
 
           <div class="footer-links-col">
-            <h4 class="footer-col-title">Business Links</h4>
-            <a href="/pricing.html">VIP Packages</a>
-            <a href="/predictions.html">Recent Winning</a>
-            <a href="/about.html">About Us</a>
-            <a href="/blog.html">Partners</a>
-            <a href="/contact.html">Contact us</a>
+            <h4 class="footer-col-title">Quick Links</h4>
+            <a href="/predictions.html">Free Predictions Today</a>
+            <a href="/predictions.html?result=won">Recent Winning Tips</a>
+            <a href="/predictions.html?cat=banker">Banker of the Day</a>
+            <a href="/bet-builder.html">Accumulator Builder</a>
+            <a href="/statistics.html">Football Statistics</a>
+            <a href="/pricing.html">VIP Membership</a>
           </div>
 
           <div class="footer-links-col">
-            <h4 class="footer-col-title">Other Links</h4>
-            <a href="/blog.html">Blog</a>
-            <a href="/about.html#disclaimer">Disclaimer</a>
-            <a href="/privacy.html">Privacy Policy</a>
-            <a href="/terms.html">Terms and Conditions</a>
-            <a href="#" onclick="event.preventDefault();openCookiePreferences()">Cookie Preferences</a>
+            <h4 class="footer-col-title">Betting Markets</h4>
+            <a href="/predictions/over-25">Over 2.5 Goals Predictions</a>
+            <a href="/predictions/btts">Both Teams to Score Tips</a>
+            <a href="/predictions/accumulator">Accumulator Tips</a>
+            <a href="/predictions/1x2">1X2 Win-Draw-Win Tips</a>
+            <a href="/predictions/correct-score">Correct Score Predictions</a>
+            <a href="/predictions/double-chance">Double Chance Tips</a>
+            <a href="/predictions/draw-no-bet">Draw No Bet Tips</a>
           </div>
 
           <div class="footer-links-col footer-predictions-col">
             <h4 class="footer-col-title">Predictions by Day</h4>
-            <a href="/predictions.html">Monday Football Predictions</a>
-            <a href="/predictions.html">Tuesday Football Predictions</a>
-            <a href="/predictions.html">Wednesday Football Predictions</a>
-            <a href="/predictions.html">Thursday Football Predictions</a>
-            <a href="/predictions.html">Friday Football Predictions</a>
-            <a href="/predictions.html">Saturday Football Predictions</a>
-            <a href="/predictions.html">Sunday Football Predictions</a>
+            ${byDayLinks}
           </div>
 
           <div class="footer-links-col">
-            <h4 class="footer-col-title">Contact</h4>
-            ${email ? `<span class="footer-contact-item"><strong>Email:</strong> <a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a></span>` : ''}
-            ${whatsapp ? `<span class="footer-contact-item"><strong>WhatsApp:</strong> <a href="${escapeHtml(whatsapp)}" target="_blank">${escapeHtml(whatsapp.replace('https://wa.me/',''))}</a></span>` : ''}
-            ${telegram ? `<span class="footer-contact-item"><strong>Telegram:</strong> <a href="${escapeHtml(telegram)}" target="_blank">Join Channel</a></span>` : ''}
+            <h4 class="footer-col-title">Company</h4>
+            <a href="/about.html">About Predictvilla</a>
+            <a href="/blog.html">Blog &amp; News</a>
+            <a href="/contact.html">Contact Us</a>
+            <a href="/about.html#disclaimer">Disclaimer</a>
+            <a href="/privacy.html">Privacy Policy</a>
+            <a href="/terms.html">Terms &amp; Conditions</a>
+            ${email ? `<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>` : ''}
+            ${whatsapp ? `<a href="${escapeHtml(whatsapp)}" target="_blank" rel="noopener">WhatsApp Us</a>` : ''}
+            ${telegram ? `<a href="${escapeHtml(telegram)}" target="_blank" rel="noopener">Join Telegram Channel</a>` : ''}
             <span class="footer-contact-item" style="margin-top:10px;display:block">
-              <strong style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-soft)">Textlink/Guestpost Placement:</strong><br>
-              <a href="/contact.html" style="color:var(--primary);font-weight:600">Contact via Telegram</a>
+              <strong style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-soft)">Textlink/Guestpost:</strong><br>
+              <a href="/contact.html" style="color:var(--primary);font-weight:600">Get in touch</a>
             </span>
           </div>
 

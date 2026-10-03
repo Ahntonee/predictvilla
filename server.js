@@ -725,6 +725,18 @@ app.get('/prediction/:slug', async (req, res) => {
       </div>` : ''}
       ${p.analysis ? `<div style="margin-top:16px;padding:16px;background:rgba(173,223,241,0.04);border-radius:10px;font-size:14px;line-height:1.7">${esc(p.analysis)}</div>` : ''}
     </div>
+    <!-- Internal links for crawlers -->
+    <div style="margin-top:16px;padding:16px 20px;border:1px solid rgba(255,255,255,0.07);border-radius:14px">
+      <p style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-soft);margin-bottom:10px">Explore More</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        ${leagueSlug(p.league_name) ? `<a href="/league/${leagueSlug(p.league_name)}" style="font-size:12px;padding:5px 11px;border:1px solid rgba(255,255,255,0.12);border-radius:20px;color:var(--text-soft);text-decoration:none">${esc(p.league_name)} Predictions</a>` : ''}
+        ${p.market ? `<a href="/predictions/${(function(m){const s={'Over/Under':'over-25','BTTS':'btts','1X2':'1x2','Correct Score':'correct-score','Double Chance':'double-chance','Draw No Bet':'draw-no-bet','Corners':'corners','Accumulator':'accumulator'};return s[m]||m.toLowerCase().replace(/[^a-z0-9]+/g,'-');})(p.market)}" style="font-size:12px;padding:5px 11px;border:1px solid rgba(255,255,255,0.12);border-radius:20px;color:var(--text-soft);text-decoration:none">${esc(p.market)} Tips</a>` : ''}
+        <a href="/predictions.html" style="font-size:12px;padding:5px 11px;border:1px solid rgba(255,255,255,0.12);border-radius:20px;color:var(--text-soft);text-decoration:none">Today's Predictions</a>
+        <a href="/bet-builder.html" style="font-size:12px;padding:5px 11px;border:1px solid rgba(160,208,0,0.4);border-radius:20px;color:#a0d000;text-decoration:none">Build Accumulator</a>
+        <a href="/statistics.html" style="font-size:12px;padding:5px 11px;border:1px solid rgba(255,255,255,0.12);border-radius:20px;color:var(--text-soft);text-decoration:none">Statistics</a>
+        <a href="/pricing.html" style="font-size:12px;padding:5px 11px;border:1px solid rgba(255,255,255,0.12);border-radius:20px;color:var(--text-soft);text-decoration:none">VIP Tips</a>
+      </div>
+    </div>
     <div class="skeleton" style="height:300px;border-radius:14px;margin-top:16px" aria-hidden="true"></div>`;
 
     html = html.replace(

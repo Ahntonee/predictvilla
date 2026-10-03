@@ -1162,8 +1162,8 @@ select.form-control { cursor: pointer; }
 
 .footer-grid-new {
   display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr 1.2fr;
-  gap: 40px;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr 1fr;
+  gap: 32px;
 }
 
 .footer-brand-col {}
@@ -2997,7 +2997,7 @@ img, video, iframe, embed, object, canvas, svg { max-width: 100%; height: auto; 
   font-size: 13px; color: var(--text-soft); transition: color .15s;
 }
 .footer-predictions-col a:hover { color: var(--primary); text-decoration: none; }
-.footer-grid-new { grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr !important; }
+.footer-grid-new { grid-template-columns: 1.4fr 1fr 1fr 1fr 1fr !important; }
 
 /* ── Mobile VP row adjustments ── */
 @media (max-width: 640px) {
@@ -3029,4 +3029,32 @@ img, video, iframe, embed, object, canvas, svg { max-width: 100%; height: auto; 
   .pred-row-vp { grid-template-columns: 1fr 130px 1fr; gap: 4px; padding: 8px; }
   .vp-odds-tips { flex-direction: column; gap: 3px; }
   .vp-tips-pill, .vp-odds-pill { justify-content: center; }
+}
+
+/* ── Internal link chips (prediction-detail related links) ── */
+.internal-link-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: var(--bg-3, rgba(255,255,255,0.05));
+  color: var(--text-soft);
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: border-color .2s, color .2s, background .2s;
+  white-space: nowrap;
+}
+.internal-link-chip:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: rgba(160,208,0,0.08);
+  text-decoration: none;
+}
+[data-theme="light"] .internal-link-chip {
+  border-color: rgba(0,0,0,0.12);
+  background: rgba(0,0,0,0.03);
+  color: var(--text-soft);
 }

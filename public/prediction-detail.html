@@ -169,6 +169,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div class="article-content" style="font-size:15px;line-height:1.85;color:var(--text)">${p.seo_body}</div>
       </div>` : ''}
 
+      <!-- Internal links: league, market, tools -->
+      <div id="internal-links-section"></div>
+
       <!-- Comments -->
       <div class="card mt-3">
         <h3 style="font-size:18px;margin-bottom:16px"><span class="material-icons-round">comment</span> Comments</h3>
@@ -178,7 +181,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <button class="btn btn-primary btn-sm mt-2" onclick="postComment(${p.id})">Post Comment</button>
         </div>
         <div id="comment-login-prompt" class="mt-2 text-soft" style="font-size:13px;display:none">
-          <a href="/pricing.html#login">Login</a> to leave a comment.
+          <a href="/login.html">Login</a> to leave a comment.
         </div>
       </div>`;
 
@@ -186,6 +189,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadProbabilities(p.id);
     loadH2H(p.id);
     loadVotes(p.id);
+    injectInternalLinks(p);
     if (user) document.getElementById('comment-form').style.display = 'block';
     else document.getElementById('comment-login-prompt').style.display = 'block';
   } catch (err) {
@@ -375,6 +379,64 @@ async function toggleBookmark(predId) {
 function shareThis() {
   if (navigator.share) { navigator.share({ title: document.title, url: window.location.href }); }
   else { navigator.clipboard?.writeText(window.location.href); showToast('Link copied!', 'success'); }
+}
+
+function slugify(str) {
+  return (str || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+const MARKET_SLUGS = {
+  'Over/Under': 'over-25', 'BTTS': 'btts', 'Both Teams Score': 'btts',
+  '1X2': '1x2', 'Correct Score': 'correct-score',
+  'Double Chance': 'double-chance', 'Draw No Bet': 'draw-no-bet',
+  'Corners': 'corners', 'Accumulator': 'accumulator',
+};
+
+function injectInternalLinks(p) {
+  const el = document.getElementById('internal-links-section');
+  if (!el) return;
+
+  const leagueSlug = slugify(p.league_name || '');
+  const marketSlug = p.market ? (MARKET_SLUGS[p.market] || slugify(p.market)) : null;
+
+  const leagueLink = leagueSlug
+    ? `<a href="/league/${leagueSlug}" class="internal-link-chip">
+        <span class="material-icons-round" style="font-size:15px">emoji_events</span>
+        More ${escapeHtml(p.league_name)} Predictions
+       </a>` : '';
+
+  const marketLink = marketSlug
+    ? `<a href="/predictions/${marketSlug}" class="internal-link-chip">
+        <span class="material-icons-round" style="font-size:15px">bar_chart</span>
+        ${escapeHtml(p.market)} Predictions
+       </a>` : '';
+
+  el.innerHTML = `
+    <div class="card mt-3" style="background:var(--bg-2);padding:18px 20px">
+      <h3 style="font-size:14px;font-weight:700;margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-soft)">
+        Explore More Predictions
+      </h3>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        ${leagueLink}
+        ${marketLink}
+        <a href="/predictions.html" class="internal-link-chip">
+          <span class="material-icons-round" style="font-size:15px">sports_soccer</span>
+          All Today's Predictions
+        </a>
+        <a href="/predictions.html?cat=banker" class="internal-link-chip">
+          <span class="material-icons-round" style="font-size:15px">star</span>
+          Banker of the Day
+        </a>
+        <a href="/bet-builder.html" class="internal-link-chip" style="color:var(--primary);border-color:var(--primary)">
+          <span class="material-icons-round" style="font-size:15px">auto_awesome</span>
+          Build an Accumulator
+        </a>
+        <a href="/statistics.html" class="internal-link-chip">
+          <span class="material-icons-round" style="font-size:15px">insights</span>
+          Football Statistics
+        </a>
+      </div>
+    </div>`;
 }
 </script>
 </body>
