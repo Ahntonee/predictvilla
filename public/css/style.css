@@ -3498,3 +3498,294 @@ img, video, iframe, embed, object, canvas, svg { max-width: 100%; height: auto; 
 [data-theme="dark"] .cat-chip {
   background: #1e2e00;
 }
+
+/* ════════════════════════════════════════════════════════════
+   AUTH FORM SYSTEM — Pill inputs + atmospheric card
+   Consistent across login, register, reset-password, contact,
+   and inline forms on pricing.html.
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Auth page wrapper (standalone pages) ─────────────────── */
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  /* Atmospheric warm spotlight from above — matches brand gold */
+  background:
+    radial-gradient(ellipse 55% 38% at 50% -2%, rgba(245, 218, 120, 0.16) 0%, transparent 58%),
+    radial-gradient(ellipse 35% 25% at 50% 0%,  rgba(255, 255, 255, 0.06) 0%, transparent 42%),
+    radial-gradient(ellipse 80% 60% at 20% 90%, rgba(160, 208,   0, 0.05) 0%, transparent 60%),
+    #0d1600;
+  background-attachment: fixed;
+}
+
+/* ── Auth card ────────────────────────────────────────────── */
+.auth-box {
+  background: rgba(18, 28, 0, 0.76);
+  backdrop-filter: blur(22px) saturate(1.7);
+  -webkit-backdrop-filter: blur(22px) saturate(1.7);
+  border: 1px solid rgba(160, 208, 0, 0.20);
+  border-radius: 22px;
+  padding: 44px 36px 36px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow:
+    0 28px 72px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(160, 208, 0, 0.06),
+    inset 0 1px 0 rgba(160, 208, 0, 0.10);
+  position: relative;
+  overflow: hidden;
+}
+/* Subtle top-centre highlight on the card */
+.auth-box::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 15%; right: 15%; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(160,208,0,0.35), transparent);
+  pointer-events: none;
+}
+
+/* ── Logo block inside card ───────────────────────────────── */
+.auth-logo {
+  display: flex; align-items: center; gap: 10px;
+  justify-content: center; margin-bottom: 24px;
+}
+.auth-logo img { width: 38px; height: 38px; object-fit: contain; }
+.auth-logo span {
+  font-size: 19px; font-weight: 900; color: var(--primary);
+  font-family: var(--font-head); letter-spacing: -0.4px;
+}
+
+/* ── Title & sub-text ─────────────────────────────────────── */
+.auth-title {
+  font-size: 27px; font-weight: 900; text-align: center;
+  margin-bottom: 5px; color: #f4f8e0; letter-spacing: -0.4px;
+  font-family: var(--font-head);
+}
+.auth-sub {
+  font-size: 13.5px; color: rgba(244,248,224,0.55);
+  text-align: center; margin-bottom: 28px; line-height: 1.5;
+}
+
+/* ── Pill input wrapper ───────────────────────────────────── */
+.auth-input-wrap {
+  position: relative;
+  margin-bottom: 14px;
+}
+
+/* ── Pill input ───────────────────────────────────────────── */
+.auth-input {
+  width: 100%;
+  padding: 13px 46px 13px 20px;
+  border-radius: 50px;
+  border: 1.5px solid rgba(160, 208, 0, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: #f4f8e0;
+  font-size: 14px;
+  font-family: var(--font-body);
+  font-weight: 500;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  box-shadow: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.auth-input::placeholder { color: rgba(244,248,224,0.38); }
+.auth-input:focus {
+  outline: none;
+  border-color: rgba(160,208,0,0.65);
+  background: rgba(255,255,255,0.09);
+  box-shadow: 0 0 0 3px rgba(160,208,0,0.12), inset 0 1px 3px rgba(0,0,0,0.15);
+}
+.auth-input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Select arrow override */
+.auth-select {
+  padding-right: 46px;
+  cursor: pointer;
+  background-image: none;
+}
+.auth-select option {
+  background: #182200; color: #f4f8e0;
+}
+
+/* ── Trailing icon ────────────────────────────────────────── */
+.auth-input-icon {
+  position: absolute;
+  right: 16px; top: 50%; transform: translateY(-50%);
+  font-size: 18px;
+  color: rgba(160,208,0,0.45);
+  pointer-events: none;
+  transition: color 0.2s;
+  user-select: none;
+}
+/* Icon becomes primary colour when input is focused */
+.auth-input-wrap:focus-within .auth-input-icon { color: rgba(160,208,0,0.85); }
+/* Clickable icon (show/hide password toggle) */
+.auth-input-icon.clickable { pointer-events: auto; cursor: pointer; }
+
+/* OTP code input — centred numeric */
+.auth-input.otp-input {
+  letter-spacing: 10px;
+  font-size: 22px;
+  font-weight: 800;
+  text-align: center;
+  padding-right: 20px;
+}
+
+/* Textarea variant — not a pill, but same border style */
+.auth-input.auth-textarea {
+  border-radius: 14px;
+  padding: 13px 20px;
+  resize: vertical;
+  min-height: 110px;
+}
+
+/* ── Row: remember me / forgot ────────────────────────────── */
+.auth-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 18px; margin-top: -4px;
+}
+.auth-checkbox-label {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 13px; color: rgba(244,248,224,0.55); cursor: pointer;
+}
+.auth-checkbox-label input[type="checkbox"] {
+  width: 14px; height: 14px; accent-color: var(--primary); cursor: pointer;
+}
+.auth-forgot {
+  font-size: 13px; color: rgba(244,248,224,0.55);
+  text-decoration: none; transition: color 0.18s;
+}
+.auth-forgot:hover { color: var(--primary); }
+
+/* ── Pill submit button ───────────────────────────────────── */
+.auth-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%;
+  padding: 14px 22px;
+  border-radius: 50px;
+  border: none;
+  background: var(--primary);
+  color: #0d1600;
+  font-size: 15px; font-weight: 800;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: background 0.18s, box-shadow 0.18s, transform 0.12s;
+  box-shadow: 0 4px 18px rgba(160,208,0,0.28);
+  letter-spacing: 0.2px;
+}
+.auth-btn:hover {
+  background: #b8e800;
+  box-shadow: 0 6px 24px rgba(160,208,0,0.40);
+  transform: translateY(-1px);
+}
+.auth-btn:active { transform: translateY(1px); box-shadow: 0 2px 10px rgba(160,208,0,0.20); }
+.auth-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+.auth-btn .material-icons-round { font-size: 17px; }
+
+/* Ghost secondary button — pill outline */
+.auth-btn-ghost {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  width: 100%; padding: 12px 22px;
+  border-radius: 50px;
+  border: 1.5px solid rgba(160,208,0,0.25);
+  background: rgba(160,208,0,0.06);
+  color: rgba(244,248,224,0.7);
+  font-size: 14px; font-weight: 700;
+  font-family: var(--font-body); cursor: pointer;
+  transition: all 0.18s;
+}
+.auth-btn-ghost:hover { border-color: rgba(160,208,0,0.5); color: var(--primary); }
+.auth-btn-ghost .material-icons-round { font-size: 16px; }
+
+/* ── Error / success feedback ─────────────────────────────── */
+.auth-error {
+  display: none; color: #ff5f6d; font-size: 13px;
+  margin: -6px 0 12px 8px; line-height: 1.4;
+}
+.auth-error.visible { display: block; }
+.auth-success {
+  display: none; color: #a0d000; font-size: 13px;
+  margin: -6px 0 12px 8px; line-height: 1.4;
+}
+.auth-success.visible { display: block; }
+
+/* ── Footer links ─────────────────────────────────────────── */
+.auth-form-footer {
+  text-align: center; margin-top: 20px;
+  font-size: 13px; color: rgba(244,248,224,0.45);
+}
+.auth-form-footer a { color: var(--primary); font-weight: 700; text-decoration: none; }
+.auth-form-footer a:hover { text-decoration: underline; }
+
+/* ── Password strength rules ──────────────────────────────── */
+.pw-rules { margin: 8px 0 4px 4px; display: flex; flex-direction: column; gap: 5px; }
+.pw-rule {
+  font-size: 12px; color: rgba(244,248,224,0.40);
+  display: flex; align-items: center; gap: 6px; transition: color 0.2s;
+}
+.pw-rule .material-icons-round { font-size: 14px; transition: color 0.2s; }
+.pw-rule.met { color: rgba(160,208,0,0.85); }
+.pw-rule.met .material-icons-round { color: #a0d000; }
+
+/* ── OTP countdown ────────────────────────────────────────── */
+.otp-countdown {
+  text-align: center; margin: 12px 0;
+  font-size: 13.5px; color: rgba(244,248,224,0.45);
+}
+.otp-countdown strong { color: var(--primary); font-size: 15px; }
+
+/* ── Divider ──────────────────────────────────────────────── */
+.auth-divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 18px 0; color: rgba(244,248,224,0.25); font-size: 12px;
+}
+.auth-divider::before, .auth-divider::after {
+  content: ''; flex: 1; height: 1px;
+  background: rgba(160,208,0,0.12);
+}
+
+/* ── Light-mode pill inputs (contact form etc.) ───────────── */
+[data-theme="light"] .auth-input {
+  background: rgba(13,22,0,0.04);
+  border-color: rgba(13,22,0,0.14);
+  color: #0d1600;
+}
+[data-theme="light"] .auth-input::placeholder { color: rgba(13,22,0,0.35); }
+[data-theme="light"] .auth-input:focus {
+  border-color: rgba(78,112,0,0.6);
+  background: rgba(255,255,255,0.8);
+  box-shadow: 0 0 0 3px rgba(78,112,0,0.09);
+}
+[data-theme="light"] .auth-input-icon { color: rgba(78,112,0,0.45); }
+[data-theme="light"] .auth-input-wrap:focus-within .auth-input-icon { color: #4e7000; }
+[data-theme="light"] .auth-select option { background: #fff; color: #0d1600; }
+[data-theme="light"] .auth-box {
+  background: rgba(255,255,255,0.82);
+  border-color: rgba(78,112,0,0.16);
+  box-shadow: 0 20px 56px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.9);
+}
+[data-theme="light"] .auth-title { color: #0d1600; }
+[data-theme="light"] .auth-sub { color: rgba(13,22,0,0.55); }
+[data-theme="light"] .auth-checkbox-label { color: rgba(13,22,0,0.55); }
+[data-theme="light"] .auth-forgot { color: rgba(13,22,0,0.50); }
+[data-theme="light"] .auth-form-footer { color: rgba(13,22,0,0.45); }
+[data-theme="light"] .auth-btn { color: #fff; }
+[data-theme="light"] .pw-rule { color: rgba(13,22,0,0.38); }
+[data-theme="light"] .pw-rule.met { color: #4e7000; }
+[data-theme="light"] .pw-rule.met .material-icons-round { color: #4e7000; }
+[data-theme="light"] .otp-countdown { color: rgba(13,22,0,0.45); }
+[data-theme="light"] .auth-error { color: #dc2626; }
+[data-theme="light"] .auth-form-footer a { color: #4e7000; }
+
+/* ── Contact form embedded in page (not .auth-page) ──────── */
+.contact-form-card .auth-input-wrap { margin-bottom: 14px; }
+.contact-form-card .auth-btn { margin-top: 4px; }
+
+/* Responsive */
+@media (max-width: 480px) {
+  .auth-box { padding: 36px 22px 28px; border-radius: 18px; }
+  .auth-title { font-size: 24px; }
+}
