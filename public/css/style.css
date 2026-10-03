@@ -3212,3 +3212,289 @@ img, video, iframe, embed, object, canvas, svg { max-width: 100%; height: auto; 
   box-shadow: 0 8px 32px rgba(0,0,0,.18), 0 2px 6px rgba(0,0,0,.1);
 }
 [data-theme="light"] .ad-popup-never-btn:hover { background: rgba(255,71,87,.06); }
+
+/* ════════════════════════════════════════════════════════════
+   NEUMORPHISM — Public Frontend
+   Soft extruded surfaces: every interactive element appears
+   pressed out of the page rather than floating above it.
+   Light + dark variants defined separately.
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Neumorphism tokens ──────────────────────────────────────
+   Light: bg #ffffff, shadow-dark rgba(13,22,0,0.13), shadow-light rgba(255,255,255,0.85)
+   Dark : bg #1e2e00, shadow-dark #121c00,            shadow-light #2a3f00
+   ────────────────────────────────────────────────────────── */
+:root {
+  --nm-shadow-d: rgba(13, 22, 0, 0.13);
+  --nm-shadow-l: rgba(255, 255, 255, 0.85);
+  --nm-blur:     12px;
+  --nm-spread:   -2px;
+}
+[data-theme="dark"] {
+  --nm-shadow-d: #111900;
+  --nm-shadow-l: #283900;
+  --nm-blur:     14px;
+  --nm-spread:   -3px;
+}
+
+/* ── Cards ── */
+.card {
+  box-shadow:
+    6px 6px var(--nm-blur) var(--nm-spread) var(--nm-shadow-d),
+    -6px -6px var(--nm-blur) var(--nm-spread) var(--nm-shadow-l);
+  border: none;
+  transition: box-shadow 0.22s, transform 0.22s;
+}
+.card:hover {
+  box-shadow:
+    8px 8px 18px var(--nm-spread) var(--nm-shadow-d),
+    -8px -8px 18px var(--nm-spread) var(--nm-shadow-l);
+  transform: translateY(-2px);
+}
+
+/* ── Prediction cards ── */
+.prediction-card {
+  box-shadow:
+    6px 6px var(--nm-blur) var(--nm-spread) var(--nm-shadow-d),
+    -6px -6px var(--nm-blur) var(--nm-spread) var(--nm-shadow-l);
+  border: none !important;
+  transition: box-shadow 0.22s, transform 0.22s;
+}
+.prediction-card:hover {
+  box-shadow:
+    9px 9px 20px var(--nm-spread) var(--nm-shadow-d),
+    -9px -9px 20px var(--nm-spread) var(--nm-shadow-l);
+  transform: translateY(-3px);
+}
+
+/* Banker card keeps its distinctive lime glow, just adds depth */
+.banker-card {
+  box-shadow:
+    6px 6px var(--nm-blur) var(--nm-spread) var(--nm-shadow-d),
+    -6px -6px var(--nm-blur) var(--nm-spread) var(--nm-shadow-l),
+    0 0 22px rgba(160,208,0,0.22) !important;
+  border: 2px solid #a0d000 !important;
+}
+
+/* ── Prediction row (vp grid layout) ── */
+.pred-row-vp {
+  box-shadow:
+    4px 4px 10px -2px var(--nm-shadow-d),
+    -4px -4px 10px -2px var(--nm-shadow-l);
+  border: none !important;
+  transition: box-shadow 0.2s, transform 0.18s;
+}
+.pred-row-vp:hover {
+  box-shadow:
+    6px 6px 14px -2px var(--nm-shadow-d),
+    -6px -6px 14px -2px var(--nm-shadow-l);
+  transform: translateY(-1px);
+}
+
+/* ── Primary button — extruded, sinks on press ── */
+.btn-primary {
+  box-shadow:
+    4px 4px 10px -1px var(--nm-shadow-d),
+    -2px -2px 8px -1px rgba(255,255,255,0.4);
+  transition: box-shadow 0.18s, transform 0.12s, background 0.2s;
+}
+.btn-primary:hover {
+  box-shadow:
+    6px 6px 14px -1px var(--nm-shadow-d),
+    -3px -3px 10px -1px rgba(255,255,255,0.45);
+  transform: translateY(-1px);
+}
+.btn-primary:active {
+  box-shadow:
+    inset 3px 3px 7px rgba(0,0,0,0.2),
+    inset -2px -2px 5px rgba(255,255,255,0.15);
+  transform: translateY(1px);
+}
+
+/* ── Ghost / outline buttons ── */
+.btn-ghost,
+.btn-outline {
+  box-shadow:
+    4px 4px 9px -2px var(--nm-shadow-d),
+    -4px -4px 9px -2px var(--nm-shadow-l);
+  transition: box-shadow 0.18s, transform 0.12s;
+}
+.btn-ghost:hover,
+.btn-outline:hover {
+  box-shadow:
+    6px 6px 13px -2px var(--nm-shadow-d),
+    -6px -6px 13px -2px var(--nm-shadow-l);
+  transform: translateY(-1px);
+}
+.btn-ghost:active,
+.btn-outline:active {
+  box-shadow:
+    inset 3px 3px 7px rgba(0,0,0,0.14),
+    inset -2px -2px 5px var(--nm-shadow-l);
+  transform: translateY(1px);
+}
+
+/* ── Odds pill & tips pill — soft extrusion ── */
+.vp-odds-pill {
+  box-shadow:
+    3px 3px 7px -1px var(--nm-shadow-d),
+    -2px -2px 6px -1px var(--nm-shadow-l);
+  border: none !important;
+}
+.vp-tips-pill {
+  box-shadow:
+    3px 3px 7px -1px var(--nm-shadow-d),
+    -2px -2px 6px -1px var(--nm-shadow-l);
+  border: none !important;
+}
+
+/* ── Form inputs — inset (sunken) feel ── */
+.form-control {
+  box-shadow:
+    inset 3px 3px 7px rgba(13,22,0,0.08),
+    inset -3px -3px 7px rgba(255,255,255,0.7);
+  border-color: transparent !important;
+  transition: box-shadow 0.18s;
+}
+.form-control:focus {
+  box-shadow:
+    inset 3px 3px 8px rgba(13,22,0,0.10),
+    inset -3px -3px 8px rgba(255,255,255,0.75),
+    0 0 0 2px rgba(160,208,0,0.22);
+  border-color: transparent !important;
+  outline: none;
+}
+[data-theme="dark"] .form-control {
+  box-shadow:
+    inset 3px 3px 7px rgba(0,0,0,0.35),
+    inset -3px -3px 7px rgba(40,57,0,0.6);
+}
+[data-theme="dark"] .form-control:focus {
+  box-shadow:
+    inset 3px 3px 8px rgba(0,0,0,0.40),
+    inset -3px -3px 8px rgba(40,57,0,0.65),
+    0 0 0 2px rgba(160,208,0,0.20);
+}
+
+/* ── Stat chips / stat blocks ── */
+.stat-chip,
+.stat-card,
+.kpi-tile {
+  box-shadow:
+    5px 5px 11px -2px var(--nm-shadow-d),
+    -5px -5px 11px -2px var(--nm-shadow-l);
+  border: none;
+}
+
+/* ── Hero section tag ── */
+.hero-tag {
+  box-shadow:
+    3px 3px 7px -1px var(--nm-shadow-d),
+    -2px -2px 6px -1px var(--nm-shadow-l);
+}
+
+/* ── Pricing tier cards ── */
+.tier-card {
+  box-shadow:
+    7px 7px 16px -3px var(--nm-shadow-d),
+    -7px -7px 16px -3px var(--nm-shadow-l);
+  border: none !important;
+  transition: box-shadow 0.22s, transform 0.2s;
+}
+.tier-card:hover {
+  box-shadow:
+    10px 10px 24px -3px var(--nm-shadow-d),
+    -10px -10px 24px -3px var(--nm-shadow-l);
+  transform: translateY(-3px);
+}
+.tier-card.popular {
+  box-shadow:
+    7px 7px 16px -3px var(--nm-shadow-d),
+    -7px -7px 16px -3px var(--nm-shadow-l),
+    0 0 0 1.5px var(--primary), 0 0 28px rgba(160,208,0,0.15) !important;
+}
+.tier-card.diamond {
+  box-shadow:
+    7px 7px 16px -3px var(--nm-shadow-d),
+    -7px -7px 16px -3px var(--nm-shadow-l),
+    0 0 0 1.5px rgba(120,190,255,0.45), 0 0 28px rgba(120,190,255,0.10) !important;
+}
+
+/* ── Sidebar nav links (on mobile) ── */
+.sidebar-nav-link {
+  transition: box-shadow 0.18s, background 0.18s;
+}
+.sidebar-nav-link.active,
+.sidebar-nav-link:hover {
+  box-shadow:
+    inset 2px 2px 5px var(--nm-shadow-d),
+    inset -2px -2px 5px var(--nm-shadow-l);
+}
+
+/* ── Period toggle pills ── */
+.period-toggle {
+  box-shadow:
+    5px 5px 11px -2px var(--nm-shadow-d),
+    -5px -5px 11px -2px var(--nm-shadow-l);
+  border: none !important;
+}
+.period-btn.active {
+  box-shadow:
+    inset 2px 2px 5px rgba(0,0,0,0.18),
+    inset -1px -1px 4px rgba(255,255,255,0.2);
+}
+
+/* ── Tab row chips ── */
+.filter-chip,
+.cat-chip {
+  box-shadow:
+    3px 3px 7px -1px var(--nm-shadow-d),
+    -3px -3px 7px -1px var(--nm-shadow-l);
+  border: none !important;
+  transition: box-shadow 0.15s;
+}
+.filter-chip.active,
+.cat-chip.active {
+  box-shadow:
+    inset 2px 2px 5px rgba(0,0,0,0.14),
+    inset -1px -1px 4px rgba(255,255,255,0.18);
+}
+
+/* ── Mobile bottom nav ── */
+.mobile-bottom-nav {
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+}
+[data-theme="dark"] .mobile-bottom-nav {
+  box-shadow:
+    0 -4px 16px #111900,
+    0 -1px 0 rgba(160,208,0,0.08);
+}
+
+/* ── FAQ items ── */
+.faq-item {
+  box-shadow:
+    4px 4px 10px -2px var(--nm-shadow-d),
+    -4px -4px 10px -2px var(--nm-shadow-l);
+  border: none !important;
+  border-radius: var(--radius-lg);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+/* Dark-mode neumorphism refinements */
+[data-theme="dark"] .card {
+  background: #1e2e00;
+}
+[data-theme="dark"] .prediction-card {
+  background: #1e2e00 !important;
+}
+[data-theme="dark"] .tier-card {
+  background: #1e2e00;
+}
+[data-theme="dark"] .period-toggle {
+  background: #1e2e00;
+}
+[data-theme="dark"] .filter-chip,
+[data-theme="dark"] .cat-chip {
+  background: #1e2e00;
+}

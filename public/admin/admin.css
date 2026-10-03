@@ -205,4 +205,221 @@ html[data-theme="light"] .EasyMDEContainer .CodeMirror,html[data-theme="light"] 
   padding-top: 180px !important;
 }
 
+/* ════════════════════════════════════════════════════════════
+   GLASSMORPHISM — Admin Dashboard
+   Frosted-glass surfaces over the deep-onyx carbon background.
+   ════════════════════════════════════════════════════════════ */
+
+/* Ambient background gradient so glass has something to catch light from */
+body {
+  background:
+    radial-gradient(ellipse 70% 55% at 15% 10%, rgba(160,208,0,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 55% 45% at 85% 80%, rgba(160,208,0,0.05) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 35% at 50% 50%, rgba(255,208,0,0.03) 0%, transparent 60%),
+    #0d1600;
+  background-attachment: fixed;
+}
+
+/* Glass token */
+:root {
+  --glass-bg:       rgba(24, 34, 0, 0.52);
+  --glass-border:   rgba(172, 255, 52, 0.18);
+  --glass-shadow:   0 8px 32px rgba(0, 0, 0, 0.36), inset 0 1px 0 rgba(172,255,52,0.10);
+  --glass-blur:     blur(18px) saturate(1.6);
+}
+
+/* ── Sidebar ── */
+#admin-sidebar {
+  background: rgba(13, 22, 0, 0.62) !important;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-right: 1px solid var(--glass-border) !important;
+  box-shadow: 4px 0 24px rgba(0,0,0,0.25);
+}
+
+.admin-brand {
+  background: rgba(160,208,0,0.05);
+  border-bottom-color: rgba(172,255,52,0.12) !important;
+}
+
+/* ── Topbar ── */
+#admin-topbar {
+  background: rgba(13, 22, 0, 0.58) !important;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--glass-border) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.22);
+}
+
+/* ── Cards & Stats ── */
+.admin-card {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: var(--glass-shadow);
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+.admin-card:hover {
+  border-color: rgba(172,255,52,0.32) !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.44), inset 0 1px 0 rgba(172,255,52,0.16);
+}
+
+.admin-stat {
+  background: rgba(24,34,0,0.48) !important;
+  backdrop-filter: blur(12px) saturate(1.4);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.28), inset 0 1px 0 rgba(172,255,52,0.08);
+  transition: box-shadow 0.2s, transform 0.18s;
+}
+.admin-stat:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.4), inset 0 1px 0 rgba(172,255,52,0.14);
+}
+
+/* ── Data table ── */
+.data-table-wrap {
+  background: rgba(18,28,0,0.38) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(172,255,52,0.12) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+/* ── Modal ── */
+.modal {
+  background: rgba(18, 28, 0, 0.72) !important;
+  backdrop-filter: blur(24px) saturate(1.8);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8);
+  border: 1px solid rgba(172,255,52,0.22) !important;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.55), inset 0 1px 0 rgba(172,255,52,0.14);
+}
+.modal-overlay {
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.modal-header { border-bottom-color: rgba(172,255,52,0.12) !important; }
+.modal-footer { border-top-color: rgba(172,255,52,0.12) !important; }
+
+/* ── Toasts ── */
+.toast {
+  background: rgba(18,28,0,0.78) !important;
+  backdrop-filter: blur(16px) saturate(1.5);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  border-color: rgba(172,255,52,0.22) !important;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+/* ── Form controls ── */
+.form-control {
+  background: rgba(13,22,0,0.45) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-color: rgba(172,255,52,0.16) !important;
+}
+.form-control:focus {
+  border-color: rgba(172,255,52,0.55) !important;
+  box-shadow: 0 0 0 3px rgba(160,208,0,0.10), inset 0 1px 3px rgba(0,0,0,0.3);
+}
+
+/* ── Tab row ── */
+.tab-row {
+  background: rgba(13,22,0,0.3);
+  backdrop-filter: blur(8px);
+  border-radius: 10px 10px 0 0;
+  padding: 4px 8px 0;
+  border-bottom-color: rgba(172,255,52,0.12) !important;
+}
+
+/* ── Buttons get a glass sheen on ghost/outline ── */
+.btn-ghost {
+  background: rgba(244,248,224,0.06) !important;
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(172,255,52,0.12);
+}
+.btn-ghost:hover {
+  background: rgba(244,248,224,0.12) !important;
+  border-color: rgba(172,255,52,0.25);
+}
+.btn-outline {
+  background: rgba(160,208,0,0.06) !important;
+  backdrop-filter: blur(6px);
+}
+.btn-outline:hover {
+  background: rgba(160,208,0,0.14) !important;
+}
+
+/* Glass shimmer — subtle top highlight on cards */
+.admin-card::before,
+.admin-stat::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 8%; right: 8%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(172,255,52,0.22), transparent);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.admin-card { position: relative; overflow: hidden; }
+.admin-stat { position: relative; overflow: hidden; }
+
+/* ── Light theme glass ── */
+html[data-theme="light"] body {
+  background:
+    radial-gradient(ellipse 70% 55% at 15% 10%, rgba(100,160,0,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 55% 45% at 85% 80%, rgba(100,160,0,0.04) 0%, transparent 55%),
+    #f4f7ec !important;
+  background-attachment: fixed;
+}
+html[data-theme="light"] #admin-sidebar {
+  background: rgba(255,255,255,0.72) !important;
+  border-right-color: rgba(50,75,25,0.18) !important;
+  box-shadow: 4px 0 20px rgba(0,0,0,0.07);
+}
+html[data-theme="light"] #admin-topbar {
+  background: rgba(255,255,255,0.68) !important;
+  border-bottom-color: rgba(50,75,25,0.14) !important;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.06);
+}
+html[data-theme="light"] .admin-card {
+  background: rgba(255,255,255,0.70) !important;
+  border-color: rgba(50,75,25,0.16) !important;
+  box-shadow: 0 4px 20px rgba(50,75,25,0.08), inset 0 1px 0 rgba(255,255,255,0.85);
+}
+html[data-theme="light"] .admin-stat {
+  background: rgba(255,255,255,0.65) !important;
+  border-color: rgba(50,75,25,0.14) !important;
+  box-shadow: 0 2px 12px rgba(50,75,25,0.07), inset 0 1px 0 rgba(255,255,255,0.8);
+}
+html[data-theme="light"] .data-table-wrap {
+  background: rgba(255,255,255,0.60) !important;
+  border-color: rgba(50,75,25,0.12) !important;
+}
+html[data-theme="light"] .modal {
+  background: rgba(255,255,255,0.84) !important;
+  border-color: rgba(50,75,25,0.18) !important;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.15);
+}
+html[data-theme="light"] .modal-overlay {
+  background: rgba(13,22,0,0.3);
+}
+html[data-theme="light"] .toast {
+  background: rgba(255,255,255,0.86) !important;
+  border-color: rgba(50,75,25,0.18) !important;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.10);
+}
+html[data-theme="light"] .form-control {
+  background: rgba(255,255,255,0.75) !important;
+  border-color: rgba(50,75,25,0.20) !important;
+}
+html[data-theme="light"] .admin-card::before,
+html[data-theme="light"] .admin-stat::before {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent);
+}
+html[data-theme="light"] :root {
+  --glass-border: rgba(50,75,25,0.18);
+}
+
 
