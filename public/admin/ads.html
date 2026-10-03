@@ -45,18 +45,23 @@
 
   <!-- Filter -->
   <div class="flex gap-2 mb-3" style="flex-wrap:wrap;align-items:center">
-    <select class="form-control" id="f-pos" style="max-width:180px">
+    <select class="form-control" id="f-pos" style="max-width:200px">
       <option value="">All Positions</option>
       <option>header</option>
+      <option>homepage_hero</option>
+      <option>homepage_mid</option>
       <option>predictions_top</option>
+      <option>predictions_mid</option>
       <option>predictions_bottom</option>
       <option>sidebar</option>
+      <option>sidebar_2</option>
+      <option>sidebar_sticky</option>
       <option>detail_top</option>
+      <option>detail_mid</option>
       <option>detail_bottom</option>
+      <option>blog_inline</option>
       <option>footer</option>
       <option>popup</option>
-      <option>homepage_mid</option>
-      <option>native_sidebar</option>
     </select>
     <select class="form-control" id="f-type" style="max-width:140px">
       <option value="">All Types</option>
@@ -123,17 +128,33 @@
     <div class="form-group">
       <label class="form-label">Position *</label>
       <select class="form-control" id="f-pos-sel">
-        <option value="header">Header</option>
-        <option value="predictions_top">Predictions Top</option>
-        <option value="predictions_bottom">Predictions Bottom</option>
-        <option value="sidebar">Sidebar</option>
-        <option value="homepage_mid">Homepage Middle</option>
-        <option value="detail_top">Prediction Detail Top</option>
-        <option value="detail_bottom">Prediction Detail Bottom</option>
-        <option value="footer">Footer</option>
-        <option value="popup">Popup</option>
-        <option value="native_sidebar">Native / Sponsored Sidebar</option>
-        <option value="sidebar_2">Sidebar Slot 2</option>
+        <optgroup label="Global">
+          <option value="header">Header (Leaderboard — all pages)</option>
+          <option value="footer">Footer (all pages)</option>
+          <option value="popup">Popup / Interstitial</option>
+        </optgroup>
+        <optgroup label="Homepage">
+          <option value="homepage_hero">Homepage Hero (below CTA)</option>
+          <option value="homepage_mid">Homepage Middle</option>
+        </optgroup>
+        <optgroup label="Predictions Page">
+          <option value="predictions_top">Predictions Top</option>
+          <option value="predictions_mid">Predictions Mid (inline, after 6th card)</option>
+          <option value="predictions_bottom">Predictions Bottom</option>
+        </optgroup>
+        <optgroup label="Sidebar">
+          <option value="sidebar">Sidebar Slot 1 (300×250)</option>
+          <option value="sidebar_2">Sidebar Slot 2</option>
+          <option value="sidebar_sticky">Sidebar Sticky (follows scroll)</option>
+        </optgroup>
+        <optgroup label="Prediction Detail">
+          <option value="detail_top">Detail Top (above match card)</option>
+          <option value="detail_mid">Detail Mid (after analysis)</option>
+          <option value="detail_bottom">Detail Bottom (below comments)</option>
+        </optgroup>
+        <optgroup label="Blog">
+          <option value="blog_inline">Blog Inline (mid-article)</option>
+        </optgroup>
       </select>
     </div>
 
@@ -198,7 +219,7 @@
 <script>
 injectAdminShell('ads.html');
 
-const POSITIONS = ['header','predictions_top','predictions_bottom','sidebar','sidebar_2','homepage_mid','detail_top','detail_bottom','footer','popup','native_sidebar'];
+const POSITIONS = ['header','homepage_hero','homepage_mid','predictions_top','predictions_mid','predictions_bottom','sidebar','sidebar_2','sidebar_sticky','detail_top','detail_mid','detail_bottom','blog_inline','footer','popup'];
 let allAds = [];
 
 document.addEventListener('DOMContentLoaded', loadAds);

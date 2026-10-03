@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Football Prediction | Predictvilla</title>
-<meta name="description" content="Expert football match prediction with AI-powered analysis, confidence score, H2H data and VIP tips on Predictvilla.">
+<title>Football Match Prediction — AI Analysis, Confidence Score & VIP Tip | Predictvilla</title>
+<meta name="description" content="Expert football prediction with AI confidence score, H2H stats, market probabilities and VIP betting tips. Today's sure bet prediction on Predictvilla.">
+<meta name="keywords" content="football match prediction, sure bet today, AI football analysis, H2H football stats, VIP football tips, over 2.5 prediction, BTTS prediction, correct score today, football confidence prediction">
 <meta property="og:title" content="Football Prediction | Predictvilla">
 <meta property="og:description" content="Expert football prediction with AI analysis, confidence score and H2H data.">
 <meta property="og:image" content="https://predictvilla.com/images/logo.webp">
@@ -169,6 +170,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div class="article-content" style="font-size:15px;line-height:1.85;color:var(--text)">${p.seo_body}</div>
       </div>` : ''}
 
+      <!-- Mid-article ad -->
+      <div class="ad-wrap" id="ad-detail-mid" style="margin:16px 0"></div>
+
       <!-- Internal links: league, market, tools -->
       <div id="internal-links-section"></div>
 
@@ -189,6 +193,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadProbabilities(p.id);
     loadH2H(p.id);
     loadVotes(p.id);
+    renderAds('detail_mid', document.getElementById('ad-detail-mid'));
     injectInternalLinks(p);
     if (user) document.getElementById('comment-form').style.display = 'block';
     else document.getElementById('comment-login-prompt').style.display = 'block';

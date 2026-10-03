@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bet Journal — Personal ROI Tracker | Predictvilla</title>
+<meta name="description" content="Track your football bets and measure your personal ROI from Predictvilla's predictions. Log stakes, odds and outcomes — see which markets make you money.">
+<meta name="keywords" content="bet journal, football betting tracker, personal ROI tracker, bet log, football prediction tracker, betting P&L, bankroll tracker, accumulator tracker">
+<link rel="canonical" href="https://predictvilla.com/bet-journal.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jura:wght@400;500;600;700&family=Exo+2:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+<link rel="icon" href="/images/logo.svg" type="image/svg+xml"><link rel="icon" href="/images/logo.png" type="image/png">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#a0d000">
+<link rel="apple-touch-icon" href="/images/logo.png">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+.bj-stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.bj-stat { background: var(--bg-2); border-radius: 12px; padding: 14px 16px; }
+.bj-stat-label { font-size: 11px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--text-soft); margin-bottom: 4px; }
+.bj-stat-value { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.bj-stat-value.positive { color: var(--primary); }
+.bj-stat-value.negative { color: rgba(255,71,87,0.85); }
+
+.bj-table-wrap { overflow-x: auto; }
+.bj-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.bj-table th { font-size: 11px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--text-soft); border-bottom: 1.5px solid var(--border); padding: 8px 10px; text-align: left; white-space: nowrap; }
+.bj-table td { padding: 10px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.bj-table tr:last-child td { border-bottom: none; }
+.bj-table tbody tr:hover { background: var(--bg-2); }
+
+.outcome-badge { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: .4px; }
+.outcome-badge.win     { background: rgba(160,208,0,.15); color: var(--primary); }
+.outcome-badge.loss    { background: rgba(255,71,87,.12); color: rgba(255,71,87,.9); }
+.outcome-badge.void    { background: rgba(255,200,0,.12); color: rgba(255,200,0,.9); }
+.outcome-badge.pending { background: var(--bg-3); color: var(--text-soft); }
+
+.bj-empty { text-align: center; padding: 48px 20px; color: var(--text-soft); }
+.bj-empty .material-icons-round { font-size: 48px; opacity: .3; display: block; margin-bottom: 12px; }
+
+.market-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.market-chip { padding: 5px 13px; border-radius: 20px; border: 1.5px solid var(--border); font-size: 12px; font-weight: 600; cursor: pointer; color: var(--text-soft); transition: all .15s; background: none; }
+.market-chip.active, .market-chip:hover { background: var(--primary); color: #000; border-color: var(--primary); }
+</style>
+</head>
+<body>
+<div id="header-placeholder"></div>
+
+<main>
+  <section class="page-hero">
+    <div class="container">
+      <h1 class="page-hero-title">Bet <span>Journal</span></h1>
+      <p class="page-hero-sub">Track every bet, measure your ROI and discover which markets actually make you money.</p>
+    </div>
+  </section>
+
+  <section style="padding-top:0">
+    <div class="container" style="max-width:900px">
+
+      <!-- Auth gate -->
+      <div id="bj-auth-gate" style="display:none" class="card text-center" style="padding:32px">
+        <span class="material-icons-round" style="font-size:48px;opacity:.3;display:block;margin-bottom:12px">lock</span>
+        <h3>Sign in to use Bet Journal</h3>
+        <p class="text-soft" style="margin:8px 0 16px">Your personal bet log and ROI stats are saved to your account.</p>
+        <a href="/login.html" class="btn btn-primary">Sign In</a>
+        <a href="/register.html" class="btn btn-outline ml-2">Create Account</a>
+      </div>
+
+      <div id="bj-app" style="display:none">
+
+        <!-- Summary stats -->
+        <div class="bj-stat-grid" id="bj-stats">
+          <div class="bj-stat"><div class="bj-stat-label">Total Bets</div><div class="bj-stat-value" id="stat-total">—</div></div>
+          <div class="bj-stat"><div class="bj-stat-label">Win Rate</div><div class="bj-stat-value positive" id="stat-winrate">—</div></div>
+          <div class="bj-stat"><div class="bj-stat-label">Total Staked</div><div class="bj-stat-value" id="stat-staked">—</div></div>
+          <div class="bj-stat"><div class="bj-stat-label">Total Returns</div><div class="bj-stat-value" id="stat-returns">—</div></div>
+          <div class="bj-stat"><div class="bj-stat-label">Net Profit</div><div class="bj-stat-value" id="stat-profit">—</div></div>
+          <div class="bj-stat"><div class="bj-stat-label">ROI</div><div class="bj-stat-value" id="stat-roi">—</div></div>
+        </div>
+
+        <!-- Action bar -->
+        <div class="flex-between mb-3" style="flex-wrap:wrap;gap:10px">
+          <div class="market-bar" id="bj-outcome-filter">
+            <button class="market-chip active" data-outcome="">All</button>
+            <button class="market-chip" data-outcome="pending">Pending</button>
+            <button class="market-chip" data-outcome="win">Won</button>
+            <button class="market-chip" data-outcome="loss">Lost</button>
+            <button class="market-chip" data-outcome="void">Void</button>
+          </div>
+          <button class="btn btn-primary" id="btn-add-bet">
+            <span class="material-icons-round" style="font-size:16px;vertical-align:middle">add</span> Log Bet
+          </button>
+        </div>
+
+        <!-- Table -->
+        <div class="card" style="padding:0">
+          <div class="bj-table-wrap">
+            <table class="bj-table">
+              <thead>
+                <tr>
+                  <th>Match</th>
+                  <th>Market</th>
+                  <th>Tip</th>
+                  <th>Odds</th>
+                  <th>Stake</th>
+                  <th>Returns</th>
+                  <th>Outcome</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="bj-tbody"></tbody>
+            </table>
+            <div id="bj-empty" class="bj-empty" style="display:none">
+              <span class="material-icons-round">book</span>
+              <h3>No bets logged yet</h3>
+              <p>Tap "Log Bet" to add your first entry and start tracking your ROI.</p>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /bj-app -->
+    </div>
+  </section>
+</main>
+
+<!-- Add/Edit Bet Modal -->
+<div class="modal-overlay" id="bj-modal" style="display:none">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <h3 id="bj-modal-title">Log a Bet</h3>
+      <button class="modal-close" id="bj-modal-close"><span class="material-icons-round">close</span></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Match</label>
+        <input type="text" class="form-control" id="bj-match" placeholder="e.g. Arsenal vs Chelsea">
+      </div>
+      <div class="flex gap-2" style="flex-wrap:wrap">
+        <div class="form-group" style="flex:1;min-width:120px">
+          <label class="form-label">Market</label>
+          <select class="form-control" id="bj-market">
+            <option value="1X2">1X2 (Home/Draw/Away)</option>
+            <option value="Over 2.5">Over 2.5 Goals</option>
+            <option value="Under 2.5">Under 2.5 Goals</option>
+            <option value="Over 1.5">Over 1.5 Goals</option>
+            <option value="Over 3.5">Over 3.5 Goals</option>
+            <option value="BTTS">Both Teams to Score</option>
+            <option value="Correct Score">Correct Score</option>
+            <option value="HT/FT">Halftime/Fulltime</option>
+            <option value="Double Chance">Double Chance</option>
+            <option value="DNB">Draw No Bet</option>
+            <option value="Accumulator">Accumulator</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group" style="flex:1;min-width:120px">
+          <label class="form-label">Tip / Selection</label>
+          <input type="text" class="form-control" id="bj-tip" placeholder="e.g. Home Win">
+        </div>
+      </div>
+      <div class="flex gap-2" style="flex-wrap:wrap">
+        <div class="form-group" style="flex:1;min-width:100px">
+          <label class="form-label">Odds</label>
+          <input type="number" class="form-control" id="bj-odds" min="1.01" step="0.01" placeholder="e.g. 1.85">
+        </div>
+        <div class="form-group" style="flex:1;min-width:100px">
+          <label class="form-label">Stake</label>
+          <input type="number" class="form-control" id="bj-stake" min="0.01" step="0.01" placeholder="e.g. 1000">
+        </div>
+        <div class="form-group" style="flex:1;min-width:80px">
+          <label class="form-label">Outcome</label>
+          <select class="form-control" id="bj-outcome">
+            <option value="pending">Pending</option>
+            <option value="win">Win</option>
+            <option value="loss">Loss</option>
+            <option value="void">Void</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Match Date</label>
+        <input type="date" class="form-control" id="bj-date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes <span class="text-soft" style="font-weight:400">(optional)</span></label>
+        <textarea class="form-control" id="bj-notes" rows="2" placeholder="e.g. Following Predictvilla banker tip"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" id="bj-cancel">Cancel</button>
+      <button class="btn btn-primary" id="bj-save">Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<div id="footer-placeholder"></div>
+<script src="/js/app.js" defer></script>
+<script>
+let bjEntries = [];
+let bjEditId = null;
+let bjFilter = '';
+
+document.addEventListener('DOMContentLoaded', () => {
+  const user = getUser();
+  if (!user) { document.getElementById('bj-auth-gate').style.display = 'block'; return; }
+  document.getElementById('bj-app').style.display = 'block';
+  loadSummary();
+  loadEntries();
+
+  document.getElementById('btn-add-bet').addEventListener('click', () => openModal());
+  document.getElementById('bj-modal-close').addEventListener('click', closeModal);
+  document.getElementById('bj-cancel').addEventListener('click', closeModal);
+  document.getElementById('bj-save').addEventListener('click', saveEntry);
+  document.getElementById('bj-outcome-filter').addEventListener('click', e => {
+    const chip = e.target.closest('[data-outcome]');
+    if (!chip) return;
+    document.querySelectorAll('#bj-outcome-filter .market-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    bjFilter = chip.dataset.outcome;
+    loadEntries();
+  });
+});
+
+async function loadSummary() {
+  try {
+    const r = await fetch('/api/bet-journal/summary', { credentials: 'include' });
+    const d = await r.json();
+    if (!d.success) return;
+    const s = d.data.summary;
+    const sym = getUser()?.currency_symbol || '₦';
+    document.getElementById('stat-total').textContent = s.total_bets || 0;
+    document.getElementById('stat-winrate').textContent = (s.win_rate || 0) + '%';
+    document.getElementById('stat-staked').textContent = sym + fmt(s.total_staked || 0);
+    document.getElementById('stat-returns').textContent = sym + fmt(s.total_returns || 0);
+    const profit = parseFloat(s.net_profit || 0);
+    const profitEl = document.getElementById('stat-profit');
+    profitEl.textContent = (profit >= 0 ? '+' : '') + sym + fmt(profit);
+    profitEl.className = 'bj-stat-value ' + (profit >= 0 ? 'positive' : 'negative');
+    const roi = s.total_staked > 0 ? ((profit / s.total_staked) * 100).toFixed(1) : 0;
+    const roiEl = document.getElementById('stat-roi');
+    roiEl.textContent = (roi >= 0 ? '+' : '') + roi + '%';
+    roiEl.className = 'bj-stat-value ' + (roi >= 0 ? 'positive' : 'negative');
+  } catch {}
+}
+
+async function loadEntries() {
+  const url = bjFilter ? `/api/bet-journal?outcome=${bjFilter}&limit=100` : '/api/bet-journal?limit=100';
+  try {
+    const r = await fetch(url, { credentials: 'include' });
+    const d = await r.json();
+    if (!d.success) return;
+    bjEntries = d.data.entries;
+    renderTable();
+  } catch {}
+}
+
+function renderTable() {
+  const tbody = document.getElementById('bj-tbody');
+  const empty = document.getElementById('bj-empty');
+  if (!bjEntries.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  const sym = getUser()?.currency_symbol || '₦';
+  tbody.innerHTML = bjEntries.map(e => {
+    const ret = parseFloat(e.returns || 0);
+    const retClass = e.outcome === 'win' ? 'positive' : e.outcome === 'loss' ? 'negative' : '';
+    return `<tr>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(e.match_label)}</td>
+      <td><span class="badge" style="font-size:11px">${escapeHtml(e.market)}</span></td>
+      <td style="color:var(--primary);font-weight:600">${escapeHtml(e.tip)}</td>
+      <td style="font-variant-numeric:tabular-nums">${parseFloat(e.odds).toFixed(2)}</td>
+      <td style="font-variant-numeric:tabular-nums">${sym}${fmt(e.stake)}</td>
+      <td class="${retClass}" style="font-variant-numeric:tabular-nums;font-weight:600">${ret > 0 ? sym + fmt(ret) : '—'}</td>
+      <td><span class="outcome-badge ${e.outcome}">${e.outcome}</span></td>
+      <td>
+        <button class="btn btn-sm btn-outline" onclick="openModal(${e.id})" style="padding:3px 8px;font-size:11px">Edit</button>
+        <button onclick="deleteEntry(${e.id})" style="background:none;border:none;cursor:pointer;color:rgba(255,71,87,.7);padding:3px 6px" title="Delete">
+          <span class="material-icons-round" style="font-size:16px;vertical-align:middle">delete</span>
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function fmt(n) {
+  const v = parseFloat(n || 0);
+  return v >= 1000 ? v.toLocaleString('en-US', { maximumFractionDigits: 0 }) : v.toFixed(2);
+}
+
+function openModal(id) {
+  bjEditId = id || null;
+  document.getElementById('bj-modal-title').textContent = id ? 'Edit Bet Entry' : 'Log a Bet';
+  if (id) {
+    const e = bjEntries.find(x => x.id === id);
+    if (e) {
+      document.getElementById('bj-match').value = e.match_label;
+      document.getElementById('bj-market').value = e.market;
+      document.getElementById('bj-tip').value = e.tip;
+      document.getElementById('bj-odds').value = e.odds;
+      document.getElementById('bj-stake').value = e.stake;
+      document.getElementById('bj-outcome').value = e.outcome;
+      document.getElementById('bj-date').value = e.match_date ? e.match_date.split('T')[0] : '';
+      document.getElementById('bj-notes').value = e.notes || '';
+    }
+  } else {
+    document.getElementById('bj-match').value = '';
+    document.getElementById('bj-market').value = '1X2';
+    document.getElementById('bj-tip').value = '';
+    document.getElementById('bj-odds').value = '';
+    document.getElementById('bj-stake').value = '';
+    document.getElementById('bj-outcome').value = 'pending';
+    document.getElementById('bj-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('bj-notes').value = '';
+  }
+  document.getElementById('bj-modal').style.display = 'flex';
+}
+
+function closeModal() { document.getElementById('bj-modal').style.display = 'none'; bjEditId = null; }
+
+async function saveEntry() {
+  const body = {
+    match_label: document.getElementById('bj-match').value.trim(),
+    market: document.getElementById('bj-market').value,
+    tip: document.getElementById('bj-tip').value.trim(),
+    odds: document.getElementById('bj-odds').value,
+    stake: document.getElementById('bj-stake').value,
+    outcome: document.getElementById('bj-outcome').value,
+    match_date: document.getElementById('bj-date').value || null,
+    notes: document.getElementById('bj-notes').value.trim(),
+  };
+  if (!body.match_label || !body.tip || !body.odds || !body.stake) { showToast('Match, tip, odds and stake are required', 'error'); return; }
+  try {
+    const url = bjEditId ? `/api/bet-journal/${bjEditId}` : '/api/bet-journal';
+    const method = bjEditId ? 'PATCH' : 'POST';
+    const r = await fetch(url, { method, credentials: 'include', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const d = await r.json();
+    if (!d.success) { showToast(d.message || 'Error saving entry', 'error'); return; }
+    closeModal();
+    showToast(bjEditId ? 'Entry updated' : 'Bet logged!', 'success');
+    loadSummary();
+    loadEntries();
+  } catch { showToast('Network error', 'error'); }
+}
+
+async function deleteEntry(id) {
+  if (!confirm('Delete this bet entry?')) return;
+  try {
+    const r = await fetch(`/api/bet-journal/${id}`, { method: 'DELETE', credentials: 'include' });
+    const d = await r.json();
+    if (d.success) { showToast('Entry deleted', 'success'); loadSummary(); loadEntries(); }
+    else showToast(d.message || 'Error', 'error');
+  } catch { showToast('Network error', 'error'); }
+}
+</script>
+</body>
+</html>

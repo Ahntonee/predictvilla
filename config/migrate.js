@@ -446,6 +446,32 @@ async function migrate() {
       UNIQUE KEY uq_fixture (fixture_api_id),
       INDEX idx_pair (home_api_id, away_api_id)
     )`,
+
+    `CREATE TABLE IF NOT EXISTS bet_journal (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      user_id INT NOT NULL,
+      prediction_id INT NULL,
+      match_label VARCHAR(255) NOT NULL,
+      market VARCHAR(50) NOT NULL DEFAULT '1X2',
+      tip VARCHAR(100) NOT NULL,
+      odds DECIMAL(6,2) NOT NULL DEFAULT 1.00,
+      stake DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+      currency CHAR(3) NOT NULL DEFAULT 'NGN',
+      outcome ENUM('win','loss','void','pending') NOT NULL DEFAULT 'pending',
+      returns DECIMAL(12,2) GENERATED ALWAYS AS (
+        CASE WHEN outcome = 'win' THEN stake * odds
+             WHEN outcome = 'void' THEN stake
+             ELSE 0 END
+      ) STORED,
+      match_date DATE NULL,
+      notes TEXT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_bj_user (user_id),
+      INDEX idx_bj_prediction (prediction_id),
+      INDEX idx_bj_outcome (user_id, outcome),
+      CONSTRAINT fk_bj_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )`,
   ];
 
   for (const sql of tables) {

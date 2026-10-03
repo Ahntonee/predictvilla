@@ -117,6 +117,7 @@ app.use('/api/tokens', require('./routes/tokens'));
 app.use('/api/backlinks', require('./routes/backlinks'));
 app.use('/api/ads', require('./routes/ads'));
 app.use('/api/admin/seo-pages', require('./routes/seoPages'));
+app.use('/api/bet-journal', require('./routes/betjournal'));
 app.use('/api', require('./routes/standings'));
 
 // Public config (safe keys only — never expose secrets)
@@ -166,6 +167,7 @@ function buildStaticHeader(currentPath = '/') {
   const navLinks = [
     ['/', 'Home'],
     ['/predictions.html', 'Predictions'],
+    ['/livescores.html', 'Live Scores'],
     ['/pricing.html', 'Subscription'],
     ['/blog.html', 'Blog'],
     ['/about.html', 'About Us'],

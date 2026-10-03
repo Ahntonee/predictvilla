@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Football Predictions Today | Free & VIP Tips | Predictvilla</title>
-<meta name="description" content="Browse today's free and VIP football predictions across 160+ leagues. Filter by Premier League, Champions League, La Liga, and more. Updated daily by our AI engine.">
+<title>Football Predictions Today — Sure Tips, BTTS & Over 2.5 Goals | Predictvilla</title>
+<meta name="description" content="Browse today's free and VIP football predictions: sure predictions, banker of the day, BTTS tips, over 2.5 goals, and correct score picks across 160+ leagues. Updated daily by AI.">
+<meta name="keywords" content="football predictions today, sure predictions today, BTTS tips today, over 2.5 goals today, banker of the day, correct score predictions, halftime fulltime tips, draw no bet tips, double chance tips, Premier League predictions, Champions League tips, La Liga predictions">
 <link rel="canonical" href="https://predictvilla.com/predictions.html">
 <meta property="og:title" content="Football Predictions & Tips — Predictvilla">
 <meta property="og:description" content="Browse today's free and VIP football predictions. Filter by league, market, or category. 160+ leagues covered daily.">
@@ -34,8 +35,8 @@
   <!-- Page Hero -->
   <section class="page-hero">
     <div class="container">
-      <h1 class="page-hero-title">Football <span>Predictions & Picks</span></h1>
-      <p class="page-hero-sub">Browse free and VIP tips across 160+ leagues — filtered by market, league, and result.</p>
+      <h1 class="page-hero-title">Football Predictions <span>Today</span></h1>
+      <p class="page-hero-sub">Sure tips, banker of the day, BTTS &amp; over 2.5 goals predictions — free and VIP picks across 160+ leagues.</p>
       <!-- Market quick-links: crawlable internal links to dedicated prediction pages -->
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px">
         <a href="/predictions/over-25" class="internal-link-chip">Over 2.5 Goals</a>
@@ -151,6 +152,11 @@
           <div class="sidebar-widget" id="sponsor-widget-2" style="display:none">
             <div class="sidebar-widget-title">Sponsored</div>
             <div id="ad-sidebar-2"></div>
+          </div>
+
+          <!-- Sticky sidebar ad (position: sticky, follows scroll) -->
+          <div id="ad-sidebar-sticky-wrap" style="position:sticky;top:80px;margin-top:20px">
+            <div class="ad-wrap ad-wrap-sidebar" id="ad-sidebar-sticky"></div>
           </div>
         </aside>
       </div>
@@ -361,6 +367,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupCategoryTabs();
   renderAds('predictions_top', document.getElementById('ad-predictions-top'));
   renderAds('sidebar', document.getElementById('ad-sidebar'));
+  renderAds('sidebar_sticky', document.getElementById('ad-sidebar-sticky'));
   loadNativeSidebar();
   loadSponsorWidget2();
 });

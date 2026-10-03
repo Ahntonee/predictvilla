@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>VIP Football Prediction Tips — Monthly, Quarterly & Annual | Predictvilla</title>
-<meta name="description" content="Subscribe to Predictvilla VIP for exclusive AI-powered football tips, Intelligence Engine picks, banker of the day, and Telegram VIP channel access. From ₦7,500/month.">
+<title>VIP Football Predictions Subscription — Sure Tips, Banker of the Day | Predictvilla</title>
+<meta name="description" content="Get VIP football predictions: daily banker of the day, sure bet tips, over 2.5 and BTTS picks, AI accumulator builder and Telegram VIP access. Plans from ₦5,000 / $15.">
+<meta name="keywords" content="VIP football predictions, sure bet tips subscription, banker of the day VIP, football predictions membership, premium football tips today, accumulator tips VIP, BTTS VIP tips, over 2.5 VIP predictions, football tips Nigeria, VIP football picks">
 <link rel="canonical" href="https://predictvilla.com/pricing.html">
 <meta property="og:title" content="VIP Subscription — Predictvilla">
 <meta property="og:description" content="Unlock VIP football tips, AI-powered picks, and exclusive access to the Telegram VIP channel.">
@@ -72,8 +73,8 @@
   <section class="page-hero" style="padding-bottom:32px">
     <div class="container">
       <span class="hero-tag">VIP Access</span>
-      <h1 class="page-hero-title" style="margin-top:16px">VIP Football <span>Prediction Tips</span></h1>
-      <p class="page-hero-sub">Intelligence Engine picks, early access to tomorrow's tips, banker exclusives, and a private Telegram VIP channel — all in one subscription.</p>
+      <h1 class="page-hero-title" style="margin-top:16px">VIP Football Predictions — <span>Banker of the Day & Sure Tips</span></h1>
+      <p class="page-hero-sub">Daily banker of the day, sure bet tips, BTTS &amp; over 2.5 goals picks — Intelligence Engine exclusives, early access and Telegram VIP channel.</p>
     </div>
   </section>
 
@@ -109,7 +110,7 @@
               <div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-control" id="reg-name" placeholder="Your name" autocomplete="name"></div>
               <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-control" id="reg-email" placeholder="you@example.com" autocomplete="email"></div>
               <div class="form-group"><label class="form-label">Password</label><input type="password" class="form-control" id="reg-pass" placeholder="Min 8 chars, 1 uppercase, 1 number, 1 special" autocomplete="new-password"></div>
-              <div class="form-group"><label class="form-label">Country</label><input type="text" class="form-control" id="reg-country" placeholder="Nigeria" autocomplete="country-name"></div>
+              <div class="form-group"><label class="form-label">Country</label><select class="form-control" id="reg-country" autocomplete="country-name"><option value="">Select your country</option></select></div>
               <button class="btn btn-primary w-full" onclick="doRegister()">Create Account</button>
             </div>
             <div id="otp-form" style="display:none">
@@ -136,58 +137,15 @@
     </div>
   </div>
 
-  <!-- Pricing Cards -->
+  <!-- Pricing Cards — loaded dynamically based on user's country -->
   <section style="padding-top:8px">
     <div class="container">
-      <div class="grid-3" style="max-width:960px;margin:0 auto;gap:24px">
-        <!-- Monthly -->
-        <div class="pricing-card">
-          <div class="plan-name">Monthly</div>
-          <div class="plan-price">₦7,500<span>/mo</span></div>
-          <div class="plan-usd">≈ $4.90 USD</div>
-          <ul>
-            <li>All free predictions</li>
-            <li>VIP prediction cards (unlocked)</li>
-            <li>Intelligence Engine picks</li>
-            <li>Banker of the Day exclusives</li>
-            <li>Early access to tomorrow's tips</li>
-            <li>Telegram VIP channel access</li>
-            <li>Cancel anytime</li>
-          </ul>
-          <button class="btn btn-outline w-full" onclick="startPayment('monthly',7500)">Get Monthly VIP</button>
-        </div>
-        <!-- Quarterly (popular) -->
-        <div class="pricing-card popular">
-          <div class="plan-badge">Best Value</div>
-          <div class="plan-name">Quarterly</div>
-          <div class="plan-price">₦19,500<span>/3mo</span></div>
-          <div class="plan-usd">≈ $12.70 USD · Save 13%</div>
-          <ul>
-            <li>Everything in Monthly</li>
-            <li>Priority support</li>
-            <li>3 months of VIP access</li>
-            <li>Intelligence Engine picks</li>
-            <li>Banker of the Day exclusives</li>
-            <li>Early access to tomorrow's tips</li>
-            <li>Telegram VIP channel access</li>
-          </ul>
-          <button class="btn btn-primary w-full" onclick="startPayment('quarterly',19500)">Get Quarterly VIP</button>
-        </div>
-        <!-- Annual -->
-        <div class="pricing-card">
-          <div class="plan-name">Annual</div>
-          <div class="plan-price">₦59,900<span>/yr</span></div>
-          <div class="plan-usd">≈ $39 USD · Save 33%</div>
-          <ul>
-            <li>Everything in Quarterly</li>
-            <li>Full year of VIP access</li>
-            <li>Best per-month value</li>
-            <li>Intelligence Engine picks</li>
-            <li>Banker of the Day exclusives</li>
-            <li>Early access to tomorrow's tips</li>
-            <li>Telegram VIP channel access</li>
-          </ul>
-          <button class="btn btn-outline w-full" onclick="startPayment('annual',59900)">Get Annual VIP</button>
+      <div id="pricing-cards-wrap" style="max-width:1100px;margin:0 auto">
+        <!-- skeleton while loading -->
+        <div class="grid-3" id="pricing-skeleton" style="max-width:960px;margin:0 auto;gap:24px">
+          <div class="skeleton" style="height:380px;border-radius:16px"></div>
+          <div class="skeleton" style="height:380px;border-radius:16px"></div>
+          <div class="skeleton" style="height:380px;border-radius:16px"></div>
         </div>
       </div>
 
@@ -235,6 +193,8 @@ function toggleFaq(btn) {
 
 let pendingPlan = null, currentUser = null, paystackKey = '';
 
+let geoPricing = null; // { currency, symbol, country_tier, plans[] }
+
 document.addEventListener('DOMContentLoaded', async () => {
   // Load Paystack public key from server
   try {
@@ -256,15 +216,74 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('vip-active-banner').style.display = 'block';
         document.getElementById('vip-expiry').textContent = formatDate(sub.expires_at);
       }
+      // Load geo-aware pricing (requires auth)
+      try {
+        const pR = await fetch('/api/subscriptions/pricing');
+        if (pR.ok) { geoPricing = (await pR.json()).data; }
+      } catch {}
     } else {
       document.getElementById('auth-section').style.display = 'block';
     }
   } catch { document.getElementById('auth-section').style.display = 'block'; }
 
+  renderPricingCards();
+
+  // Populate country select
+  if (typeof populateCountrySelect === 'function') populateCountrySelect('reg-country');
+
   // Handle hash for direct tab
   if (window.location.hash === '#login') showTab('login');
   if (window.location.hash === '#register') showTab('register');
 });
+
+function renderPricingCards() {
+  const wrap = document.getElementById('pricing-cards-wrap');
+  if (!wrap) return;
+
+  // If no geo pricing loaded (user not logged in), show default NGN cards
+  const pricing = geoPricing || {
+    currency: 'NGN', symbol: '₦', country_tier: 'NG',
+    plans: [
+      { id: 'biweekly',  label: '2 Weeks',   amount: 5000,  period: '14 days',   savings: null,  popular: false },
+      { id: 'monthly',   label: 'Monthly',   amount: 7500,  period: '1 month',   savings: null,  popular: false },
+      { id: 'quarterly', label: 'Quarterly', amount: 19500, period: '3 months',  savings: '13%', popular: true  },
+      { id: 'annual',    label: 'Annual',    amount: 59900, period: '12 months', savings: '33%', popular: false },
+    ],
+  };
+
+  const isUSD = pricing.currency === 'USD';
+  const fmt = (amt) => isUSD
+    ? `$${amt.toLocaleString()}`
+    : `₦${amt.toLocaleString()}`;
+
+  const periodLabel = { biweekly: '/2wk', monthly: '/mo', quarterly: '/3mo', annual: '/yr' };
+
+  const cards = pricing.plans.map(p => `
+    <div class="pricing-card${p.popular ? ' popular' : ''}">
+      ${p.popular ? '<div class="plan-badge">Best Value</div>' : ''}
+      <div class="plan-name">${p.label}</div>
+      <div class="plan-price">${fmt(p.amount)}<span>${periodLabel[p.id] || ''}</span></div>
+      <div class="plan-usd">${p.period}${p.savings ? ` · Save ${p.savings}` : ''}</div>
+      <ul>
+        <li>All free predictions</li>
+        <li>VIP prediction cards (unlocked)</li>
+        <li>Intelligence Engine picks</li>
+        <li>Banker of the Day exclusives</li>
+        <li>Early access to tomorrow's tips</li>
+        <li>Telegram VIP channel access</li>
+        <li>Cancel anytime</li>
+      </ul>
+      <button class="btn ${p.popular ? 'btn-primary' : 'btn-outline'} w-full"
+        onclick="startPayment('${p.id}',${p.amount})">
+        Get ${p.label} VIP
+      </button>
+    </div>`).join('');
+
+  wrap.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));max-width:1100px;margin:0 auto;gap:24px">
+      ${cards}
+    </div>`;
+}
 
 function showTab(tab) {
   // Slides the branded panel while preserving the existing login and registration forms.
@@ -313,12 +332,13 @@ function startPayment(plan, amount) {
     showToast('Payment is temporarily unavailable. Please contact support.','error');
     return;
   }
+  const currency = geoPricing?.currency || 'NGN';
   try {
     const handler = PaystackPop.setup({
       key: paystackKey,
       email: currentUser.email,
       amount: amount * 100,
-      currency: 'NGN',
+      currency,
       ref: 'PV_' + Date.now() + '_' + Math.random().toString(36).substr(2,9),
       metadata: { plan, user_id: currentUser.id },
       callback: async function(response) {

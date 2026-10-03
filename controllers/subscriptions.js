@@ -3,7 +3,29 @@ const { pool } = require('../config/db');
 const { successResponse, errorResponse, asyncHandler } = require('../utils/helpers');
 const { sendVipWelcomeEmail, sendExpiryReminderEmail } = require('../utils/email');
 
-const DURATIONS = { monthly: 30, quarterly: 90, annual: 365 };
+const DURATIONS = { biweekly: 14, monthly: 30, quarterly: 90, annual: 365 };
+
+// Nigerian plans (NGN). International plans (USD — stored in cents for Paystack USD).
+const NIGERIA_PRICES = {
+  biweekly:  parseInt(process.env.NGN_PLAN_BIWEEKLY)  || 5000,
+  monthly:   parseInt(process.env.NGN_PLAN_MONTHLY)   || 7500,
+  quarterly: parseInt(process.env.NGN_PLAN_QUARTERLY) || 19500,
+  annual:    parseInt(process.env.NGN_PLAN_ANNUAL)    || 59900,
+};
+const INTL_PRICES_USD = {
+  biweekly:  parseFloat(process.env.USD_PLAN_BIWEEKLY)  || 15,
+  monthly:   parseFloat(process.env.USD_PLAN_MONTHLY)   || 45,
+  quarterly: parseFloat(process.env.USD_PLAN_QUARTERLY) || 120,
+  annual:    parseFloat(process.env.USD_PLAN_ANNUAL)    || 400,
+};
+
+function isNigeria(country) {
+  if (!country) return true; // default Nigerian pricing if unknown
+  return /nigeria|ng\b/i.test(country);
+}
+exports.NIGERIA_PRICES = NIGERIA_PRICES;
+exports.INTL_PRICES_USD = INTL_PRICES_USD;
+exports.isNigeria = isNigeria;
 
 exports.getStatus = asyncHandler(async (req, res) => {
   const [rows] = await pool.query(
@@ -32,19 +54,16 @@ exports.paystackVerify = asyncHandler(async (req, res) => {
     const txn = response.data.data;
     if (txn.status !== 'success') return errorResponse(res, 'Payment not successful', 400);
 
-    // Verify currency
-    const expectedCurrency = (process.env.PAYSTACK_CURRENCY || 'NGN').toUpperCase();
-    if (txn.currency && txn.currency.toUpperCase() !== expectedCurrency) {
-      return errorResponse(res, `Invalid payment currency. Expected ${expectedCurrency}`, 400);
+    // Verify currency — accept NGN (Nigerian) or USD (international)
+    const txnCurrency = (txn.currency || 'NGN').toUpperCase();
+    if (txnCurrency !== 'NGN' && txnCurrency !== 'USD') {
+      return errorResponse(res, `Unsupported payment currency: ${txnCurrency}`, 400);
     }
 
-    // Verify amount (allow 1% tolerance for rounding)
-    const planAmounts = {
-      monthly:   parseFloat(process.env.PAYSTACK_PLAN_MONTHLY_AMOUNT)   || 0,
-      quarterly: parseFloat(process.env.PAYSTACK_PLAN_QUARTERLY_AMOUNT) || 0,
-      annual:    parseFloat(process.env.PAYSTACK_PLAN_ANNUAL_AMOUNT)     || 0,
-    };
-    const expectedAmount = planAmounts[plan];
+    // Verify amount matches the correct price table for the currency (1% tolerance)
+    const expectedAmount = txnCurrency === 'USD'
+      ? INTL_PRICES_USD[plan]
+      : NIGERIA_PRICES[plan];
     if (expectedAmount > 0 && txn.amount / 100 < expectedAmount * 0.99) {
       return errorResponse(res, 'Payment amount does not match the selected plan price', 400);
     }

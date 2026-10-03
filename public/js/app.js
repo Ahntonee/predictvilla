@@ -9,6 +9,19 @@
 // ── Constants ────────────────────────────────────────────────────────────────
 const API = '';
 
+// ── Countries list (ISO 3166-1) ───────────────────────────────────────────────
+const WORLD_COUNTRIES = ["Afghanistan","Albania","Algeria","Andorra","Angola","Antigua and Barbuda","Argentina","Armenia","Australia","Austria","Azerbaijan","Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bhutan","Bolivia","Bosnia and Herzegovina","Botswana","Brazil","Brunei","Bulgaria","Burkina Faso","Burundi","Cabo Verde","Cambodia","Cameroon","Canada","Central African Republic","Chad","Chile","China","Colombia","Comoros","Congo (Brazzaville)","Congo (Kinshasa)","Costa Rica","Croatia","Cuba","Cyprus","Czech Republic","Denmark","Djibouti","Dominica","Dominican Republic","Ecuador","Egypt","El Salvador","Equatorial Guinea","Eritrea","Estonia","Eswatini","Ethiopia","Fiji","Finland","France","Gabon","Gambia","Georgia","Germany","Ghana","Greece","Grenada","Guatemala","Guinea","Guinea-Bissau","Guyana","Haiti","Honduras","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy","Ivory Coast","Jamaica","Japan","Jordan","Kazakhstan","Kenya","Kiribati","Kosovo","Kuwait","Kyrgyzstan","Laos","Latvia","Lebanon","Lesotho","Liberia","Libya","Liechtenstein","Lithuania","Luxembourg","Madagascar","Malawi","Malaysia","Maldives","Mali","Malta","Marshall Islands","Mauritania","Mauritius","Mexico","Micronesia","Moldova","Monaco","Mongolia","Montenegro","Morocco","Mozambique","Myanmar","Namibia","Nauru","Nepal","Netherlands","New Zealand","Nicaragua","Niger","Nigeria","North Korea","North Macedonia","Norway","Oman","Pakistan","Palau","Palestine","Panama","Papua New Guinea","Paraguay","Peru","Philippines","Poland","Portugal","Qatar","Romania","Russia","Rwanda","Saint Kitts and Nevis","Saint Lucia","Saint Vincent and the Grenadines","Samoa","San Marino","Sao Tome and Principe","Saudi Arabia","Senegal","Serbia","Seychelles","Sierra Leone","Singapore","Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Korea","South Sudan","Spain","Sri Lanka","Sudan","Suriname","Sweden","Switzerland","Syria","Taiwan","Tajikistan","Tanzania","Thailand","Timor-Leste","Togo","Tonga","Trinidad and Tobago","Tunisia","Turkey","Turkmenistan","Tuvalu","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Uzbekistan","Vanuatu","Vatican City","Venezuela","Vietnam","Yemen","Zambia","Zimbabwe"];
+
+function buildCountryOptions(selectedValue) {
+  return '<option value="">Select your country</option>' +
+    WORLD_COUNTRIES.map(c => `<option value="${c}"${c === selectedValue ? ' selected' : ''}>${c}</option>`).join('');
+}
+
+function populateCountrySelect(selectId, selectedValue) {
+  const el = document.getElementById(selectId);
+  if (el) el.innerHTML = buildCountryOptions(selectedValue || '');
+}
+
 // ── Auth State ────────────────────────────────────────────────────────────────
 function getUser() {
   try { return JSON.parse(localStorage.getItem('ol_user')); } catch { return null; }
@@ -463,9 +476,11 @@ async function injectHeader() {
   const mainLinks = [
     ['/', 'home', 'Home'],
     ['/predictions.html', 'sports_soccer', 'All Predictions'],
+    ['/livescores.html', 'live_tv', 'Live Scores'],
     ['/blog.html', 'article', 'Blog'],
     ['/pricing.html', 'workspace_premium', 'Subscription'],
     ['/bet-builder.html', 'construction', 'Bet Builder'],
+    ['/bet-journal.html', 'book', 'Bet Journal'],
     ['/about.html', 'info', 'About Us'],
   ];
   const catLinks = [
@@ -735,7 +750,7 @@ async function injectFooter() {
 async function renderAds(position, container) {
   if (!container) return;
   // Suppress wide banner/inline ads on small screens — they blow the layout
-  const inlinePositions = ['homepage_mid', 'predictions_top', 'predictions_bottom', 'predictions_mid'];
+  const inlinePositions = ['homepage_mid', 'predictions_top', 'predictions_bottom', 'predictions_mid', 'detail_mid', 'blog_inline'];
   if (window.innerWidth <= 640 && inlinePositions.includes(position)) {
     container.style.display = 'none';
     return;
@@ -955,9 +970,13 @@ async function loadPredictions(params = {}, container, append = false) {
       if (!groups[key]) groups[key] = { logo: p.league_logo || '', country: p.country || '', preds: [] };
       groups[key].preds.push(p);
     });
-    const rows = Object.entries(groups).map(([name, g]) => {
+    const groupEntries = Object.entries(groups);
+    const rows = groupEntries.map(([name, g], idx) => {
       const countryPart = g.country ? `<span style="margin-right:2px;opacity:.7">${escapeHtml(g.country)}:</span>` : '';
-      return `<div class="league-group">
+      const midAdSlot = (idx === 5 && !append)
+        ? `<div class="ad-wrap ad-wrap-mid" id="ad-predictions-mid-inline" style="margin:12px 0"></div>`
+        : '';
+      return `${midAdSlot}<div class="league-group">
         <div class="league-group-header">
           ${g.logo ? `<img src="${escapeHtml(g.logo)}" alt="">` : '<span class="material-icons-round" style="font-size:14px">emoji_events</span>'}
           <span>${countryPart}${escapeHtml(name)}</span>
@@ -965,6 +984,11 @@ async function loadPredictions(params = {}, container, append = false) {
         ${g.preds.map(p => buildPredictionRow(p, isVip)).join('')}
       </div>`;
     }).join('');
+
+    // Lazy-render the mid-list ad after DOM is updated
+    if (!append && groupEntries.length > 5) {
+      setTimeout(() => renderAds('predictions_mid', document.getElementById('ad-predictions-mid-inline')), 200);
+    }
 
     if (append) {
       let list = container.querySelector('.pred-list-grouped');
