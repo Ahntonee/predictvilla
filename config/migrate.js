@@ -500,6 +500,7 @@ async function migrate() {
     `ALTER TABLE team_statistics ADD COLUMN corners_avg DECIMAL(5,2) NULL`,
     `ALTER TABLE team_statistics ADD COLUMN home_corners_avg DECIMAL(5,2) NULL`,
     `ALTER TABLE team_statistics ADD COLUMN away_corners_avg DECIMAL(5,2) NULL`,
+    `ALTER TABLE users ADD COLUMN subscription_tier ENUM('basic','standard','diamond') NULL DEFAULT NULL`,
   ];
   for (const sql of alterStatements) {
     try {

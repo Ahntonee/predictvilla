@@ -3,29 +3,59 @@ const { pool } = require('../config/db');
 const { successResponse, errorResponse, asyncHandler } = require('../utils/helpers');
 const { sendVipWelcomeEmail, sendExpiryReminderEmail } = require('../utils/email');
 
-const DURATIONS = { biweekly: 14, monthly: 30, quarterly: 90, annual: 365 };
+// ── Plan duration map ─────────────────────────────────────────────────────────
+const DURATIONS = {
+  // Tiered plans (3 tiers × 2 billing periods)
+  basic_biweekly:    14,
+  basic_monthly:     30,
+  standard_biweekly: 14,
+  standard_monthly:  30,
+  diamond_biweekly:  14,
+  diamond_monthly:   30,
+  // Legacy IDs kept for backward compat with existing DB records
+  biweekly: 14, monthly: 30, quarterly: 90, annual: 365,
+};
 
-// Nigerian plans (NGN). International plans (USD — stored in cents for Paystack USD).
+// Nigerian Naira prices (differentiated per tier)
 const NIGERIA_PRICES = {
-  biweekly:  parseInt(process.env.NGN_PLAN_BIWEEKLY)  || 5000,
-  monthly:   parseInt(process.env.NGN_PLAN_MONTHLY)   || 7500,
-  quarterly: parseInt(process.env.NGN_PLAN_QUARTERLY) || 19500,
-  annual:    parseInt(process.env.NGN_PLAN_ANNUAL)    || 59900,
+  basic_biweekly:    parseInt(process.env.NGN_BASIC_BIWEEKLY)    || 3000,
+  basic_monthly:     parseInt(process.env.NGN_BASIC_MONTHLY)     || 5000,
+  standard_biweekly: parseInt(process.env.NGN_STANDARD_BIWEEKLY) || 5000,
+  standard_monthly:  parseInt(process.env.NGN_STANDARD_MONTHLY)  || 10000,
+  diamond_biweekly:  parseInt(process.env.NGN_DIAMOND_BIWEEKLY)  || 10000,
+  diamond_monthly:   parseInt(process.env.NGN_DIAMOND_MONTHLY)   || 20000,
+  // Legacy
+  biweekly: 5000, monthly: 7500, quarterly: 19500, annual: 59900,
 };
+
+// International USD prices — flat rate across all tiers
 const INTL_PRICES_USD = {
-  biweekly:  parseFloat(process.env.USD_PLAN_BIWEEKLY)  || 15,
-  monthly:   parseFloat(process.env.USD_PLAN_MONTHLY)   || 45,
-  quarterly: parseFloat(process.env.USD_PLAN_QUARTERLY) || 120,
-  annual:    parseFloat(process.env.USD_PLAN_ANNUAL)    || 400,
+  basic_biweekly:    parseFloat(process.env.USD_BIWEEKLY) || 10,
+  basic_monthly:     parseFloat(process.env.USD_MONTHLY)  || 15,
+  standard_biweekly: parseFloat(process.env.USD_BIWEEKLY) || 10,
+  standard_monthly:  parseFloat(process.env.USD_MONTHLY)  || 15,
+  diamond_biweekly:  parseFloat(process.env.USD_BIWEEKLY) || 10,
+  diamond_monthly:   parseFloat(process.env.USD_MONTHLY)  || 15,
+  // Legacy
+  biweekly: 15, monthly: 45, quarterly: 120, annual: 400,
 };
+
+// Extract tier from plan ID (e.g. 'diamond_monthly' → 'diamond')
+function planTier(plan) {
+  const t = plan.split('_')[0];
+  return ['basic', 'standard', 'diamond'].includes(t) ? t : null;
+}
 
 function isNigeria(country) {
-  if (!country) return true; // default Nigerian pricing if unknown
+  if (!country) return true;
   return /nigeria|ng\b/i.test(country);
 }
+
+exports.DURATIONS = DURATIONS;
 exports.NIGERIA_PRICES = NIGERIA_PRICES;
 exports.INTL_PRICES_USD = INTL_PRICES_USD;
 exports.isNigeria = isNigeria;
+exports.planTier = planTier;
 
 exports.getStatus = asyncHandler(async (req, res) => {
   const [rows] = await pool.query(
@@ -84,12 +114,16 @@ exports.paystackVerify = asyncHandler(async (req, res) => {
       : now;
     const expiresAt = new Date(baseDate.getTime() + DURATIONS[plan] * 24 * 60 * 60 * 1000);
 
+    const tier = planTier(plan);
     await pool.query(
       `INSERT INTO subscriptions (user_id, plan, status, provider, paystack_reference, amount, currency, expires_at)
        VALUES (?,?,'active','paystack',?,?,?,?)`,
       [req.user.id, plan, reference, txn.amount / 100, txn.currency, expiresAt]
     );
-    await pool.query("UPDATE users SET role='vip', updated_at=NOW() WHERE id=?", [req.user.id]);
+    await pool.query(
+      "UPDATE users SET role='vip', subscription_tier=COALESCE(?,subscription_tier), updated_at=NOW() WHERE id=?",
+      [tier, req.user.id]
+    );
 
     const telegramLink = process.env.TELEGRAM_VIP_INVITE_LINK;
     try { await sendVipWelcomeEmail({ ...req.user, plan, telegramLink }); } catch {}
@@ -125,11 +159,15 @@ exports.adminGrant = asyncHandler(async (req, res) => {
   const { user_id, plan, days } = req.body;
   const dur = days ? parseInt(days) : (DURATIONS[plan] || 30);
   const expiresAt = new Date(Date.now() + dur * 24 * 60 * 60 * 1000);
+  const tier = planTier(plan) || null;
   await pool.query(
     `INSERT INTO subscriptions (user_id, plan, status, provider, expires_at) VALUES (?,?,'active','manual',?)`,
-    [user_id, plan || 'monthly', expiresAt]
+    [user_id, plan || 'diamond_monthly', expiresAt]
   );
-  await pool.query("UPDATE users SET role='vip' WHERE id=?", [user_id]);
+  await pool.query(
+    "UPDATE users SET role='vip', subscription_tier=COALESCE(?,subscription_tier) WHERE id=?",
+    [tier, user_id]
+  );
   return successResponse(res, null, 'VIP granted');
 });
 

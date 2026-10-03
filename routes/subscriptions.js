@@ -5,6 +5,24 @@ const { successResponse, asyncHandler } = require('../utils/helpers');
 const { pool } = require('../config/db');
 const { NIGERIA_PRICES, INTL_PRICES_USD, isNigeria } = require('../controllers/subscriptions');
 
+const TIERS = [
+  {
+    id: 'basic', name: 'Villa Basic', tagline: 'Big Odds',
+    description: 'For subscribers comfortable with higher variance. 5–10 combined-odds target plus weekend long shots.',
+    badge: null, accent: 'soft',
+  },
+  {
+    id: 'standard', name: 'Villa Standard', tagline: 'Balanced',
+    description: 'Built around a 2.00 daily target with more selective picks. The middle ground between returns and risk.',
+    badge: 'Most Popular', accent: 'primary',
+  },
+  {
+    id: 'diamond', name: 'Villa Diamond', tagline: 'Priority Picks',
+    description: 'Built around 1.50 target selections and highest-priority lower-risk picks. 2–3 per day when fixtures justify it.',
+    badge: 'Premium', accent: 'diamond',
+  },
+];
+
 // Public: plan prices (read from env so admin can change without code deploy)
 router.get('/plans', (req, res) => {
   const currency = process.env.PAYSTACK_PLAN_CURRENCY || 'NGN';
@@ -18,31 +36,24 @@ router.get('/plans', (req, res) => {
   });
 });
 
-// Geo-aware pricing: returns prices in the user's currency based on their registered country.
-// Requires auth so we can read the user's country. Never exposes other tiers' prices.
+// Geo-aware tiered pricing.
+// Requires auth so we can read the user's country — never exposes the other country's prices.
 router.get('/pricing', authenticate, asyncHandler(async (req, res) => {
   const [[user]] = await pool.query('SELECT country FROM users WHERE id=?', [req.user.id]);
   const nigeria = isNigeria(user?.country);
-  if (nigeria) {
-    return successResponse(res, {
-      currency: 'NGN', symbol: '₦', country_tier: 'NG',
-      plans: [
-        { id: 'biweekly',  label: '2 Weeks',   amount: NIGERIA_PRICES.biweekly,  period: '14 days',   savings: null,  popular: false },
-        { id: 'monthly',   label: 'Monthly',   amount: NIGERIA_PRICES.monthly,   period: '1 month',   savings: null,  popular: false },
-        { id: 'quarterly', label: 'Quarterly', amount: NIGERIA_PRICES.quarterly, period: '3 months',  savings: '13%', popular: true  },
-        { id: 'annual',    label: 'Annual',    amount: NIGERIA_PRICES.annual,    period: '12 months', savings: '33%', popular: false },
-      ],
-    });
-  }
-  return successResponse(res, {
-    currency: 'USD', symbol: '$', country_tier: 'INTL',
-    plans: [
-      { id: 'biweekly',  label: '2 Weeks',   amount: INTL_PRICES_USD.biweekly,  period: '14 days',   savings: null,  popular: false },
-      { id: 'monthly',   label: 'Monthly',   amount: INTL_PRICES_USD.monthly,   period: '1 month',   savings: null,  popular: false },
-      { id: 'quarterly', label: 'Quarterly', amount: INTL_PRICES_USD.quarterly, period: '3 months',  savings: null,  popular: true  },
-      { id: 'annual',    label: 'Annual',    amount: INTL_PRICES_USD.annual,    period: '12 months', savings: '26%', popular: false },
-    ],
-  });
+  const currency  = nigeria ? 'NGN' : 'USD';
+  const symbol    = nigeria ? '₦'   : '$';
+  const prices    = nigeria ? NIGERIA_PRICES : INTL_PRICES_USD;
+
+  const tiers = TIERS.map(t => ({
+    ...t,
+    plans: {
+      biweekly: { id: `${t.id}_biweekly`, amount: prices[`${t.id}_biweekly`], label: '2 Weeks', period: '14 days' },
+      monthly:  { id: `${t.id}_monthly`,  amount: prices[`${t.id}_monthly`],  label: 'Monthly',  period: '1 month' },
+    },
+  }));
+
+  return successResponse(res, { currency, symbol, country_tier: nigeria ? 'NG' : 'INTL', tiers });
 }));
 
 router.get('/status', authenticate, ctrl.getStatus);
