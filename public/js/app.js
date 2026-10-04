@@ -40,10 +40,11 @@ function showErrorModal(message, title = 'Something went wrong') {
       <span class="material-icons-round" style="font-size:42px;color:var(--danger,#ff4757);display:block;margin-bottom:10px">error_outline</span>
       <h3 id="gem-title" style="margin-bottom:8px;font-size:18px"></h3>
       <p id="gem-msg" style="color:var(--text-soft);font-size:14px;line-height:1.6;margin-bottom:20px"></p>
-      <button onclick="document.getElementById('global-error-modal').remove()" class="btn btn-primary" style="min-width:100px">OK</button>
+      <button id="gem-ok-btn" class="btn btn-primary" style="min-width:100px">OK</button>
     </div>`;
-    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
     document.body.appendChild(modal);
+    document.getElementById('gem-ok-btn').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
   }
   document.getElementById('gem-title').textContent = title;
   document.getElementById('gem-msg').textContent = message;
@@ -822,17 +823,29 @@ function initTelegramPopup() {
     if (popup) return;
     popup = document.createElement('div');
     popup.id = 'tg-popup';
-    popup.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:8888;background:var(--card);border:1px solid rgba(160,208,0,.35);border-radius:16px;padding:18px 20px;max-width:320px;box-shadow:0 12px 40px rgba(0,0,0,.35);animation:slideUp .3s ease';
-    popup.innerHTML = `<button onclick="document.getElementById('tg-popup').remove();sessionStorage.setItem('tg_popup_dismissed','1')" style="position:absolute;top:10px;right:12px;background:none;border:none;cursor:pointer;color:var(--text-soft);font-size:20px;line-height:1">×</button>
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
-        <span style="font-size:28px">📣</span>
-        <strong style="font-size:15px;color:var(--text)">Join Our Telegram Channel</strong>
+    popup.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:8888;background:var(--card);border:1px solid rgba(160,208,0,.35);border-radius:18px;padding:18px 20px 20px;max-width:310px;box-shadow:0 12px 40px rgba(0,0,0,.35);animation:slideUp .3s ease;font-family:var(--font-body,sans-serif)';
+    popup.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="material-icons-round" style="font-size:22px;color:var(--primary)">send</span>
+          <strong style="font-size:14px;color:var(--text);font-family:var(--font-head,sans-serif);font-weight:700">Join Our Telegram</strong>
+        </div>
+        <button id="tg-close-btn" aria-label="Close" style="flex-shrink:0;background:none;border:none;cursor:pointer;color:var(--text-soft);font-size:18px;line-height:1;padding:4px 6px;border-radius:6px;display:flex;align-items:center;justify-content:center">
+          <span class="material-icons-round" style="font-size:18px">close</span>
+        </button>
       </div>
-      <p style="font-size:13px;color:var(--text-soft);margin-bottom:14px;line-height:1.5">Get live tips, alerts, and exclusive VIP picks straight to your phone.</p>
-      <a href="${telegramLink}" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-full" style="font-size:13px" onclick="sessionStorage.setItem('tg_popup_dismissed','1')">
-        <span class="material-icons-round" style="font-size:15px;vertical-align:middle">send</span> Join Telegram →
+      <p style="font-size:13px;color:var(--text-soft);margin:0 0 14px;line-height:1.55">Get live tips, alerts, and exclusive VIP picks straight to your phone.</p>
+      <a id="tg-join-btn" href="${telegramLink}" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-full" style="font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px">
+        <span class="material-icons-round" style="font-size:15px">send</span> Join Channel
       </a>`;
     document.body.appendChild(popup);
+    document.getElementById('tg-close-btn').addEventListener('click', () => {
+      popup.remove();
+      sessionStorage.setItem('tg_popup_dismissed', '1');
+    });
+    document.getElementById('tg-join-btn').addEventListener('click', () => {
+      sessionStorage.setItem('tg_popup_dismissed', '1');
+    });
   }, 30000);
 }
 
