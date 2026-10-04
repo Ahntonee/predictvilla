@@ -184,7 +184,7 @@ async function doExtend() {
 }
 
 async function cancelSub(id) {
-  if (!confirm('Cancel this subscription?')) return;
+  if (!await adminConfirm('Cancel Subscription', 'The user will lose VIP access at the end of their billing period.', 'Cancel Subscription', 'danger')) return;
   const d = await api(`/subscriptions/admin/${id}/cancel`, {method:'PUT'});
   if (d.success) { showToast('Cancelled','info'); loadSubs(currentPage); }
   else showToast(d.message,'error');

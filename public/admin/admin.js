@@ -142,7 +142,58 @@
     }
   };
 
-  window.confirm2 = function (msg) { return window.confirm(msg); };
+  // Styled async confirm dialog — matches app brand colors
+  (function () {
+    const s = document.createElement('style');
+    s.textContent = `
+      .adm-confirm-overlay{position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.60);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px;animation:adm-fade .18s ease}
+      @keyframes adm-fade{from{opacity:0}to{opacity:1}}
+      .adm-confirm-card{background:#182200;border:1px solid rgba(160,208,0,0.22);border-radius:20px;max-width:360px;width:100%;padding:28px 28px 24px;box-shadow:0 24px 64px rgba(0,0,0,0.60);position:relative;font-family:'Bai Jamjuree','KoHo',sans-serif;animation:adm-slide .22s cubic-bezier(.22,.61,.36,1)}
+      @keyframes adm-slide{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+      .adm-confirm-card h3{font-size:17px;font-weight:700;color:#f4f8e0;margin:0 28px 10px 0;font-family:'Bai Jamjuree','KoHo',sans-serif;letter-spacing:-0.1px}
+      .adm-confirm-card p{font-size:13px;line-height:1.65;color:rgba(244,248,224,0.60);margin:0 0 22px}
+      .adm-confirm-close{position:absolute;top:14px;right:16px;background:none;border:none;cursor:pointer;color:rgba(244,248,224,0.40);font-size:20px;line-height:1;padding:3px 5px;border-radius:6px;font-family:'Material Icons Round','Material Icons';transition:color .15s}
+      .adm-confirm-close:hover{color:#f4f8e0}
+      .adm-confirm-actions{display:flex;gap:10px}
+      .adm-confirm-btn{flex:1;padding:11px 16px;border-radius:50px;font-size:14px;font-weight:700;cursor:pointer;border:none;font-family:'Bai Jamjuree','KoHo',sans-serif;letter-spacing:0.1px;transition:opacity .15s}
+      .adm-confirm-btn:hover{opacity:.85}
+      .adm-btn-cancel{background:rgba(244,248,224,0.08);color:rgba(244,248,224,0.70);border:1px solid rgba(244,248,224,0.14)}
+      .adm-btn-danger{background:#0d1600;color:#ef4444;border:1px solid rgba(239,68,68,0.35)}
+      .adm-btn-primary{background:#0d1600;color:#a0d000;border:1px solid rgba(160,208,0,0.35)}
+      html[data-theme="light"] .adm-confirm-card{background:#fff;border-color:rgba(78,112,0,0.16)}
+      html[data-theme="light"] .adm-confirm-card h3{color:#0d1600}
+      html[data-theme="light"] .adm-confirm-card p{color:rgba(13,22,0,0.55)}
+      html[data-theme="light"] .adm-confirm-close{color:rgba(13,22,0,0.30)}
+      html[data-theme="light"] .adm-confirm-close:hover{color:#0d1600}
+      html[data-theme="light"] .adm-btn-cancel{background:rgba(13,22,0,0.06);color:rgba(13,22,0,0.60);border-color:rgba(13,22,0,0.12)}
+      html[data-theme="light"] .adm-btn-danger{background:#fff;color:#dc2626;border-color:rgba(220,38,38,0.30)}
+      html[data-theme="light"] .adm-btn-primary{background:#fff;color:#4e7000;border-color:rgba(78,112,0,0.30)}
+    `;
+    document.head.appendChild(s);
+  })();
+
+  window.adminConfirm = function (title, message, confirmLabel = 'Confirm', type = 'danger') {
+    return new Promise(resolve => {
+      const overlay = document.createElement('div');
+      overlay.className = 'adm-confirm-overlay';
+      overlay.innerHTML = `
+        <div class="adm-confirm-card" role="dialog" aria-modal="true">
+          <button class="adm-confirm-close" id="adm-close">&#x2715;</button>
+          <h3>${title}</h3>
+          <p>${message}</p>
+          <div class="adm-confirm-actions">
+            <button class="adm-confirm-btn adm-btn-cancel" id="adm-cancel">Cancel</button>
+            <button class="adm-confirm-btn ${type === 'danger' ? 'adm-btn-danger' : 'adm-btn-primary'}" id="adm-ok">${confirmLabel}</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      const done = val => { overlay.remove(); resolve(val); };
+      document.getElementById('adm-ok').addEventListener('click', () => done(true));
+      document.getElementById('adm-cancel').addEventListener('click', () => done(false));
+      document.getElementById('adm-close').addEventListener('click', () => done(false));
+      overlay.addEventListener('click', e => { if (e.target === overlay) done(false); });
+    });
+  };
 
   // Pagination helper
   window.renderPager = function (el, page, total, limit, cb) {

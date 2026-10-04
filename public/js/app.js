@@ -1123,112 +1123,133 @@ if (document.readyState === 'loading') {
   function injectStyles() {
     const s = document.createElement('style');
     s.textContent = `
-      #ol-cookie-banner{position:fixed;bottom:0;left:0;right:0;z-index:99999;background:var(--bg-card,#0d2233);border-top:1px solid rgba(2,245,161,0.18);padding:18px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;box-shadow:0 -4px 24px rgba(0,0,0,0.4)}
-      #ol-cookie-banner p{margin:0;font-size:13px;color:var(--text-soft,#addff1);flex:1;min-width:200px}
-      #ol-cookie-banner a{color:var(--primary,#02f5a1);text-decoration:underline}
-      .ol-cb-btns{display:flex;gap:10px;flex-wrap:wrap}
-      .ol-cb-btns button{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;white-space:nowrap}
-      .ol-btn-manage{background:transparent;border:1px solid rgba(173,223,241,0.3)!important;color:var(--text,#e8f4f8)}
-      .ol-btn-reject{background:rgba(173,223,241,0.08);color:var(--text-soft,#addff1)}
-      .ol-btn-accept{background:var(--primary,#02f5a1);color:#07191e}
-      #ol-cookie-overlay{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:16px}
-      #ol-cookie-modal{background:var(--bg-card,#0d2233);border:1px solid rgba(2,245,161,0.18);border-radius:16px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.6)}
-      #ol-cookie-modal .cm-head{padding:24px 24px 0;display:flex;align-items:center;gap:14px;border-bottom:1px solid rgba(255,255,255,0.07);padding-bottom:16px}
-      #ol-cookie-modal .cm-head img{height:36px;object-fit:contain}
-      #ol-cookie-modal .cm-head h2{margin:0;font-size:18px;font-weight:800;color:var(--text,#e8f4f8)}
-      #ol-cookie-modal .cm-body{padding:20px 24px}
-      #ol-cookie-modal .cm-body p{font-size:13px;color:var(--text-soft,#addff1);margin:0 0 16px;line-height:1.7}
-      #ol-cookie-modal .cm-body a{color:var(--primary,#02f5a1)}
-      .cm-cookie-row{border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px 16px;margin-bottom:12px}
-      .cm-cookie-row h4{margin:0 0 4px;font-size:14px;font-weight:700;color:var(--text,#e8f4f8);display:flex;justify-content:space-between;align-items:center}
-      .cm-cookie-row p{margin:0;font-size:12px;color:var(--text-soft,#addff1);line-height:1.6}
-      .cm-badge-on{font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;background:rgba(2,245,161,0.15);color:var(--primary,#02f5a1)}
-      .cm-toggle{position:relative;width:40px;height:22px;flex-shrink:0}
-      .cm-toggle input{opacity:0;width:0;height:0;position:absolute}
-      .cm-toggle-slider{position:absolute;inset:0;border-radius:22px;background:rgba(255,255,255,0.1);cursor:pointer;transition:.3s}
-      .cm-toggle input:checked+.cm-toggle-slider{background:var(--primary,#02f5a1)}
-      .cm-toggle-slider::before{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;bottom:3px;left:3px;transition:.3s}
-      .cm-toggle input:checked+.cm-toggle-slider::before{transform:translateX(18px)}
-      #ol-cookie-modal .cm-footer{padding:16px 24px 24px;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,0.07)}
-      #ol-cookie-modal .cm-footer button{padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:none}
+      /* ── Cookie consent overlay ── */
+      .ck-overlay{position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px;animation:ck-fade-in .2s ease}
+      @keyframes ck-fade-in{from{opacity:0}to{opacity:1}}
+      /* Simple consent card */
+      .ck-card{background:#182200;border:1px solid rgba(160,208,0,0.22);border-radius:20px;max-width:400px;width:100%;padding:28px 28px 24px;box-shadow:0 24px 64px rgba(0,0,0,0.55);position:relative;font-family:'Bai Jamjuree','KoHo',sans-serif;animation:ck-slide-up .25s cubic-bezier(.22,.61,.36,1)}
+      @keyframes ck-slide-up{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+      .ck-card h2{font-size:19px;font-weight:700;color:#f4f8e0;margin:0 32px 10px 0;letter-spacing:-0.2px;font-family:'Bai Jamjuree','KoHo',sans-serif}
+      .ck-card p{font-size:13px;line-height:1.65;color:rgba(244,248,224,0.65);margin:0 0 22px}
+      .ck-card a{color:#a0d000;text-decoration:underline}
+      .ck-close{position:absolute;top:16px;right:18px;background:none;border:none;cursor:pointer;color:rgba(244,248,224,0.45);font-size:22px;line-height:1;padding:2px 4px;border-radius:6px;font-family:'Material Icons Round','Material Icons';transition:color .15s}
+      .ck-close:hover{color:#f4f8e0}
+      .ck-actions{display:flex;gap:10px}
+      .ck-btn{flex:1;padding:11px 16px;border-radius:50px;font-size:14px;font-weight:700;cursor:pointer;border:none;font-family:'Bai Jamjuree','KoHo',sans-serif;letter-spacing:0.1px;transition:opacity .15s}
+      .ck-btn:hover{opacity:.88}
+      .ck-btn-accept{background:#0d1600;color:#a0d000;border:none}
+      .ck-btn-prefs{background:rgba(244,248,224,0.08);color:rgba(244,248,224,0.75);border:1px solid rgba(244,248,224,0.14)}
+      /* Light theme */
+      html[data-theme="light"] .ck-card{background:#ffffff;border-color:rgba(78,112,0,0.18)}
+      html[data-theme="light"] .ck-card h2{color:#0d1600}
+      html[data-theme="light"] .ck-card p{color:rgba(13,22,0,0.60)}
+      html[data-theme="light"] .ck-close{color:rgba(13,22,0,0.35)}
+      html[data-theme="light"] .ck-close:hover{color:#0d1600}
+      html[data-theme="light"] .ck-btn-accept{background:#0d1600;color:#a0d000}
+      html[data-theme="light"] .ck-btn-prefs{background:rgba(13,22,0,0.06);color:rgba(13,22,0,0.60);border-color:rgba(13,22,0,0.12)}
+      /* Preferences modal */
+      .ck-pref-overlay{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,0.65);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:16px;animation:ck-fade-in .2s ease}
+      .ck-pref-modal{background:#182200;border:1px solid rgba(160,208,0,0.22);border-radius:20px;max-width:500px;width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,0.55);font-family:'Bai Jamjuree','KoHo',sans-serif;animation:ck-slide-up .25s cubic-bezier(.22,.61,.36,1)}
+      .ck-pref-head{display:flex;align-items:center;justify-content:space-between;padding:22px 24px 18px;border-bottom:1px solid rgba(160,208,0,0.10)}
+      .ck-pref-head h2{font-size:17px;font-weight:700;color:#f4f8e0;margin:0;font-family:'Bai Jamjuree','KoHo',sans-serif}
+      .ck-pref-body{padding:20px 24px;overflow-y:auto;flex:1}
+      .ck-pref-body>p{font-size:13px;color:rgba(244,248,224,0.60);margin:0 0 16px;line-height:1.7}
+      .ck-pref-body a{color:#a0d000}
+      .ck-row{border:1px solid rgba(160,208,0,0.12);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+      .ck-row h4{margin:0 0 4px;font-size:14px;font-weight:700;color:#f4f8e0;display:flex;justify-content:space-between;align-items:center;font-family:'Bai Jamjuree','KoHo',sans-serif}
+      .ck-row p{margin:0;font-size:12px;color:rgba(244,248,224,0.55);line-height:1.6}
+      .ck-badge{font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;background:rgba(160,208,0,0.15);color:#a0d000}
+      .ck-toggle{position:relative;width:40px;height:22px;flex-shrink:0}
+      .ck-toggle input{opacity:0;width:0;height:0;position:absolute}
+      .ck-toggle-track{position:absolute;inset:0;border-radius:22px;background:rgba(255,255,255,0.10);cursor:pointer;transition:.3s}
+      .ck-toggle input:checked+.ck-toggle-track{background:#a0d000}
+      .ck-toggle-track::before{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;bottom:3px;left:3px;transition:.3s}
+      .ck-toggle input:checked+.ck-toggle-track::before{transform:translateX(18px)}
+      .ck-pref-foot{padding:14px 24px 22px;border-top:1px solid rgba(160,208,0,0.10);display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+      .ck-pref-foot .ck-btn{flex:none;padding:10px 20px}
+      html[data-theme="light"] .ck-pref-modal{background:#fff;border-color:rgba(78,112,0,0.15)}
+      html[data-theme="light"] .ck-pref-head h2,.ck-pref-light h4{color:#0d1600}
+      html[data-theme="light"] .ck-pref-body>p,.ck-pref-light p{color:rgba(13,22,0,0.55)}
+      html[data-theme="light"] .ck-row{border-color:rgba(13,22,0,0.10)}
+      html[data-theme="light"] .ck-row h4{color:#0d1600}
+      html[data-theme="light"] .ck-row p{color:rgba(13,22,0,0.50)}
     `;
     document.head.appendChild(s);
   }
 
   function showBanner() {
-    const banner = document.createElement('div');
-    banner.id = 'ol-cookie-banner';
-    banner.innerHTML = `
-      <p>We use cookies to keep Predictvilla running and to improve your experience with personalised football tips. <a href="/privacy.html">Privacy Policy</a></p>
-      <div class="ol-cb-btns">
-        <button class="ol-btn-manage" id="ol-manage-btn">Manage Cookies</button>
-        <button class="ol-btn-reject" id="ol-reject-btn">Reject Optional</button>
-        <button class="ol-btn-accept" id="ol-accept-btn">Accept All</button>
+    const overlay = document.createElement('div');
+    overlay.className = 'ck-overlay';
+    overlay.innerHTML = `
+      <div class="ck-card" role="dialog" aria-modal="true" aria-label="Cookie consent">
+        <button class="ck-close" id="ck-close-btn" aria-label="Close">&#x2715;</button>
+        <h2>Cookies settings</h2>
+        <p>We use cookies and similar technologies to help personalise content, tailor and measure ads, and provide a better experience. By clicking accept, you agree to this, as outlined in our <a href="/privacy.html">Cookies Policy</a>.</p>
+        <div class="ck-actions">
+          <button class="ck-btn ck-btn-accept" id="ck-accept-btn">Accept</button>
+          <button class="ck-btn ck-btn-prefs" id="ck-prefs-btn">Preferences</button>
+        </div>
       </div>`;
-    document.body.appendChild(banner);
-    document.getElementById('ol-accept-btn').addEventListener('click', () => { saveConsent(true); banner.remove(); });
-    document.getElementById('ol-reject-btn').addEventListener('click', () => { saveConsent(false); banner.remove(); });
-    document.getElementById('ol-manage-btn').addEventListener('click', () => { banner.remove(); showModal(); });
+    document.body.appendChild(overlay);
+    document.getElementById('ck-accept-btn').addEventListener('click', () => { saveConsent(true); overlay.remove(); });
+    document.getElementById('ck-close-btn').addEventListener('click', () => { saveConsent(false); overlay.remove(); });
+    document.getElementById('ck-prefs-btn').addEventListener('click', () => { overlay.remove(); showPrefsModal(); });
   }
 
-  function showModal() {
+  function showPrefsModal() {
     const overlay = document.createElement('div');
-    overlay.id = 'ol-cookie-overlay';
+    overlay.className = 'ck-pref-overlay';
     overlay.innerHTML = `
-      <div id="ol-cookie-modal">
-        <div class="cm-head">
-          <img src="/images/logo.svg" alt="Predictvilla">
+      <div class="ck-pref-modal" role="dialog" aria-modal="true" aria-label="Cookie preferences">
+        <div class="ck-pref-head">
           <h2>Cookie Preferences</h2>
+          <button class="ck-close" id="ckp-close-btn" aria-label="Close">&#x2715;</button>
         </div>
-        <div class="cm-body">
+        <div class="ck-pref-body">
           <p>Predictvilla uses cookies to deliver accurate football predictions, keep your account secure, and improve the tips we show you. Choose which cookies you're happy with below.</p>
-
-          <div class="cm-cookie-row">
-            <h4>Essential Cookies <span class="cm-badge-on">Always On</span></h4>
+          <div class="ck-row">
+            <h4>Essential Cookies <span class="ck-badge">Always On</span></h4>
             <p>Required for the site to function — login sessions, security, and displaying predictions. These cannot be disabled.</p>
           </div>
-
-          <div class="cm-cookie-row">
+          <div class="ck-row">
             <h4>Analytics Cookies
-              <label class="cm-toggle"><input type="checkbox" id="cm-analytics-chk"><span class="cm-toggle-slider"></span></label>
+              <label class="ck-toggle"><input type="checkbox" id="ckp-analytics"><span class="ck-toggle-track"></span></label>
             </h4>
-            <p>Help us understand which predictions users find most useful, which leagues are most popular, and how to improve our intelligence engine's accuracy.</p>
+            <p>Help us understand which predictions users find most useful and how to improve our intelligence engine's accuracy.</p>
           </div>
-
-          <div class="cm-cookie-row">
+          <div class="ck-row">
             <h4>Personalisation Cookies
-              <label class="cm-toggle"><input type="checkbox" id="cm-personal-chk"><span class="cm-toggle-slider"></span></label>
+              <label class="ck-toggle"><input type="checkbox" id="ckp-personal"><span class="ck-toggle-track"></span></label>
             </h4>
-            <p>Remember your favourite leagues, preferred markets (e.g. Over/Under vs 1X2), and date filters so your predictions list is always relevant.</p>
+            <p>Remember your favourite leagues, preferred markets, and date filters so your predictions list is always relevant.</p>
           </div>
-
-          <p style="font-size:12px;margin-top:4px">You can update these preferences at any time from the site footer. See our <a href="/privacy.html">Privacy Policy</a> for full details.</p>
+          <p style="font-size:12px;margin-top:4px">You can update these preferences any time from the site footer. See our <a href="/privacy.html">Privacy Policy</a> for full details.</p>
         </div>
-        <div class="cm-footer">
-          <button id="cm-reject-btn" style="background:rgba(173,223,241,0.08);color:var(--text-soft,#addff1)">Reject Optional</button>
-          <button id="cm-save-btn" style="background:rgba(2,245,161,0.12);color:var(--primary,#02f5a1)">Save Preferences</button>
-          <button id="cm-accept-btn" style="background:var(--primary,#02f5a1);color:#07191e">Accept All</button>
+        <div class="ck-pref-foot">
+          <button class="ck-btn ck-btn-prefs" id="ckp-reject-btn">Reject Optional</button>
+          <button class="ck-btn ck-btn-prefs" id="ckp-save-btn" style="color:#a0d000;border-color:rgba(160,208,0,0.30)">Save Choices</button>
+          <button class="ck-btn ck-btn-accept" id="ckp-accept-btn">Accept All</button>
         </div>
       </div>`;
     document.body.appendChild(overlay);
 
     const consent = getConsent();
     if (consent?.analytics) {
-      document.getElementById('cm-analytics-chk').checked = true;
-      document.getElementById('cm-personal-chk').checked = true;
+      document.getElementById('ckp-analytics').checked = true;
+      document.getElementById('ckp-personal').checked = true;
     }
 
-    document.getElementById('cm-accept-btn').addEventListener('click', () => { saveConsent(true); overlay.remove(); });
-    document.getElementById('cm-reject-btn').addEventListener('click', () => { saveConsent(false); overlay.remove(); });
-    document.getElementById('cm-save-btn').addEventListener('click', () => {
-      const analytics = document.getElementById('cm-analytics-chk').checked || document.getElementById('cm-personal-chk').checked;
-      saveConsent(analytics);
+    document.getElementById('ckp-accept-btn').addEventListener('click', () => { saveConsent(true); overlay.remove(); });
+    document.getElementById('ckp-reject-btn').addEventListener('click', () => { saveConsent(false); overlay.remove(); });
+    document.getElementById('ckp-close-btn').addEventListener('click', () => { overlay.remove(); });
+    document.getElementById('ckp-save-btn').addEventListener('click', () => {
+      saveConsent(document.getElementById('ckp-analytics').checked || document.getElementById('ckp-personal').checked);
       overlay.remove();
     });
     overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
   }
 
-  window.openCookiePreferences = showModal;
+  window.openCookiePreferences = showPrefsModal;
 
   injectStyles();
   if (!getConsent()) {

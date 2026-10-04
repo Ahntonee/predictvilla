@@ -275,7 +275,7 @@ async function togglePub(id, cur) {
 
 async function deletePost(id) {
   // Permanently removes a blog post after administrator confirmation.
-  if (!confirm('Delete this post?')) return;
+  if (!await adminConfirm('Delete Post', 'This blog post will be permanently removed and will no longer appear on the site.', 'Delete', 'danger')) return;
   const d = await api(`/blog/admin/${id}`, { method: 'DELETE' });
   if (d.success) { showToast('Deleted', 'info'); loadPosts(currentPage); }
   else showToast(d.message, 'error');

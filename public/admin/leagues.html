@@ -170,7 +170,7 @@ async function toggleEnable(id, cur) {
   loadLeagues(currentPage);
 }
 async function deleteLeague(id) {
-  if (!confirm('Delete this league?')) return;
+  if (!await adminConfirm('Delete League', 'This league and all its associated data will be permanently removed.', 'Delete', 'danger')) return;
   const d = await api(`/leagues/admin/${id}`,{method:'DELETE'});
   if (d.success) { showToast('Deleted','info'); loadLeagues(currentPage); }
   else showToast(d.message,'error');

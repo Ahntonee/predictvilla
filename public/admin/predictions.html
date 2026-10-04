@@ -511,7 +511,7 @@ async function savePred() {
   const id = document.getElementById('edit-id').value;
   const matchDate = document.getElementById('f-matchdate').value;
   if (!id && matchDate && new Date(matchDate) < new Date()) {
-    if (!confirm('This match date is in the past. Publish anyway?')) return;
+    if (!await adminConfirm('Past Match Date', 'This match date is in the past. Publish anyway?', 'Publish', 'primary')) return;
   }
   const body = {
     home_team: document.getElementById('f-home').value.trim(),
@@ -595,7 +595,7 @@ async function submitResult() {
 }
 
 async function deletePred(id) {
-  if (!confirm('Delete this prediction?')) return;
+  if (!await adminConfirm('Delete Prediction', 'This prediction will be permanently removed. This cannot be undone.', 'Delete', 'danger')) return;
   const d = await api(`/predictions/admin/${id}`, {method:'DELETE'});
   if (d.success) { showToast('Deleted','info'); loadPreds(currentPage); }
   else showToast(d.message,'error');
@@ -611,7 +611,7 @@ async function bulkPublish(val) {
 }
 async function bulkDelete() {
   const ids = getSelected(); if (!ids.length) { showToast('Select predictions first','error'); return; }
-  if (!confirm(`Delete ${ids.length} predictions?`)) return;
+  if (!await adminConfirm('Delete Predictions', `${ids.length} prediction${ids.length > 1 ? 's' : ''} will be permanently removed. This cannot be undone.`, 'Delete All', 'danger')) return;
   await Promise.all(ids.map(id => api(`/predictions/admin/${id}`, {method:'DELETE'})));
   showToast('Deleted','info'); loadPreds(currentPage);
 }
