@@ -1,248 +1,364 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Prediction Intelligence — Predictvilla Admin</title>
+<title>Model Intelligence — Predictvilla Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@400;600;700&family=KoHo:wght@400;500;600&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 <link rel="icon" href="/images/logo.svg" type="image/svg+xml"><link rel="icon" href="/images/logo.png" type="image/png">
-<link rel="apple-touch-icon" href="/images/logo.png">
 <link rel="stylesheet" href="/css/style.css"><link rel="stylesheet" href="admin.css">
+<style>
+/* ── Page tokens ───────────────────────────────────────────────────────────── */
+:root {
+  --gold:#ffc107; --silver:#b0b8c8; --bronze:#cd7f32;
+}
+
+/* ── Summary stat cards ────────────────────────────────────────────────────── */
+.bm-stats-row {
+  display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;
+}
+@media(max-width:900px){.bm-stats-row{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.bm-stats-row{grid-template-columns:1fr}}
+
+.bm-stat {
+  background:var(--card-bg,#0d1a26);border:1px solid var(--border);border-radius:14px;
+  padding:18px 20px;position:relative;overflow:hidden;
+}
+.bm-stat::before {
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:var(--stat-accent,var(--primary));border-radius:14px 14px 0 0;
+}
+.bm-stat-icon {
+  width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  background:rgba(0,245,161,0.1);margin-bottom:10px;
+}
+.bm-stat-val {
+  font-family:var(--font-head,'Bai Jamjuree',sans-serif);font-size:28px;font-weight:700;
+  color:var(--stat-accent,var(--primary));line-height:1;margin-bottom:4px;
+}
+.bm-stat-label { font-size:12px;color:var(--text-soft); }
+.bm-stat-sub { font-size:11px;color:var(--text-soft);margin-top:4px; }
+
+/* ── Leaderboard section ────────────────────────────────────────────────────── */
+.bm-leaderboards {
+  display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px;
+}
+@media(max-width:820px){.bm-leaderboards{grid-template-columns:1fr}}
+
+.bm-board {
+  background:var(--card-bg,#0d1a26);border:1px solid var(--border);border-radius:14px;overflow:hidden;
+}
+.bm-board-head {
+  padding:14px 18px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.bm-board-head h3 {
+  font-family:var(--font-head,'Bai Jamjuree',sans-serif);font-size:14px;font-weight:700;margin:0;
+  display:flex;align-items:center;gap:7px;
+}
+.bm-board-body { padding:0; }
+
+.bm-rank-row {
+  display:flex;align-items:center;gap:10px;padding:11px 18px;
+  border-bottom:1px solid rgba(255,255,255,0.04);transition:background .15s;
+}
+.bm-rank-row:last-child { border-bottom:none; }
+.bm-rank-row:hover { background:rgba(0,245,161,0.03); }
+
+.rank-num {
+  font-family:var(--font-head,'Bai Jamjuree',sans-serif);font-weight:700;font-size:13px;
+  width:20px;flex-shrink:0;text-align:center;
+}
+.rank-1 .rank-num { color:var(--gold); }
+.rank-2 .rank-num { color:var(--silver); }
+.rank-3 .rank-num { color:var(--bronze); }
+
+.rank-info { flex:1;min-width:0; }
+.rank-name { font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.rank-sub  { font-size:11px;color:var(--text-soft);margin-top:1px; }
+
+.rank-bar-wrap { width:80px;flex-shrink:0; }
+.rank-bar-bg { height:5px;border-radius:3px;background:rgba(255,255,255,0.08);overflow:hidden; }
+.rank-bar-fill { height:100%;border-radius:3px; }
+
+.rank-pct {
+  font-family:var(--font-head,'Bai Jamjuree',sans-serif);font-weight:700;font-size:13px;
+  min-width:38px;text-align:right;flex-shrink:0;
+}
+.rank-count { font-size:11px;color:var(--text-soft);min-width:44px;text-align:right;flex-shrink:0; }
+
+/* ── Market performance (full-width) ─────────────────────────────────────── */
+.bm-market-section {
+  background:var(--card-bg,#0d1a26);border:1px solid var(--border);
+  border-radius:14px;margin-bottom:22px;overflow:hidden;
+}
+.bm-market-head {
+  padding:14px 18px 0;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+}
+.bm-market-head h3 {
+  font-family:var(--font-head,'Bai Jamjuree',sans-serif);font-size:14px;font-weight:700;margin:0 0 14px;
+  display:flex;align-items:center;gap:7px;
+}
+.bm-market-grid {
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1px;
+  background:var(--border);
+}
+.bm-market-card {
+  background:var(--card-bg,#0d1a26);padding:16px 20px;
+}
+.bm-market-card h4 {
+  font-family:var(--font-head,'Bai Jamjuree',sans-serif);font-size:12px;font-weight:700;
+  color:var(--primary);text-transform:uppercase;letter-spacing:.5px;margin:0 0 12px;
+}
+.mkt-bar-row {
+  display:flex;align-items:center;gap:8px;margin-bottom:9px;
+}
+.mkt-label { font-size:11px;color:var(--text-soft);width:110px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.mkt-bar-bg { flex:1;height:7px;border-radius:4px;background:rgba(255,255,255,0.07);overflow:hidden; }
+.mkt-bar-fill { height:100%;border-radius:4px; }
+.mkt-val { font-size:12px;font-weight:700;width:36px;text-align:right;flex-shrink:0; }
+.mkt-count { font-size:10px;color:var(--text-soft);width:40px;text-align:right;flex-shrink:0; }
+
+/* ── Detailed analysis tabs ──────────────────────────────────────────────── */
+.pi-tab {
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 16px;border:none;background:transparent;cursor:pointer;
+  color:var(--text-soft);font-size:13px;font-weight:600;font-family:var(--font-head,'Bai Jamjuree',sans-serif);
+  border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .2s,border-color .2s;
+}
+.pi-tab .material-icons-round{font-size:15px}
+.pi-tab:hover{color:var(--text)}
+.pi-tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+
+.pi-table {
+  width:100%;border-collapse:collapse;font-size:12px;
+}
+.pi-table th {
+  padding:9px 12px;text-align:left;font-size:11px;font-weight:700;
+  letter-spacing:.5px;text-transform:uppercase;color:var(--text-soft);
+  border-bottom:1px solid var(--border);white-space:nowrap;
+  font-family:var(--font-head,'Bai Jamjuree',sans-serif);
+}
+.pi-table th.num,.pi-table td.num{text-align:right}
+.pi-table td {
+  padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.04);
+  color:var(--text);font-size:12px;white-space:nowrap;
+}
+.pi-table tbody tr:hover{background:rgba(0,245,161,0.03)}
+.pi-table tbody tr.row-under2{background:rgba(2,245,161,0.04)}
+.pi-table tbody tr.row-under3{background:rgba(250,163,7,0.04)}
+
+.loading-cell{text-align:center;padding:24px;color:var(--text-soft);font-size:13px}
+.badge-rate{
+  display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;
+  font-family:var(--font-head,'Bai Jamjuree',sans-serif);
+}
+.badge-rate.good{background:rgba(2,245,161,0.12);color:var(--primary)}
+.badge-rate.ok  {background:rgba(250,163,7,0.10);color:var(--warning)}
+.badge-rate.bad {background:rgba(255,80,80,0.10);color:var(--danger)}
+.badge-rate.none{background:rgba(255,255,255,0.06);color:var(--text-soft)}
+.profile-chip{
+  display:inline-block;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:700;
+}
+
+/* ── Trophy icons ────────────────────────────────────────────────────────── */
+.trophy-1 { color:var(--gold) }
+.trophy-2 { color:var(--silver) }
+.trophy-3 { color:var(--bronze) }
+</style>
 </head>
 <body>
 <div id="admin-sidebar"></div>
 <div id="admin-topbar"></div>
 <main id="admin-main">
-  <h1 class="admin-section-title"><span class="material-icons-round">psychology</span> Prediction Intelligence</h1>
-  <p class="text-soft mb-3" style="font-size:13px">Deep analytics on league profiles, team scoring, market performance, and best prediction combinations. Seed historical data first for maximum accuracy.</p>
 
-  <!-- Tabs -->
-  <div class="flex gap-2 mb-4" style="flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:0">
-    <button class="pi-tab active" data-tab="league">
-      <span class="material-icons-round">emoji_events</span> League Intelligence
-    </button>
-    <button class="pi-tab" data-tab="team">
-      <span class="material-icons-round">groups</span> Team Stats
-    </button>
-    <button class="pi-tab" data-tab="market">
-      <span class="material-icons-round">bar_chart</span> Market Performance
-    </button>
-    <button class="pi-tab" data-tab="picks">
-      <span class="material-icons-round">auto_awesome</span> Best Picks
-    </button>
-    <button class="pi-tab" data-tab="profiles">
-      <span class="material-icons-round">speed</span> Goal Profiles
+  <div class="flex-between mb-1" style="flex-wrap:wrap;gap:10px">
+    <div>
+      <h1 class="admin-section-title mb-0" style="display:flex;align-items:center;gap:8px">
+        <span class="material-icons-round">workspace_premium</span> Model Intelligence
+      </h1>
+      <p class="text-soft mb-0" style="font-size:12px;margin-top:4px">
+        Leagues and teams with the highest prediction success rates — where the model performs best.
+      </p>
+    </div>
+    <button class="btn btn-ghost btn-sm" id="refresh-btn">
+      <span class="material-icons-round">refresh</span> Refresh
     </button>
   </div>
 
-  <!-- ── LEAGUE INTELLIGENCE ── -->
-  <div id="tab-league" class="pi-panel">
-    <div class="flex-between mb-3" style="flex-wrap:wrap;gap:10px">
-      <div>
-        <span class="badge" style="background:rgba(2,245,161,0.15);color:var(--primary);margin-right:6px">■ &lt;2 goals/game</span>
-        <span class="badge" style="background:rgba(250,163,7,0.12);color:var(--warning)">■ &lt;3 goals/game</span>
-      </div>
-      <input class="form-control" id="league-search" placeholder="Filter league…" style="max-width:200px;height:34px;font-size:13px">
-    </div>
-    <div style="overflow-x:auto">
-      <table class="pi-table" id="league-table">
-        <thead><tr>
-          <th>League</th><th>Country</th>
-          <th class="num" title="Average goals per game">Goals/G</th>
-          <th class="num" title="Both teams scored %">BTTS%</th>
-          <th class="num" title="Matches with 2+ goals">O1.5%</th>
-          <th class="num" title="Matches with 3+ goals">O2.5%</th>
-          <th class="num" title="Matches with 4+ goals">O3.5%</th>
-          <th class="num" title="Home win %">HW%</th>
-          <th class="num" title="Draw %">D%</th>
-          <th class="num" title="Away win %">AW%</th>
-          <th class="num">Matches</th>
-          <th class="num">Our Preds</th>
-          <th class="num">Win Rate</th>
-        </tr></thead>
-        <tbody id="league-tbody"><tr><td colspan="13" class="loading-cell">Loading…</td></tr></tbody>
-      </table>
-    </div>
+  <div style="height:18px"></div>
+
+  <!-- ── Summary stat cards ──────────────────────────────────────────────── -->
+  <div class="bm-stats-row" id="summary-stats">
+    <div class="bm-stat skeleton" style="height:100px"></div>
+    <div class="bm-stat skeleton" style="height:100px"></div>
+    <div class="bm-stat skeleton" style="height:100px"></div>
+    <div class="bm-stat skeleton" style="height:100px"></div>
   </div>
 
-  <!-- ── TEAM STATS ── -->
-  <div id="tab-team" class="pi-panel" style="display:none">
-    <div class="flex gap-2 mb-3" style="flex-wrap:wrap;align-items:center">
-      <select class="form-control" id="team-sort" style="max-width:180px;height:34px;font-size:13px">
-        <option value="scored">Goals Scored Avg ↓</option>
-        <option value="conceded">Goals Conceded Avg ↓</option>
-        <option value="home_scored">Home Scored ↓</option>
-        <option value="away_scored">Away Scored ↓</option>
-        <option value="home_conceded">Home Conceded ↓</option>
-        <option value="away_conceded">Away Conceded ↓</option>
-        <option value="clean_sheets">Clean Sheets ↓</option>
-        <option value="wins">Wins ↓</option>
-      </select>
-      <select class="form-control" id="team-filter" style="max-width:200px;height:34px;font-size:13px">
-        <option value="">All teams</option>
-        <option value="score2plus">Scoring ≥ 2/game</option>
-        <option value="concede2plus">Conceding ≥ 2/game</option>
-        <option value="under2">Scoring &lt; 2/game</option>
-        <option value="under3">Scoring &lt; 3/game</option>
-      </select>
-      <button class="btn btn-primary btn-sm" onclick="loadTeamStats()">Apply</button>
-      <input class="form-control" id="team-search" placeholder="Search team…" style="max-width:180px;height:34px;font-size:13px">
-    </div>
-    <div style="overflow-x:auto">
-      <table class="pi-table" id="team-table">
-        <thead><tr>
-          <th>Team</th><th>League</th>
-          <th class="num">MP</th><th class="num">W</th><th class="num">D</th><th class="num">L</th>
-          <th class="num" title="Overall goals scored per game">Scr</th>
-          <th class="num" title="Overall goals conceded per game">Con</th>
-          <th class="num" title="Home goals scored per game">H-Scr</th>
-          <th class="num" title="Away goals scored per game">A-Scr</th>
-          <th class="num" title="Home goals conceded per game">H-Con</th>
-          <th class="num" title="Away goals conceded per game">A-Con</th>
-          <th class="num" title="Clean sheets">CS</th>
-          <th class="num" title="Win percentage">Win%</th>
-        </tr></thead>
-        <tbody id="team-tbody"><tr><td colspan="14" class="loading-cell">Loading…</td></tr></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- ── MARKET PERFORMANCE ── -->
-  <div id="tab-market" class="pi-panel" style="display:none">
-    <div class="grid-2" style="gap:24px" id="market-grid">
-      <div class="loading-cell">Loading…</div>
-    </div>
-  </div>
-
-  <!-- ── BEST PICKS ── -->
-  <div id="tab-picks" class="pi-panel" style="display:none">
-    <div class="grid-2" style="gap:24px">
-      <div>
-        <h3 style="font-size:15px;margin-bottom:14px;color:var(--primary)">
-          <span class="material-icons-round" style="font-size:18px;vertical-align:middle">leaderboard</span> Best League × Market Combos
+  <!-- ── Leaderboards: top leagues + top teams ──────────────────────────── -->
+  <div class="bm-leaderboards">
+    <!-- Top Leagues -->
+    <div class="bm-board">
+      <div class="bm-board-head">
+        <h3>
+          <span class="material-icons-round trophy-1" style="font-size:18px">emoji_events</span>
+          Top Leagues by Win Rate
         </h3>
-        <div style="overflow-x:auto">
-          <table class="pi-table" id="picks-league-table">
-            <thead><tr>
-              <th>League</th><th>Market</th><th>Pick</th>
-              <th class="num">Preds</th><th class="num">Correct</th><th class="num">Win%</th><th class="num">Avg Conf</th>
-            </tr></thead>
-            <tbody id="picks-league-tbody"><tr><td colspan="7" class="loading-cell">Loading…</td></tr></tbody>
-          </table>
-        </div>
+        <span class="text-soft" style="font-size:11px" id="league-board-meta"></span>
       </div>
-      <div>
-        <h3 style="font-size:15px;margin-bottom:14px;color:var(--accent)">
-          <span class="material-icons-round" style="font-size:18px;vertical-align:middle">groups</span> Teams with Best Prediction Record
+      <div class="bm-board-body" id="league-board">
+        <div class="loading-cell">Loading…</div>
+      </div>
+    </div>
+
+    <!-- Top Teams -->
+    <div class="bm-board">
+      <div class="bm-board-head">
+        <h3>
+          <span class="material-icons-round" style="color:#64b5f6;font-size:18px">groups</span>
+          Most Productive Teams
         </h3>
-        <div style="overflow-x:auto">
-          <table class="pi-table" id="picks-team-table">
-            <thead><tr>
-              <th>Team</th><th class="num">Preds</th><th class="num">Correct</th><th class="num">Win%</th>
-            </tr></thead>
-            <tbody id="picks-team-tbody"><tr><td colspan="4" class="loading-cell">Loading…</td></tr></tbody>
-          </table>
-        </div>
+        <span class="text-soft" style="font-size:11px" id="team-board-meta"></span>
+      </div>
+      <div class="bm-board-body" id="team-board">
+        <div class="loading-cell">Loading…</div>
       </div>
     </div>
   </div>
 
-  <!-- ── GOAL PROFILES ── -->
-  <div id="tab-profiles" class="pi-panel" style="display:none">
-    <div class="flex gap-2 mb-3" style="flex-wrap:wrap">
-      <button class="btn btn-outline btn-sm profile-filter active" data-filter="all">All</button>
-      <button class="btn btn-outline btn-sm profile-filter" data-filter="under2" style="border-color:rgba(2,245,161,0.4);color:var(--primary)">Under 2 goals/game</button>
-      <button class="btn btn-outline btn-sm profile-filter" data-filter="under3" style="border-color:rgba(250,163,7,0.4);color:var(--warning)">Under 3 goals/game</button>
-      <button class="btn btn-outline btn-sm profile-filter" data-filter="over3" style="border-color:rgba(255,80,80,0.4);color:var(--danger)">Over 3 goals/game</button>
+  <!-- ── Market performance ──────────────────────────────────────────────── -->
+  <div class="bm-market-section">
+    <div class="bm-market-head">
+      <h3>
+        <span class="material-icons-round" style="font-size:17px">bar_chart</span>
+        Market Performance
+      </h3>
     </div>
-    <div style="overflow-x:auto">
-      <table class="pi-table" id="profiles-table">
-        <thead><tr>
-          <th>League</th><th>Country</th>
-          <th class="num">Goals/G</th>
-          <th class="num">BTTS%</th>
-          <th class="num">O1.5%</th>
-          <th class="num">O2.5%</th>
-          <th class="num">O3.5%</th>
-          <th class="num">HW%</th>
-          <th class="num">D%</th>
-          <th class="num">AW%</th>
-          <th class="num">Matches</th>
-          <th>Profile</th>
-        </tr></thead>
-        <tbody id="profiles-tbody"><tr><td colspan="12" class="loading-cell">Loading…</td></tr></tbody>
-      </table>
+    <div class="bm-market-grid" id="market-perf-grid">
+      <div class="bm-market-card"><div class="loading-cell">Loading…</div></div>
     </div>
   </div>
+
+  <!-- ── Detailed analysis tabs ──────────────────────────────────────────── -->
+  <div class="admin-card" style="padding:0">
+    <div style="padding:0 4px;border-bottom:1px solid var(--border);display:flex;gap:0;flex-wrap:wrap">
+      <button class="pi-tab active" data-tab="league">
+        <span class="material-icons-round">emoji_events</span> League Details
+      </button>
+      <button class="pi-tab" data-tab="team">
+        <span class="material-icons-round">groups</span> Team Stats
+      </button>
+      <button class="pi-tab" data-tab="profiles">
+        <span class="material-icons-round">speed</span> Goal Profiles
+      </button>
+    </div>
+
+    <!-- ── League Details ── -->
+    <div id="tab-league" class="pi-panel" style="padding:0">
+      <div class="flex gap-2" style="padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.05);flex-wrap:wrap;align-items:center">
+        <span class="badge" style="background:rgba(2,245,161,0.12);color:var(--primary);font-size:11px">■ &lt;2 goals/game</span>
+        <span class="badge" style="background:rgba(250,163,7,0.10);color:var(--warning);font-size:11px">■ 2–3 goals/game</span>
+        <input class="form-control" id="league-search" placeholder="Filter league…" style="max-width:200px;height:32px;font-size:12px;margin-left:auto">
+      </div>
+      <div style="overflow-x:auto">
+        <table class="pi-table" id="league-table">
+          <thead><tr>
+            <th>League</th><th>Country</th>
+            <th class="num" title="Average goals per game">Goals/G</th>
+            <th class="num" title="Both teams scored %">BTTS%</th>
+            <th class="num" title="Matches with 2+ goals">O1.5%</th>
+            <th class="num" title="Matches with 3+ goals">O2.5%</th>
+            <th class="num" title="Matches with 4+ goals">O3.5%</th>
+            <th class="num" title="Home win %">HW%</th>
+            <th class="num" title="Draw %">D%</th>
+            <th class="num" title="Away win %">AW%</th>
+            <th class="num">Matches</th>
+            <th class="num">Preds</th>
+            <th class="num">Win Rate</th>
+          </tr></thead>
+          <tbody id="league-tbody"><tr><td colspan="13" class="loading-cell">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Team Stats ── -->
+    <div id="tab-team" class="pi-panel" style="display:none;padding:0">
+      <div class="flex gap-2" style="padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.05);flex-wrap:wrap;align-items:center">
+        <select class="form-control" id="team-sort" style="max-width:170px;height:32px;font-size:12px">
+          <option value="scored">Goals Scored Avg ↓</option>
+          <option value="conceded">Goals Conceded Avg ↓</option>
+          <option value="home_scored">Home Scored ↓</option>
+          <option value="away_scored">Away Scored ↓</option>
+          <option value="clean_sheets">Clean Sheets ↓</option>
+          <option value="wins">Wins ↓</option>
+        </select>
+        <select class="form-control" id="team-filter" style="max-width:170px;height:32px;font-size:12px">
+          <option value="">All teams</option>
+          <option value="score2plus">Scoring ≥ 2/game</option>
+          <option value="concede2plus">Conceding ≥ 2/game</option>
+          <option value="under2">Scoring &lt; 2/game</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="loadTeamStats()">Apply</button>
+        <input class="form-control" id="team-search" placeholder="Search team…" style="max-width:180px;height:32px;font-size:12px;margin-left:auto">
+      </div>
+      <div style="overflow-x:auto">
+        <table class="pi-table" id="team-table">
+          <thead><tr>
+            <th>Team</th><th>League</th>
+            <th class="num">MP</th><th class="num">W</th><th class="num">D</th><th class="num">L</th>
+            <th class="num" title="Overall goals scored per game">Scr</th>
+            <th class="num" title="Overall goals conceded per game">Con</th>
+            <th class="num" title="Home goals scored per game">H-Scr</th>
+            <th class="num" title="Away goals scored per game">A-Scr</th>
+            <th class="num" title="Clean sheets">CS</th>
+            <th class="num" title="Win percentage">Win%</th>
+          </tr></thead>
+          <tbody id="team-tbody"><tr><td colspan="12" class="loading-cell">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Goal Profiles ── -->
+    <div id="tab-profiles" class="pi-panel" style="display:none;padding:0">
+      <div class="flex gap-2" style="padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.05);flex-wrap:wrap">
+        <button class="btn btn-outline btn-sm profile-filter active" data-filter="all">All</button>
+        <button class="btn btn-outline btn-sm profile-filter" data-filter="under2" style="border-color:rgba(2,245,161,0.4);color:var(--primary)">Under 2 goals/game</button>
+        <button class="btn btn-outline btn-sm profile-filter" data-filter="under3" style="border-color:rgba(250,163,7,0.4);color:var(--warning)">2–3 goals/game</button>
+        <button class="btn btn-outline btn-sm profile-filter" data-filter="over3" style="border-color:rgba(255,80,80,0.4);color:var(--danger)">Over 3 goals/game</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="pi-table" id="profiles-table">
+          <thead><tr>
+            <th>League</th><th>Country</th>
+            <th class="num">Goals/G</th>
+            <th class="num">BTTS%</th>
+            <th class="num">O1.5%</th>
+            <th class="num">O2.5%</th>
+            <th class="num">O3.5%</th>
+            <th class="num">HW%</th>
+            <th class="num">D%</th>
+            <th class="num">AW%</th>
+            <th class="num">Matches</th>
+            <th>Profile</th>
+          </tr></thead>
+          <tbody id="profiles-tbody"><tr><td colspan="12" class="loading-cell">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
 </main>
-
-<style>
-.pi-tab {
-  display:inline-flex;align-items:center;gap:6px;
-  padding:8px 16px;border:none;background:transparent;cursor:pointer;
-  color:var(--text-soft);font-size:13px;font-weight:500;font-family:inherit;
-  border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .2s,border-color .2s
-}
-.pi-tab .material-icons-round{font-size:16px}
-.pi-tab:hover{color:var(--text)}
-.pi-tab.active{color:var(--primary);border-bottom-color:var(--primary)}
-
-.pi-table {
-  width:100%;border-collapse:collapse;font-size:13px
-}
-.pi-table th {
-  padding:8px 12px;text-align:left;font-size:11px;font-weight:700;
-  letter-spacing:.5px;text-transform:uppercase;color:var(--text-soft);
-  border-bottom:1px solid var(--border);white-space:nowrap
-}
-.pi-table th.num,.pi-table td.num{text-align:right}
-.pi-table td {
-  padding:8px 12px;border-bottom:1px solid rgba(173,223,241,0.05);
-  color:var(--text);font-size:13px;white-space:nowrap
-}
-.pi-table tbody tr:hover{background:rgba(173,223,241,0.03)}
-.pi-table tbody tr.row-under2{background:rgba(2,245,161,0.05)}
-.pi-table tbody tr.row-under3{background:rgba(250,163,7,0.05)}
-.pi-table tbody tr.row-high{background:rgba(255,80,80,0.05)}
-
-.loading-cell{text-align:center;padding:24px;color:var(--text-soft);font-size:13px}
-.win-bar-wrap{display:flex;align-items:center;gap:8px;min-width:100px}
-.win-bar{height:6px;border-radius:3px;background:var(--primary)}
-.badge-rate{
-  display:inline-block;padding:2px 8px;border-radius:12px;font-size:12px;font-weight:700
-}
-.badge-rate.good{background:rgba(2,245,161,0.15);color:var(--primary)}
-.badge-rate.ok  {background:rgba(250,163,7,0.12);color:var(--warning)}
-.badge-rate.bad {background:rgba(255,80,80,0.12);color:var(--danger)}
-.badge-rate.none{background:rgba(173,223,241,0.07);color:var(--text-soft)}
-.market-card{
-  background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:18px
-}
-.market-bar-row{
-  display:flex;align-items:center;gap:10px;margin-bottom:12px
-}
-.profile-chip{
-  display:inline-block;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:700
-}
-</style>
 
 <script src="admin.js"></script>
 <script>
 injectAdminShell('prediction-stats.html');
 
-// ── Tab switching ──────────────────────────────────────────────────────────────
-document.querySelectorAll('.pi-tab').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.pi-tab').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.pi-panel').forEach(p => p.style.display = 'none');
-    btn.classList.add('active');
-    document.getElementById('tab-' + btn.dataset.tab).style.display = 'block';
-  });
-});
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+/* ── Helpers ──────────────────────────────────────────────────────────────── */
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 function rateBadge(rate) {
   if (rate === null || rate === undefined || rate === '') return `<span class="badge-rate none">N/A</span>`;
@@ -251,55 +367,182 @@ function rateBadge(rate) {
   return `<span class="badge-rate ${cls}">${r}%</span>`;
 }
 
-function winBar(rate, max = 100) {
-  const pct = Math.min(100, Math.max(0, parseFloat(rate || 0)));
-  const color = pct >= 60 ? 'var(--primary)' : pct >= 45 ? 'var(--warning)' : 'var(--danger)';
-  return `<div class="win-bar-wrap"><div style="flex:1;background:rgba(255,255,255,0.07);border-radius:3px;height:6px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${color};border-radius:3px"></div></div><span style="width:34px;text-align:right;font-size:12px;font-weight:700">${pct}%</span></div>`;
+function pct(v, highlight, hiColor = 'var(--primary)', loColor = 'var(--text)') {
+  return v != null
+    ? `<span style="color:${parseFloat(v) >= highlight ? hiColor : loColor}">${v}%</span>`
+    : '<span class="text-soft">—</span>';
 }
 
 function goalsBadge(gpg) {
   if (!gpg) return '';
   const g = parseFloat(gpg);
-  if (g < 2)  return `<span class="profile-chip" style="background:rgba(2,245,161,0.15);color:var(--primary)">Low</span>`;
-  if (g < 3)  return `<span class="profile-chip" style="background:rgba(250,163,7,0.12);color:var(--warning)">Med</span>`;
-  return       `<span class="profile-chip" style="background:rgba(255,80,80,0.12);color:var(--danger)">High</span>`;
+  if (g < 2)  return `<span class="profile-chip" style="background:rgba(2,245,161,0.12);color:var(--primary)">Low</span>`;
+  if (g < 3)  return `<span class="profile-chip" style="background:rgba(250,163,7,0.10);color:var(--warning)">Med</span>`;
+  return              `<span class="profile-chip" style="background:rgba(255,80,80,0.10);color:var(--danger)">High</span>`;
 }
 
-function categoryLabel(cat) {
-  const map = {
-    home:'Home Win', draw:'Draw', away:'Away Win',
-    gg:'BTTS Yes', ng:'BTTS No',
-    over15:'Over 1.5', under15:'Under 1.5',
-    over25:'Over 2.5', under25:'Under 2.5',
-    over35:'Over 3.5', under35:'Under 3.5',
-    dc_1x:'1X (Home/Draw)', dc_x2:'X2 (Draw/Away)', dc_12:'12 (Home/Away)',
-    dnb_home:'DNB Home', dnb_away:'DNB Away',
-    corners_over:'Corners Over', corners_under:'Corners Under',
-  };
-  return map[cat] || cat;
+/* ── Summary stat cards ───────────────────────────────────────────────────── */
+function renderSummaryStats(bestPicks) {
+  const allLeagueRows = bestPicks.byLeagueMarket || [];
+  const allTeamRows   = bestPicks.byTeam || [];
+
+  const totalPreds = allLeagueRows.reduce((a, r) => a + (parseInt(r.total) || 0), 0);
+  const totalCorrect = allLeagueRows.reduce((a, r) => a + (parseInt(r.correct) || 0), 0);
+  const overallWin = totalPreds ? Math.round(totalCorrect / totalPreds * 100) : null;
+
+  const topLeague = allLeagueRows[0];
+  const topTeam   = allTeamRows[0];
+
+  document.getElementById('summary-stats').innerHTML = `
+    <div class="bm-stat" style="--stat-accent:var(--primary)">
+      <div class="bm-stat-icon"><span class="material-icons-round" style="color:var(--primary);font-size:20px">analytics</span></div>
+      <div class="bm-stat-val">${totalPreds.toLocaleString()}</div>
+      <div class="bm-stat-label">Total Predictions</div>
+      <div class="bm-stat-sub">${totalCorrect.toLocaleString()} correct</div>
+    </div>
+    <div class="bm-stat" style="--stat-accent:${overallWin>=60?'var(--primary)':overallWin>=45?'var(--warning)':'var(--danger)'}">
+      <div class="bm-stat-icon"><span class="material-icons-round" style="color:var(--primary);font-size:20px">percent</span></div>
+      <div class="bm-stat-val" style="color:${overallWin>=60?'var(--primary)':overallWin>=45?'var(--warning)':'var(--danger)'}">${overallWin != null ? overallWin+'%' : '—'}</div>
+      <div class="bm-stat-label">Overall Win Rate</div>
+      <div class="bm-stat-sub">${allLeagueRows.length} league-market combos</div>
+    </div>
+    <div class="bm-stat" style="--stat-accent:var(--gold)">
+      <div class="bm-stat-icon"><span class="material-icons-round trophy-1" style="font-size:20px">emoji_events</span></div>
+      <div class="bm-stat-val" style="color:var(--gold);font-size:22px">${topLeague ? esc(topLeague.league_name) : '—'}</div>
+      <div class="bm-stat-label">Best League</div>
+      <div class="bm-stat-sub">${topLeague ? topLeague.win_rate+'% win rate · '+topLeague.total+' preds' : 'No data yet'}</div>
+    </div>
+    <div class="bm-stat" style="--stat-accent:#64b5f6">
+      <div class="bm-stat-icon"><span class="material-icons-round" style="color:#64b5f6;font-size:20px">star</span></div>
+      <div class="bm-stat-val" style="color:#64b5f6;font-size:22px">${topTeam ? esc(topTeam.team) : '—'}</div>
+      <div class="bm-stat-label">Top Prediction Team</div>
+      <div class="bm-stat-sub">${topTeam ? topTeam.win_rate+'% win rate · '+topTeam.total+' preds' : 'No data yet'}</div>
+    </div>`;
 }
 
-// ── League Intelligence ───────────────────────────────────────────────────────
-let leagueData = [];
+/* ── League leaderboard ───────────────────────────────────────────────────── */
+function renderLeagueBoard(rows) {
+  const el = document.getElementById('league-board');
+  document.getElementById('league-board-meta').textContent = `Top ${Math.min(rows.length, 15)} of ${rows.length}`;
 
-async function loadLeagueStats() {
-  const tbody = document.getElementById('league-tbody');
-  tbody.innerHTML = '<tr><td colspan="13" class="loading-cell">Loading…</td></tr>';
-  try {
-    const { data } = await api('/admin/analytics/intel/league-stats');
-    leagueData = data.leagues || [];
-    renderLeagueTable(leagueData);
-  } catch(e) {
-    tbody.innerHTML = `<tr><td colspan="13" class="loading-cell" style="color:var(--danger)">Error: ${esc(e.message)}</td></tr>`;
+  if (!rows.length) {
+    el.innerHTML = '<div class="loading-cell">No data yet — grade some predictions first.</div>';
+    return;
   }
+
+  const topRows = rows.slice(0, 15);
+  const maxRate = Math.max(...topRows.map(r => parseFloat(r.win_rate) || 0), 1);
+
+  el.innerHTML = topRows.map((r, i) => {
+    const rate = parseFloat(r.win_rate) || 0;
+    const barColor = rate >= 60 ? 'var(--primary)' : rate >= 45 ? 'var(--warning)' : 'var(--danger)';
+    const rankCls  = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : '';
+    const icon = i === 0 ? 'workspace_premium' : i === 1 ? 'workspace_premium' : i === 2 ? 'workspace_premium' : null;
+    const iconColor = i === 0 ? 'var(--gold)' : i === 1 ? 'var(--silver)' : 'var(--bronze)';
+
+    return `<div class="bm-rank-row ${rankCls}">
+      <div class="rank-num">${icon ? `<span class="material-icons-round" style="font-size:15px;color:${iconColor}">${icon}</span>` : i+1}</div>
+      <div class="rank-info">
+        <div class="rank-name">${esc(r.league_name)}</div>
+        <div class="rank-sub">${esc(r.country||'')} · ${esc(r.market||'')} · ${esc(r.category||'')}</div>
+      </div>
+      <div class="rank-bar-wrap">
+        <div class="rank-bar-bg"><div class="rank-bar-fill" style="width:${(rate/maxRate*100).toFixed(1)}%;background:${barColor}"></div></div>
+      </div>
+      <div class="rank-pct" style="color:${barColor}">${rate}%</div>
+      <div class="rank-count">${r.total} preds</div>
+    </div>`;
+  }).join('');
 }
 
-const pct = (v, highlight, hi_color='var(--primary)', lo_color='var(--text)') =>
-  v != null ? `<span style="color:${parseFloat(v) >= highlight ? hi_color : lo_color}">${v}%</span>` : '<span class="text-soft">—</span>';
+/* ── Team leaderboard ─────────────────────────────────────────────────────── */
+function renderTeamBoard(rows) {
+  const el = document.getElementById('team-board');
+  document.getElementById('team-board-meta').textContent = `Top ${Math.min(rows.length, 15)} teams`;
+
+  if (!rows.length) {
+    el.innerHTML = '<div class="loading-cell">No data yet — grade some predictions first.</div>';
+    return;
+  }
+
+  const topRows = rows.slice(0, 15);
+  const maxRate = Math.max(...topRows.map(r => parseFloat(r.win_rate) || 0), 1);
+
+  el.innerHTML = topRows.map((r, i) => {
+    const rate = parseFloat(r.win_rate) || 0;
+    const barColor = rate >= 60 ? '#64b5f6' : rate >= 45 ? 'var(--warning)' : 'var(--danger)';
+    const rankCls  = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : '';
+
+    return `<div class="bm-rank-row ${rankCls}">
+      <div class="rank-num">${i + 1}</div>
+      <div class="rank-info">
+        <div class="rank-name">${esc(r.team)}</div>
+        <div class="rank-sub">${r.correct} correct / ${r.total} predictions</div>
+      </div>
+      <div class="rank-bar-wrap">
+        <div class="rank-bar-bg"><div class="rank-bar-fill" style="width:${(rate/maxRate*100).toFixed(1)}%;background:${barColor}"></div></div>
+      </div>
+      <div class="rank-pct" style="color:${barColor}">${rate}%</div>
+      <div class="rank-count">${r.total} preds</div>
+    </div>`;
+  }).join('');
+}
+
+/* ── Market performance grid ──────────────────────────────────────────────── */
+function renderMarketPerf(markets) {
+  const grid = document.getElementById('market-perf-grid');
+
+  if (!markets.length) {
+    grid.innerHTML = '<div class="bm-market-card"><div class="loading-cell">No data yet — graded predictions needed.</div></div>';
+    return;
+  }
+
+  const groups = {};
+  markets.forEach(m => {
+    if (!groups[m.market]) groups[m.market] = [];
+    groups[m.market].push(m);
+  });
+
+  const categoryLabel = cat => {
+    const map = {
+      home:'Home Win', draw:'Draw', away:'Away Win',
+      gg:'BTTS Yes', ng:'BTTS No',
+      over15:'Over 1.5', under15:'Under 1.5',
+      over25:'Over 2.5', under25:'Under 2.5',
+      over35:'Over 3.5', under35:'Under 3.5',
+      dc_1x:'1X (Home/Draw)', dc_x2:'X2 (Draw/Away)', dc_12:'12 (Home/Away)',
+      corners_over:'Corners Over', corners_under:'Corners Under',
+    };
+    return map[cat] || cat;
+  };
+
+  grid.innerHTML = Object.entries(groups).map(([mkt, picks]) => {
+    const sorted = [...picks].sort((a,b) => (parseFloat(b.win_rate)||0) - (parseFloat(a.win_rate)||0));
+    return `<div class="bm-market-card">
+      <h4>${esc(mkt)}</h4>
+      ${sorted.map(p => {
+        const rate = parseFloat(p.win_rate) || 0;
+        const barColor = rate >= 60 ? 'var(--primary)' : rate >= 45 ? 'var(--warning)' : 'var(--danger)';
+        return `<div class="mkt-bar-row">
+          <span class="mkt-label">${esc(categoryLabel(p.category))}</span>
+          <div class="mkt-bar-bg"><div class="mkt-bar-fill" style="width:${rate}%;background:${barColor}"></div></div>
+          <span class="mkt-val" style="color:${barColor}">${rate}%</span>
+          <span class="mkt-count">${p.total}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+}
+
+/* ── League detail table ──────────────────────────────────────────────────── */
+let leagueData = [];
 
 function renderLeagueTable(rows) {
   const tbody = document.getElementById('league-tbody');
-  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="13" class="loading-cell">No data — run the historical seed first.</td></tr>'; return; }
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="13" class="loading-cell">No data — run the historical seed first.</td></tr>';
+    return;
+  }
   tbody.innerHTML = rows.map(r => {
     const gpg = parseFloat(r.goals_per_game);
     const rowCls = !r.goals_per_game ? '' : gpg < 2 ? 'row-under2' : gpg < 3 ? 'row-under3' : '';
@@ -315,7 +558,7 @@ function renderLeagueTable(rows) {
       <td class="num">${pct(r.over35_pct, 30)}</td>
       <td class="num">${pct(r.home_win_pct, 45)}</td>
       <td class="num">${pct(r.draw_pct,     30, 'var(--warning)')}</td>
-      <td class="num">${pct(r.away_win_pct, 35, 'var(--accent)')}</td>
+      <td class="num">${pct(r.away_win_pct, 35, 'var(--primary)')}</td>
       <td class="num text-soft">${r.stat_matches ?? '—'}</td>
       <td class="num">${r.total_predictions || '—'}</td>
       <td class="num">${rateBadge(rate)}</td>
@@ -325,15 +568,17 @@ function renderLeagueTable(rows) {
 
 document.getElementById('league-search').addEventListener('input', function() {
   const q = this.value.toLowerCase();
-  renderLeagueTable(leagueData.filter(r => r.league_name.toLowerCase().includes(q) || r.country.toLowerCase().includes(q)));
+  renderLeagueTable(leagueData.filter(r =>
+    r.league_name.toLowerCase().includes(q) || (r.country||'').toLowerCase().includes(q)
+  ));
 });
 
-// ── Team Stats ────────────────────────────────────────────────────────────────
+/* ── Team detail table ────────────────────────────────────────────────────── */
 let teamData = [];
 
 async function loadTeamStats() {
   const tbody = document.getElementById('team-tbody');
-  tbody.innerHTML = '<tr><td colspan="14" class="loading-cell">Loading…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="12" class="loading-cell">Loading…</td></tr>';
   const sort   = document.getElementById('team-sort').value;
   const filter = document.getElementById('team-filter').value;
   try {
@@ -343,19 +588,17 @@ async function loadTeamStats() {
     teamData = data.teams || [];
     renderTeamTable(teamData);
   } catch(e) {
-    tbody.innerHTML = `<tr><td colspan="14" class="loading-cell" style="color:var(--danger)">Error: ${esc(e.message)}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12" class="loading-cell" style="color:var(--danger)">Error: ${esc(e.message)}</td></tr>`;
   }
 }
 
 function renderTeamTable(rows) {
   const tbody = document.getElementById('team-tbody');
-  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="14" class="loading-cell">No data — run the historical seed first.</td></tr>'; return; }
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="12" class="loading-cell">No data — run historical seed first.</td></tr>'; return; }
   tbody.innerHTML = rows.map(r => {
-    const scored   = parseFloat(r.goals_scored_avg);
-    const conceded = parseFloat(r.goals_conceded_avg);
-    const scoreCls = scored >= 2 ? 'color:var(--primary);font-weight:700' : '';
-    const concCls  = conceded >= 2 ? 'color:var(--danger);font-weight:700' : '';
+    const scored = parseFloat(r.goals_scored_avg);
     const f = v => v != null ? v : '—';
+    const scoreCls = scored >= 2 ? 'color:var(--primary);font-weight:700' : '';
     return `<tr>
       <td><strong>${esc(r.team_name)}</strong></td>
       <td class="text-soft" style="max-width:130px;overflow:hidden;text-overflow:ellipsis">${esc(r.league_name)}</td>
@@ -364,11 +607,9 @@ function renderTeamTable(rows) {
       <td class="num text-soft">${f(r.draws)}</td>
       <td class="num" style="color:var(--danger)">${f(r.losses)}</td>
       <td class="num"><span style="${scoreCls}">${f(r.goals_scored_avg)}</span></td>
-      <td class="num"><span style="${concCls}">${f(r.goals_conceded_avg)}</span></td>
+      <td class="num">${f(r.goals_conceded_avg)}</td>
       <td class="num">${f(r.home_scored_avg)}</td>
       <td class="num">${f(r.away_scored_avg)}</td>
-      <td class="num">${f(r.home_conceded_avg)}</td>
-      <td class="num">${f(r.away_conceded_avg)}</td>
       <td class="num">${f(r.clean_sheets)}</td>
       <td class="num">${r.win_pct != null ? `<strong>${r.win_pct}%</strong>` : '—'}</td>
     </tr>`;
@@ -380,106 +621,12 @@ document.getElementById('team-search').addEventListener('input', function() {
   renderTeamTable(teamData.filter(r => r.team_name.toLowerCase().includes(q)));
 });
 
-// ── Market Performance ────────────────────────────────────────────────────────
-async function loadMarketStats() {
-  const grid = document.getElementById('market-grid');
-  grid.innerHTML = '<div class="loading-cell">Loading…</div>';
-  try {
-    const { data } = await api('/admin/analytics/intel/market-stats');
-    const markets = data.markets || [];
-    if (!markets.length) {
-      grid.innerHTML = '<div class="loading-cell">No data yet — graded predictions needed.</div>';
-      return;
-    }
-
-    // Group by market
-    const groups = {};
-    markets.forEach(m => {
-      if (!groups[m.market]) groups[m.market] = [];
-      groups[m.market].push(m);
-    });
-
-    const maxTotal = Math.max(...markets.map(m => parseInt(m.total) || 0), 1);
-
-    grid.innerHTML = Object.entries(groups).map(([mkt, picks]) => `
-      <div class="market-card">
-        <h4 style="font-size:14px;font-weight:700;margin-bottom:16px;color:var(--primary)">${esc(mkt)}</h4>
-        ${picks.map(p => {
-          const pct = parseFloat(p.win_rate) || 0;
-          const barColor = pct >= 60 ? 'var(--primary)' : pct >= 45 ? 'var(--warning)' : 'var(--danger)';
-          return `<div class="market-bar-row">
-            <span style="width:130px;font-size:12px;color:var(--text-soft);flex-shrink:0">${categoryLabel(p.category)}</span>
-            <div style="flex:1;background:rgba(255,255,255,0.07);border-radius:3px;height:8px;overflow:hidden">
-              <div style="width:${pct}%;height:100%;background:${barColor};border-radius:3px"></div>
-            </div>
-            <span style="width:40px;text-align:right;font-size:13px;font-weight:700;color:${barColor}">${pct}%</span>
-            <span class="text-soft" style="font-size:11px;width:50px;text-align:right">${p.total} pred</span>
-          </div>`;
-        }).join('')}
-      </div>
-    `).join('');
-  } catch(e) {
-    grid.innerHTML = `<div class="loading-cell" style="color:var(--danger)">Error: ${esc(e.message)}</div>`;
-  }
-}
-
-// ── Best Picks ─────────────────────────────────────────────────────────────────
-async function loadBestPicks() {
-  document.getElementById('picks-league-tbody').innerHTML = '<tr><td colspan="7" class="loading-cell">Loading…</td></tr>';
-  document.getElementById('picks-team-tbody').innerHTML   = '<tr><td colspan="4" class="loading-cell">Loading…</td></tr>';
-  try {
-    const { data } = await api('/admin/analytics/intel/best-picks');
-
-    // League × market table
-    const lTbody = document.getElementById('picks-league-tbody');
-    const lRows = data.byLeagueMarket || [];
-    if (!lRows.length) {
-      lTbody.innerHTML = '<tr><td colspan="7" class="loading-cell">No data yet (need ≥5 graded predictions per combo).</td></tr>';
-    } else {
-      lTbody.innerHTML = lRows.map((r, i) => {
-        const rank = i < 3 ? `<span class="material-icons-round" aria-label="Rank ${i + 1}">workspace_premium</span>` : `${i+1}.`;
-        return `<tr>
-          <td><span style="margin-right:6px">${rank}</span>${esc(r.league_name)}<br><span class="text-soft" style="font-size:11px">${esc(r.country)}</span></td>
-          <td class="text-soft">${esc(r.market)}</td>
-          <td><strong>${categoryLabel(r.category)}</strong></td>
-          <td class="num">${r.total}</td>
-          <td class="num" style="color:var(--primary)">${r.correct}</td>
-          <td class="num">${rateBadge(r.win_rate)}</td>
-          <td class="num text-soft">${r.avg_conf}%</td>
-        </tr>`;
-      }).join('');
-    }
-
-    // Team table
-    const tTbody = document.getElementById('picks-team-tbody');
-    const tRows = data.byTeam || [];
-    if (!tRows.length) {
-      tTbody.innerHTML = '<tr><td colspan="4" class="loading-cell">No data yet.</td></tr>';
-    } else {
-      tTbody.innerHTML = tRows.map((r, i) => {
-        const rank = i < 3 ? `<span class="material-icons-round" aria-label="Rank ${i + 1}">workspace_premium</span>` : `${i+1}.`;
-        return `<tr>
-          <td><span style="margin-right:6px">${rank}</span><strong>${esc(r.team)}</strong></td>
-          <td class="num">${r.total}</td>
-          <td class="num" style="color:var(--primary)">${r.correct}</td>
-          <td class="num">${winBar(r.win_rate)}</td>
-        </tr>`;
-      }).join('');
-    }
-  } catch(e) {
-    const msg = `<tr><td colspan="7" class="loading-cell" style="color:var(--danger)">Error: ${esc(e.message)}</td></tr>`;
-    document.getElementById('picks-league-tbody').innerHTML = msg;
-    document.getElementById('picks-team-tbody').innerHTML   = msg;
-  }
-}
-
-// ── Goal Profiles ─────────────────────────────────────────────────────────────
-let profileData = [];
-let profileFilter = 'all';
+/* ── Goal profiles ────────────────────────────────────────────────────────── */
+let profileData = [], profileFilter = 'all';
 
 async function loadProfiles() {
   const tbody = document.getElementById('profiles-tbody');
-  tbody.innerHTML = '<tr><td colspan="7" class="loading-cell">Loading…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="12" class="loading-cell">Loading…</td></tr>';
   try {
     const { data } = await api('/admin/analytics/intel/league-profiles');
     profileData = data.leagues || [];
@@ -493,26 +640,26 @@ function renderProfileTable(filter) {
   const tbody = document.getElementById('profiles-tbody');
   let rows = profileData;
   if (filter === 'under2') rows = rows.filter(r => parseFloat(r.goals_per_game) < 2);
-  else if (filter === 'under3') rows = rows.filter(r => parseFloat(r.goals_per_game) < 3);
-  else if (filter === 'over3') rows = rows.filter(r => parseFloat(r.goals_per_game) >= 3);
+  else if (filter === 'under3') rows = rows.filter(r => { const g=parseFloat(r.goals_per_game); return g>=2&&g<3; });
+  else if (filter === 'over3')  rows = rows.filter(r => parseFloat(r.goals_per_game) >= 3);
   if (!rows.length) { tbody.innerHTML = '<tr><td colspan="12" class="loading-cell">No leagues in this range.</td></tr>'; return; }
+  const f2 = (v, hi, hiColor='var(--primary)') => v != null
+    ? `<span style="color:${parseFloat(v)>=hi?hiColor:'var(--text)'}">${v}%</span>`
+    : '<span class="text-soft">—</span>';
   tbody.innerHTML = rows.map(r => {
     const gpg = parseFloat(r.goals_per_game);
-    const rowCls = gpg < 2 ? 'row-under2' : gpg < 3 ? 'row-under3' : 'row-high';
-    const f = (v, hi, hiColor='var(--primary)') => v != null
-      ? `<span style="color:${parseFloat(v)>=hi?hiColor:'var(--text)'}">${v}%</span>`
-      : '<span class="text-soft">—</span>';
+    const rowCls = gpg < 2 ? 'row-under2' : gpg < 3 ? 'row-under3' : '';
     return `<tr class="${rowCls}">
       <td><strong>${esc(r.league_name)}</strong></td>
       <td class="text-soft">${esc(r.country)}</td>
       <td class="num"><strong>${r.goals_per_game}</strong></td>
-      <td class="num">${f(r.btts_pct,   50)}</td>
-      <td class="num">${f(r.over15_pct, 70)}</td>
-      <td class="num">${f(r.over25_pct, 50)}</td>
-      <td class="num">${f(r.over35_pct, 30)}</td>
-      <td class="num">${f(r.home_win_pct, 45)}</td>
-      <td class="num">${f(r.draw_pct,     30, 'var(--warning)')}</td>
-      <td class="num">${f(r.away_win_pct, 35, 'var(--accent)')}</td>
+      <td class="num">${f2(r.btts_pct,   50)}</td>
+      <td class="num">${f2(r.over15_pct, 70)}</td>
+      <td class="num">${f2(r.over25_pct, 50)}</td>
+      <td class="num">${f2(r.over35_pct, 30)}</td>
+      <td class="num">${f2(r.home_win_pct, 45)}</td>
+      <td class="num">${f2(r.draw_pct,     30, 'var(--warning)')}</td>
+      <td class="num">${f2(r.away_win_pct, 35)}</td>
       <td class="num text-soft">${r.matches_played ?? '—'}</td>
       <td>${goalsBadge(r.goals_per_game)}</td>
     </tr>`;
@@ -528,20 +675,50 @@ document.querySelectorAll('.profile-filter').forEach(btn => {
   });
 });
 
-// ── Initial load ──────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  loadLeagueStats();
-
-  document.querySelectorAll('.pi-tab').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const tab = btn.dataset.tab;
-      if (tab === 'team'    && !teamData.length)    loadTeamStats();
-      if (tab === 'market')                          loadMarketStats();
-      if (tab === 'picks')                           loadBestPicks();
-      if (tab === 'profiles' && !profileData.length) loadProfiles();
-    });
+/* ── Tab switching ────────────────────────────────────────────────────────── */
+document.querySelectorAll('.pi-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.pi-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.pi-panel').forEach(p => p.style.display = 'none');
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).style.display = 'block';
+    const tab = btn.dataset.tab;
+    if (tab === 'team' && !teamData.length) loadTeamStats();
+    if (tab === 'profiles' && !profileData.length) loadProfiles();
   });
 });
+
+/* ── Main loader ──────────────────────────────────────────────────────────── */
+async function loadAll() {
+  try {
+    // Load best-picks and market stats in parallel (core dashboard data)
+    const [picksRes, marketRes, leagueRes] = await Promise.all([
+      api('/admin/analytics/intel/best-picks'),
+      api('/admin/analytics/intel/market-stats'),
+      api('/admin/analytics/intel/league-stats'),
+    ]);
+
+    // Summary cards + leaderboards from best-picks
+    const picks = picksRes.data || {};
+    renderSummaryStats(picks);
+    renderLeagueBoard(picks.byLeagueMarket || []);
+    renderTeamBoard(picks.byTeam || []);
+
+    // Market performance
+    renderMarketPerf(marketRes.data?.markets || []);
+
+    // League detail table
+    leagueData = leagueRes.data?.leagues || [];
+    renderLeagueTable(leagueData);
+
+  } catch(e) {
+    document.getElementById('summary-stats').innerHTML =
+      `<div class="admin-card" style="grid-column:1/-1;color:var(--danger);padding:20px">Failed to load: ${esc(e.message)}</div>`;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadAll);
+document.getElementById('refresh-btn').addEventListener('click', loadAll);
 </script>
 </body>
 </html>

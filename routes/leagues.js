@@ -6,6 +6,7 @@ router.get('/', ctrl.list);
 router.get('/admin', authenticate, requireAdmin, ctrl.listAdmin);
 router.get('/:id', ctrl.getOne);
 router.post('/admin', authenticate, requireAdmin, ctrl.create);
+router.put('/admin/bulk-popular', authenticate, requireAdmin, ctrl.bulkMarkPopular);
 router.put('/admin/:id', authenticate, requireAdmin, ctrl.update);
 router.delete('/admin/:id', authenticate, requireAdmin, ctrl.remove);
 

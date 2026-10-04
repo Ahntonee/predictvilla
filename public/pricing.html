@@ -359,17 +359,24 @@
   <section style="padding-top:4px">
     <div class="container">
 
-      <!-- Period toggle -->
+      <!-- Period selector -->
       <div style="text-align:center;margin-bottom:32px">
-        <div class="period-toggle" id="period-toggle">
-          <button class="period-btn active" data-period="biweekly" onclick="setPeriod('biweekly',this)">
-            2 Weeks
-          </button>
-          <button class="period-btn" data-period="monthly" onclick="setPeriod('monthly',this)">
-            Monthly
-          </button>
+        <div style="display:inline-flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center">
+          <span style="font-size:13px;font-weight:700;color:var(--text-soft);text-transform:uppercase;letter-spacing:.5px">Billing Period</span>
+          <select id="period-select" onchange="setPeriodSelect(this.value)" style="padding:8px 36px 8px 16px;border-radius:26px;border:1.5px solid var(--border);background:var(--bg-2);color:var(--text);font-size:14px;font-weight:700;cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a0d000' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 12px center">
+            <option value="biweekly">2 Weeks (Bi-Weekly)</option>
+            <option value="monthly">Monthly</option>
+          </select>
+          <div class="period-toggle" id="period-toggle">
+            <button class="period-btn active" data-period="biweekly" onclick="setPeriod('biweekly',this)">
+              2 Weeks
+            </button>
+            <button class="period-btn" data-period="monthly" onclick="setPeriod('monthly',this)">
+              Monthly
+            </button>
+          </div>
         </div>
-        <p id="period-note" style="font-size:12px;color:var(--text-soft);margin-top:8px"></p>
+        <p id="period-note" style="font-size:12px;color:var(--text-soft);margin-top:8px">Billed every 2 weeks. Renew anytime.</p>
       </div>
 
       <!-- Tier cards skeleton / live -->
@@ -480,6 +487,16 @@ function setPeriod(period, btn) {
   activePeriod = period;
   document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  const sel = document.getElementById('period-select');
+  if (sel) sel.value = period;
+  document.getElementById('period-note').textContent =
+    period === 'biweekly' ? 'Billed every 2 weeks. Renew anytime.' : 'Billed monthly. Best value per day.';
+  renderTierCards();
+}
+
+function setPeriodSelect(period) {
+  activePeriod = period;
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.toggle('active', b.dataset.period === period));
   document.getElementById('period-note').textContent =
     period === 'biweekly' ? 'Billed every 2 weeks. Renew anytime.' : 'Billed monthly. Best value per day.';
   renderTierCards();
@@ -541,12 +558,22 @@ function renderTierCards() {
 // ── Paystack ───────────────────────────────────────────────────────────────────
 function startPayment(planId, amount) {
   if (!currentUser) {
-    showToast('Please login or register to continue','info');
-    setTimeout(() => { location.href = '/login.html?redirect=/pricing.html'; }, 1200);
+    const authSec = document.getElementById('auth-section');
+    if (authSec && authSec.style.display !== 'none') {
+      authSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      authSec.style.outline = '2.5px solid var(--primary)';
+      authSec.style.borderRadius = '20px';
+      authSec.style.transition = 'outline .2s';
+      setTimeout(() => { authSec.style.outline = ''; }, 2000);
+      showToast('Sign in or create an account to subscribe', 'info');
+    } else {
+      showToast('Please login or register to continue', 'info');
+      setTimeout(() => { location.href = '/login.html?redirect=/pricing.html'; }, 1200);
+    }
     return;
   }
   if (!paystackKey || paystackKey.includes('YOUR_PAYSTACK')) {
-    showToast('Payment is temporarily unavailable. Please contact support.','error');
+    showErrorModal('Online payment is not yet available. Please contact us via the contact page to subscribe manually.', 'Payment Unavailable');
     return;
   }
   const currency = geoPricing?.currency || 'NGN';

@@ -16,7 +16,10 @@
 <main id="admin-main">
   <div class="flex-between mb-3">
     <h1 class="admin-section-title mb-0">Leagues</h1>
-    <button class="btn btn-primary" id="add-league-btn">+ Add League</button>
+    <div class="flex gap-2">
+      <button class="btn btn-ghost" id="mark-all-popular-btn"><span class="material-icons-round" style="font-size:16px">star</span> Mark All Popular</button>
+      <button class="btn btn-primary" id="add-league-btn">+ Add League</button>
+    </div>
   </div>
 
   <div class="search-bar mb-2">
@@ -80,6 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadLeagues();
 
   document.getElementById('add-league-btn').addEventListener('click', () => openModal());
+  document.getElementById('mark-all-popular-btn').addEventListener('click', markAllPopular);
   document.getElementById('modal-close-btn').addEventListener('click', closeModal);
   document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
   document.getElementById('modal-save-btn').addEventListener('click', saveLeague);
@@ -104,7 +108,10 @@ async function loadLeagues(page = 1) {
         <td>${escHtml(l.continent||'—')}</td>
         <td>${l.tier||1}</td>
         <td>${l.api_league_id||'—'}</td>
-        <td><button class="btn btn-sm ${l.is_popular?'btn-primary':'btn-ghost'}" data-pop-id="${l.id}" data-pop-cur="${l.is_popular}">${l.is_popular?'<span class="material-icons-round" style="font-size:15px">star</span> Yes':'<span class="material-icons-round" style="font-size:15px">star_border</span> No'}</button></td>
+        <td>${l.is_popular
+          ? `<button class="btn btn-sm btn-danger" data-pop-id="${l.id}" data-pop-cur="1"><span class="material-icons-round" style="font-size:15px">star_border</span> Delist</button>`
+          : `<button class="btn btn-sm btn-ghost" data-pop-id="${l.id}" data-pop-cur="0"><span class="material-icons-round" style="font-size:15px">star_border</span> Mark</button>`
+        }</td>
         <td><button class="btn btn-sm ${l.is_active?'btn-primary':'btn-ghost'}" data-en-id="${l.id}" data-en-cur="${l.is_active}">${l.is_active?'ON':'OFF'}</button></td>
         <td>
           <div class="flex gap-2">
@@ -162,8 +169,17 @@ async function saveLeague() {
 }
 
 async function togglePop(id, cur) {
-  await api(`/leagues/admin/${id}`, {method:'PUT', body:JSON.stringify({is_popular:cur?0:1})});
+  const isPopular = cur === '1' || cur === 1;
+  if (isPopular && !await adminConfirm('Delist League', 'Remove this league from the popular list?', 'Delist', 'danger')) return;
+  await api(`/leagues/admin/${id}`, {method:'PUT', body:JSON.stringify({is_popular:isPopular?0:1})});
   loadLeagues(currentPage);
+}
+
+async function markAllPopular() {
+  if (!await adminConfirm('Mark All Popular', 'This will mark every league as popular. Continue?', 'Mark All', 'primary')) return;
+  const d = await api('/leagues/admin/bulk-popular', {method:'PUT'});
+  if (d.success) { showToast('All leagues marked popular', 'success'); loadLeagues(currentPage); }
+  else showToast(d.message || 'Failed', 'error');
 }
 async function toggleEnable(id, cur) {
   await api(`/leagues/admin/${id}`, {method:'PUT', body:JSON.stringify({is_active:cur?0:1})});

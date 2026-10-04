@@ -1,149 +1,699 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Game Browser — Predictvilla Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@400;600;700&family=KoHo:wght@400;500;600&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 <link rel="icon" href="/images/logo.svg" type="image/svg+xml"><link rel="icon" href="/images/logo.png" type="image/png">
 <link rel="stylesheet" href="/css/style.css"><link rel="stylesheet" href="admin.css">
 <style>
-.form-dots span {
-  display:inline-flex;align-items:center;justify-content:center;
-  width:15px;height:15px;border-radius:50%;font-size:8px;font-weight:800;margin:0 1px;
+/* ── Game Browser custom styles ───────────────────────────────────────────── */
+.gb-toolbar {
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px;
+  background:var(--card-bg,#0d1a26);border:1px solid var(--border);
+  border-radius:12px;padding:14px 18px;margin-bottom:14px;
 }
-.stat-pill {
+.gb-date-wrap { display:flex;align-items:center;gap:8px; }
+.gb-date-wrap input[type=date] {
+  background:rgba(0,245,161,0.07);border:1px solid rgba(0,245,161,0.25);
+  color:var(--text);border-radius:8px;padding:6px 12px;font-size:13px;
+  font-family:var(--font-head,'Bai Jamjuree',sans-serif);
+}
+.gb-nav { display:flex;gap:4px;margin-bottom:14px; }
+.gb-nav-tab {
+  padding:8px 18px;border-radius:8px 8px 0 0;font-family:var(--font-head,'Bai Jamjuree',sans-serif);
+  font-weight:700;font-size:13px;cursor:pointer;border:1px solid transparent;
+  border-bottom:none;background:transparent;color:var(--text-soft);transition:.2s;
+}
+.gb-nav-tab.active {
+  background:var(--card-bg,#0d1a26);border-color:var(--border);color:var(--primary);
+}
+.gb-tab-pane { display:none; }
+.gb-tab-pane.active { display:block; }
+
+/* API status pill */
+.api-status-pill {
+  display:inline-flex;align-items:center;gap:5px;padding:4px 10px;
+  border-radius:20px;font-size:11px;font-weight:700;
+  background:rgba(0,245,161,0.08);color:var(--primary);
+  border:1px solid rgba(0,245,161,0.2);margin-left:auto;
+}
+.api-status-pill.warn { background:rgba(255,193,7,0.1);color:#ffc107;border-color:rgba(255,193,7,0.2); }
+.api-status-pill.error { background:rgba(255,71,87,0.1);color:var(--danger);border-color:rgba(255,71,87,0.2); }
+
+/* Consistency comparison */
+.consistency-bar {
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+  background:rgba(0,245,161,0.04);border:1px solid rgba(0,245,161,0.12);
+  border-radius:10px;padding:10px 16px;margin-bottom:14px;font-size:12px;
+}
+.consistency-bar .citem { display:flex;align-items:center;gap:6px; }
+.citem-val { font-family:var(--font-head,'Bai Jamjuree',sans-serif);font-weight:700;font-size:15px;color:var(--primary); }
+.citem-label { color:var(--text-soft); }
+.citem-warn { color:#ffc107; }
+.citem-ok { color:var(--primary); }
+.citem-sep { color:var(--border);margin:0 4px; }
+
+/* Filter bar */
+.gb-filters {
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+  background:var(--card-bg,#0d1a26);border:1px solid var(--border);
+  border-radius:10px;padding:10px 14px;margin-bottom:10px;
+}
+.gb-filter-chip {
+  display:inline-flex;align-items:center;gap:5px;padding:4px 10px;
+  border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;
+  border:1px solid var(--border);background:transparent;color:var(--text-soft);
+  transition:.15s;font-family:var(--font-head,'Bai Jamjuree',sans-serif);
+}
+.gb-filter-chip.active { background:rgba(0,245,161,0.1);color:var(--primary);border-color:rgba(0,245,161,0.3); }
+.gb-filter-chip.long-shot { border-color:rgba(255,193,7,0.3); }
+.gb-filter-chip.long-shot.active { background:rgba(255,193,7,0.1);color:#ffc107;border-color:rgba(255,193,7,0.4); }
+.conf-min-wrap { display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-soft); }
+.conf-min-wrap input[type=range] { width:80px;accent-color:var(--primary); }
+.conf-min-wrap span { font-weight:700;color:var(--primary);min-width:24px; }
+
+/* Game table */
+.gb-table-wrap { border-radius:10px;overflow:hidden;border:1px solid var(--border); }
+.gb-table { width:100%;border-collapse:collapse; }
+.gb-table thead tr { background:rgba(0,0,0,0.3); }
+.gb-table th {
+  padding:10px 12px;text-align:left;font-family:var(--font-head,'Bai Jamjuree',sans-serif);
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--text-soft);border-bottom:1px solid var(--border);white-space:nowrap;
+}
+.gb-table td { padding:10px 12px;font-size:12px;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle; }
+.gb-table tr:last-child td { border-bottom:none; }
+.gb-table tbody tr:hover { background:rgba(0,245,161,0.03); }
+.gb-table tbody tr.selected-row { background:rgba(0,245,161,0.06); }
+
+/* Form dots */
+.form-dots { display:inline-flex;gap:2px; }
+.form-dot {
+  width:16px;height:16px;border-radius:50%;display:inline-flex;
+  align-items:center;justify-content:center;font-size:9px;font-weight:800;
+}
+
+/* Confidence bar */
+.conf-bar-wrap { display:flex;align-items:center;gap:6px; }
+.conf-bar { width:50px;height:4px;border-radius:2px;background:rgba(255,255,255,0.08);overflow:hidden; }
+.conf-bar-fill { height:100%;border-radius:2px;transition:width .3s; }
+
+/* Tier badges */
+.tier-badge {
+  padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;
+  font-family:var(--font-head,'Bai Jamjuree',sans-serif);text-transform:uppercase;letter-spacing:.3px;
+}
+.tier-basic { background:rgba(100,181,246,0.15);color:#64b5f6;border:1px solid rgba(100,181,246,0.25); }
+.tier-standard { background:rgba(0,245,161,0.12);color:var(--primary);border:1px solid rgba(0,245,161,0.25); }
+.tier-diamond { background:rgba(179,136,255,0.15);color:#b388ff;border:1px solid rgba(179,136,255,0.25); }
+.tier-vip { background:rgba(255,193,7,0.15);color:#ffc107;border:1px solid rgba(255,193,7,0.25); }
+
+/* Analysis panel (expandable) */
+.analysis-row td { padding:0 !important; }
+.analysis-panel {
+  padding:14px 18px;background:rgba(0,0,0,0.2);border-top:1px solid rgba(0,245,161,0.1);
+}
+.analysis-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px; }
+.analysis-block { background:rgba(0,245,161,0.04);border:1px solid rgba(0,245,161,0.1);border-radius:8px;padding:10px 12px; }
+.analysis-block h4 { font-family:var(--font-head,'Bai Jamjuree',sans-serif);font-size:11px;font-weight:700;color:var(--text-soft);text-transform:uppercase;letter-spacing:.5px;margin:0 0 8px; }
+.analysis-block p { font-size:12px;color:var(--text);margin:0;line-height:1.6; }
+.factor-list { list-style:none;padding:0;margin:0; }
+.factor-list li { display:flex;justify-content:space-between;align-items:center;padding:2px 0;font-size:11px; }
+.factor-list li .fl { color:var(--text-soft); }
+.factor-list li .fv { font-weight:700;color:var(--primary); }
+.factor-list li .fv.neg { color:#ff6b6b; }
+.factor-list li .fv.mid { color:#ffc107; }
+.odds-pill {
   display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700;
-  background:rgba(0,245,161,0.1);color:var(--primary);border:1px solid rgba(0,245,161,0.2);
+  background:rgba(0,245,161,0.1);color:var(--primary);border:1px solid rgba(0,245,161,0.2);margin:2px;
+  cursor:pointer;transition:.15s;
 }
-.conf-bar {
-  width:60px;height:5px;border-radius:3px;background:var(--border);display:inline-block;vertical-align:middle;overflow:hidden;
+.odds-pill:hover,.odds-pill.selected { background:rgba(0,245,161,0.25);border-color:var(--primary); }
+
+/* Bulk action bar */
+.bulk-bar {
+  position:sticky;bottom:16px;z-index:20;display:none;
+  background:var(--card-bg,#0d1a26);border:1px solid rgba(0,245,161,0.3);
+  border-radius:12px;padding:12px 18px;margin-top:12px;
+  box-shadow:0 4px 24px rgba(0,0,0,0.4);
+  align-items:center;flex-wrap:wrap;gap:10px;
 }
-.conf-bar-fill { height:100%; border-radius:3px; background:var(--primary); }
+.bulk-bar.visible { display:flex; }
+.bulk-bar strong { font-family:var(--font-head,'Bai Jamjuree',sans-serif);color:var(--primary); }
+
+/* Tier picker tab */
+.tier-columns { display:grid;grid-template-columns:repeat(3,1fr);gap:14px; }
+@media(max-width:800px){ .tier-columns { grid-template-columns:1fr; } }
+.tier-col { background:var(--card-bg,#0d1a26);border:1px solid var(--border);border-radius:12px;padding:0; }
+.tier-col-head {
+  padding:12px 16px;border-bottom:1px solid var(--border);
+  font-family:var(--font-head,'Bai Jamjuree',sans-serif);font-weight:700;font-size:14px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.tier-col-list { padding:10px;min-height:200px; }
+.tier-game-card {
+  background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.06);border-radius:8px;
+  padding:10px 12px;margin-bottom:8px;cursor:pointer;transition:.15s;font-size:12px;
+}
+.tier-game-card:hover { border-color:rgba(0,245,161,0.3); }
+.tier-game-card .tg-teams { font-weight:700;margin-bottom:4px; }
+.tier-game-card .tg-meta { color:var(--text-soft);display:flex;justify-content:space-between;font-size:11px; }
+
+/* Accumulator tab */
+.accum-layout { display:grid;grid-template-columns:1fr 300px;gap:14px; }
+@media(max-width:900px){ .accum-layout { grid-template-columns:1fr; } }
+.accum-panel {
+  background:var(--card-bg,#0d1a26);border:1px solid var(--border);border-radius:12px;
+  padding:16px;position:sticky;top:72px;align-self:start;
+}
+.accum-panel h3 { font-family:var(--font-head,'Bai Jamjuree',sans-serif);font-weight:700;margin:0 0 12px;display:flex;align-items:center;gap:8px; }
+.accum-odds-total {
+  font-family:var(--font-head,'Bai Jamjuree',sans-serif);font-size:36px;font-weight:700;
+  color:var(--primary);text-align:center;padding:12px 0;
+}
+.accum-odds-total span { font-size:14px;color:var(--text-soft);display:block;margin-top:-4px; }
+.accum-target-bar { height:6px;border-radius:3px;background:rgba(255,255,255,0.08);margin:8px 0;overflow:hidden; }
+.accum-target-fill { height:100%;border-radius:3px;transition:width .4s,background .4s; }
+.accum-item {
+  display:flex;justify-content:space-between;align-items:center;
+  padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:12px;
+}
+.accum-item:last-child { border-bottom:none; }
+.accum-item-name { flex:1;min-width:0;padding-right:8px; }
+.accum-item-odds { font-weight:700;color:var(--primary);font-family:var(--font-head,'Bai Jamjuree',sans-serif);white-space:nowrap; }
+.accum-remove { background:none;border:none;color:var(--text-soft);cursor:pointer;padding:2px;margin-left:6px;font-size:16px;line-height:1; }
+.accum-remove:hover { color:var(--danger); }
+.accum-empty { text-align:center;color:var(--text-soft);padding:20px 0;font-size:12px; }
+
+/* Sync status */
+.sync-status-row { display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-soft); }
+.sync-dot { width:8px;height:8px;border-radius:50%;background:var(--text-soft);flex-shrink:0; }
+.sync-dot.ok { background:var(--primary); }
+.sync-dot.running { background:#ffc107;animation:pulse .8s infinite; }
+.sync-dot.error { background:var(--danger); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 </style>
 </head>
 <body>
 <div id="admin-sidebar"></div>
 <div id="admin-topbar"></div>
 <main id="admin-main">
-  <div class="flex-between mb-3" style="flex-wrap:wrap;gap:12px">
-    <h1 class="admin-section-title mb-0"><span class="material-icons-round">grid_view</span> Game Browser</h1>
-    <div class="flex gap-2" style="flex-wrap:wrap;align-items:center">
-      <input type="date" class="form-control" id="date-picker" style="max-width:160px">
-      <button class="btn btn-ghost btn-sm" id="sync-btn"><span class="material-icons-round">sync</span> Sync Fixtures</button>
-      <button class="btn btn-ghost btn-sm" id="run-intel-btn"><span class="material-icons-round">psychology</span> Run Intelligence</button>
-      <button class="btn btn-primary btn-sm" id="bulk-pub-btn" style="display:none"><span class="material-icons-round">check_circle</span> Publish Selected (<span id="sel-count">0</span>)</button>
+
+  <!-- Header toolbar -->
+  <div class="flex-between mb-2" style="flex-wrap:wrap;gap:10px">
+    <h1 class="admin-section-title mb-0" style="display:flex;align-items:center;gap:8px">
+      <span class="material-icons-round">grid_view</span> Game Browser
+    </h1>
+    <div class="sync-status-row">
+      <span class="sync-dot" id="sync-dot"></span>
+      <span id="sync-status-text">Ready</span>
     </div>
   </div>
 
-  <!-- Filter bar -->
-  <div class="admin-card mb-3" style="padding:12px 16px">
-    <div class="flex gap-2" style="flex-wrap:wrap;align-items:center">
-      <input type="text" class="form-control" id="f-search" placeholder="Search teams…" style="max-width:180px">
-      <select class="form-control" id="f-status" style="max-width:140px">
-        <option value="">All</option>
-        <option value="published">Published</option>
-        <option value="draft">Draft / Unscored</option>
-      </select>
-      <select class="form-control" id="f-league" style="max-width:180px">
+  <!-- Toolbar: date + actions -->
+  <div class="gb-toolbar">
+    <div class="gb-date-wrap">
+      <span class="material-icons-round" style="color:var(--text-soft);font-size:18px">calendar_today</span>
+      <input type="date" id="date-picker">
+    </div>
+    <button class="btn btn-ghost btn-sm" id="sync-btn">
+      <span class="material-icons-round">sync</span> Sync Fixtures
+    </button>
+    <button class="btn btn-ghost btn-sm" id="auto-predict-btn">
+      <span class="material-icons-round">auto_awesome</span> Generate Predictions
+    </button>
+    <button class="btn btn-ghost btn-sm" id="run-intel-btn">
+      <span class="material-icons-round">psychology</span> Run Intelligence
+    </button>
+    <button class="btn btn-ghost btn-sm" id="api-status-btn" title="Check API quota">
+      <span class="material-icons-round">cloud</span> API Status
+    </button>
+    <div id="api-status-pill" class="api-status-pill" style="display:none"></div>
+  </div>
+
+  <!-- Consistency comparison -->
+  <div class="consistency-bar" id="consistency-bar" style="display:none">
+    <div class="citem">
+      <span class="material-icons-round" style="font-size:16px;color:var(--primary)">storage</span>
+      <span class="citem-label">DB predictions:</span>
+      <span class="citem-val" id="cb-db">—</span>
+    </div>
+    <span class="citem-sep">|</span>
+    <div class="citem">
+      <span class="material-icons-round" style="font-size:16px;color:#64b5f6">cloud_download</span>
+      <span class="citem-label">Last API sync:</span>
+      <span class="citem-val" id="cb-api">—</span>
+    </div>
+    <span class="citem-sep">|</span>
+    <div class="citem" id="cb-check-wrap">
+      <span class="material-icons-round" id="cb-check-icon" style="font-size:16px"></span>
+      <span id="cb-check-text" class="citem-label"></span>
+    </div>
+    <div style="margin-left:auto;font-size:11px;color:var(--text-soft)" id="cb-confidence-summary"></div>
+  </div>
+
+  <!-- Tab nav -->
+  <div class="gb-nav">
+    <button class="gb-nav-tab active" data-tab="games">
+      <span class="material-icons-round" style="font-size:14px;vertical-align:middle">table_rows</span> Games
+    </button>
+    <button class="gb-nav-tab" data-tab="tier-picker">
+      <span class="material-icons-round" style="font-size:14px;vertical-align:middle">layers</span> Tier Picker
+    </button>
+    <button class="gb-nav-tab" data-tab="accumulator">
+      <span class="material-icons-round" style="font-size:14px;vertical-align:middle">casino</span> 2-Odds Accumulator
+    </button>
+  </div>
+
+  <!-- ══ TAB 1: GAMES ══════════════════════════════════════════════════════ -->
+  <div class="gb-tab-pane active" id="tab-games">
+    <!-- Filter bar -->
+    <div class="gb-filters">
+      <input type="text" class="form-control" id="f-search" placeholder="Search teams…" style="max-width:180px;font-size:12px">
+      <select class="form-control" id="f-league" style="max-width:180px;font-size:12px">
         <option value="">All Leagues</option>
       </select>
+      <select class="form-control" id="f-status" style="max-width:130px;font-size:12px">
+        <option value="">All Status</option>
+        <option value="published">Published</option>
+        <option value="draft">Draft</option>
+      </select>
+      <select class="form-control" id="f-tier" style="max-width:130px;font-size:12px">
+        <option value="">All Tiers</option>
+        <option value="basic">Basic</option>
+        <option value="standard">Standard</option>
+        <option value="diamond">Diamond</option>
+        <option value="vip">VIP Only</option>
+      </select>
+      <div class="conf-min-wrap">
+        <span class="material-icons-round" style="font-size:14px">speed</span>
+        <label style="font-size:11px;color:var(--text-soft);white-space:nowrap">Min conf:</label>
+        <input type="range" id="conf-slider" min="0" max="100" value="70">
+        <span id="conf-val">70</span>
+      </div>
+      <button class="gb-filter-chip long-shot" id="longshot-toggle">
+        <span class="material-icons-round" style="font-size:13px">trending_up</span> Long Shots
+      </button>
       <span class="text-soft" style="font-size:12px;margin-left:auto" id="result-count"></span>
+    </div>
+
+    <!-- Table -->
+    <div class="gb-table-wrap">
+      <table class="gb-table" id="games-table">
+        <thead>
+          <tr>
+            <th style="width:28px"><input type="checkbox" id="chk-all"></th>
+            <th>Match</th>
+            <th>League</th>
+            <th>KO</th>
+            <th>Form H/A</th>
+            <th>λH / λA</th>
+            <th>Tip</th>
+            <th>Conf</th>
+            <th>Tier</th>
+            <th>Status</th>
+            <th style="width:110px">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="games-body">
+          <tr><td colspan="11" style="text-align:center;padding:24px;color:var(--text-soft);font-size:13px">
+            Select a date and click <strong>Sync Fixtures</strong>, then <strong>Generate Predictions</strong>
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Bulk bar -->
+    <div class="bulk-bar" id="bulk-bar">
+      <strong id="sel-count-text">0 selected</strong>
+      <select class="form-control" id="bulk-tier" style="max-width:130px;font-size:12px">
+        <option value="">Assign Tier…</option>
+        <option value="basic">Basic</option>
+        <option value="standard">Standard</option>
+        <option value="diamond">Diamond</option>
+        <option value="vip">VIP Only</option>
+      </select>
+      <button class="btn btn-sm btn-ghost" id="bulk-assign-tier-btn">
+        <span class="material-icons-round">label</span> Assign Tier
+      </button>
+      <button class="btn btn-sm btn-primary" id="bulk-pub-btn">
+        <span class="material-icons-round">publish</span> Publish Selected
+      </button>
+      <button class="btn btn-sm btn-ghost" id="bulk-clear-btn">
+        <span class="material-icons-round">clear</span> Clear
+      </button>
     </div>
   </div>
 
-  <!-- Table -->
-  <div class="admin-card" style="padding:0;overflow-x:auto">
-    <table class="data-table" id="games-table">
-      <thead>
-        <tr>
-          <th style="width:32px"><input type="checkbox" id="chk-all"></th>
-          <th>Match</th>
-          <th>League</th>
-          <th>KO</th>
-          <th>Home Form</th>
-          <th>Away Form</th>
-          <th>λH / λA</th>
-          <th>Tip</th>
-          <th>Conf</th>
-          <th>Status</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="games-body">
-        <tr><td colspan="11" class="empty-cell"><div class="skeleton" style="height:40px"></div></td></tr>
-      </tbody>
-    </table>
+  <!-- ══ TAB 2: TIER PICKER ════════════════════════════════════════════════ -->
+  <div class="gb-tab-pane" id="tab-tier-picker">
+    <p style="font-size:12px;color:var(--text-soft);margin:0 0 12px">
+      Click a game card to move it between tiers. Changes are saved immediately.
+    </p>
+    <div class="tier-columns">
+      <div class="tier-col">
+        <div class="tier-col-head">
+          <span style="display:flex;align-items:center;gap:6px">
+            <span class="tier-badge tier-basic">Basic</span>
+            <span id="basic-count" style="color:var(--text-soft);font-size:12px"></span>
+          </span>
+          <button class="btn btn-sm btn-ghost" onclick="bulkPublishTier('basic')">
+            <span class="material-icons-round" style="font-size:14px">publish</span>
+          </button>
+        </div>
+        <div class="tier-col-list" id="tier-basic-list"><div class="text-soft" style="padding:16px;font-size:12px;text-align:center">No games assigned</div></div>
+      </div>
+      <div class="tier-col">
+        <div class="tier-col-head">
+          <span style="display:flex;align-items:center;gap:6px">
+            <span class="tier-badge tier-standard">Standard</span>
+            <span id="standard-count" style="color:var(--text-soft);font-size:12px"></span>
+          </span>
+          <button class="btn btn-sm btn-ghost" onclick="bulkPublishTier('standard')">
+            <span class="material-icons-round" style="font-size:14px">publish</span>
+          </button>
+        </div>
+        <div class="tier-col-list" id="tier-standard-list"><div class="text-soft" style="padding:16px;font-size:12px;text-align:center">No games assigned</div></div>
+      </div>
+      <div class="tier-col">
+        <div class="tier-col-head">
+          <span style="display:flex;align-items:center;gap:6px">
+            <span class="tier-badge tier-diamond">Diamond</span>
+            <span id="diamond-count" style="color:var(--text-soft);font-size:12px"></span>
+          </span>
+          <button class="btn btn-sm btn-ghost" onclick="bulkPublishTier('diamond')">
+            <span class="material-icons-round" style="font-size:14px">publish</span>
+          </button>
+        </div>
+        <div class="tier-col-list" id="tier-diamond-list"><div class="text-soft" style="padding:16px;font-size:12px;text-align:center">No games assigned</div></div>
+      </div>
+    </div>
+    <div style="margin-top:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div class="tier-col" style="flex:1;min-width:200px">
+        <div class="tier-col-head">
+          <span style="display:flex;align-items:center;gap:6px">
+            <span class="material-icons-round" style="font-size:14px;color:var(--text-soft)">category</span>
+            <span style="font-size:13px;color:var(--text-soft)">Unassigned</span>
+            <span id="unassigned-count" style="color:var(--text-soft);font-size:12px"></span>
+          </span>
+        </div>
+        <div class="tier-col-list" id="tier-unassigned-list"><div class="text-soft" style="padding:16px;font-size:12px;text-align:center">All games have tiers</div></div>
+      </div>
+      <div class="tier-col" style="flex:1;min-width:200px">
+        <div class="tier-col-head">
+          <span style="display:flex;align-items:center;gap:6px">
+            <span class="tier-badge tier-vip">VIP Only</span>
+            <span id="vip-count" style="color:var(--text-soft);font-size:12px"></span>
+          </span>
+          <button class="btn btn-sm btn-ghost" onclick="bulkPublishTier('vip')">
+            <span class="material-icons-round" style="font-size:14px">publish</span>
+          </button>
+        </div>
+        <div class="tier-col-list" id="tier-vip-list"><div class="text-soft" style="padding:16px;font-size:12px;text-align:center">No VIP games</div></div>
+      </div>
+    </div>
   </div>
+
+  <!-- ══ TAB 3: ACCUMULATOR ════════════════════════════════════════════════ -->
+  <div class="gb-tab-pane" id="tab-accumulator">
+    <div class="accum-layout">
+      <!-- Game list (left) -->
+      <div>
+        <p style="font-size:12px;color:var(--text-soft);margin:0 0 10px">
+          Click the odds pill on a game to add it to your 2-odds accumulator. Target combined odds: <strong style="color:var(--primary)">~2.00</strong>
+        </p>
+        <div id="accum-game-list"></div>
+      </div>
+      <!-- Accumulator panel (right) -->
+      <div class="accum-panel">
+        <h3><span class="material-icons-round" style="color:var(--primary)">casino</span> Accumulator</h3>
+        <div class="accum-odds-total" id="accum-total">
+          0.00
+          <span>Combined Odds</span>
+        </div>
+        <!-- Target bar: fills to 2.00 = 100% -->
+        <div class="accum-target-bar">
+          <div class="accum-target-fill" id="accum-fill" style="width:0%;background:var(--primary)"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-soft);margin-bottom:10px">
+          <span>0.00</span><span style="color:var(--primary);font-weight:700">2.00 target</span><span>3.00+</span>
+        </div>
+        <div id="accum-list"><div class="accum-empty">No selections yet.<br>Click an odds pill to add.</div></div>
+        <div id="accum-actions" style="margin-top:12px;display:none">
+          <button class="btn btn-primary btn-sm" style="width:100%;margin-bottom:6px" id="accum-publish-btn">
+            <span class="material-icons-round">publish</span> Publish as VIP Accumulator
+          </button>
+          <button class="btn btn-ghost btn-sm" style="width:100%" id="accum-clear-btn">
+            <span class="material-icons-round">clear_all</span> Clear All
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </main>
 
 <script src="admin.js"></script>
 <script>
 injectAdminShell('game-browser.html');
 
+/* ── State ───────────────────────────────────────────────────────────────── */
 let allGames = [];
 let selectedIds = new Set();
+let lastApiSynced = 0;   // fixtures count from last sync response
+let accumSelections = []; // [{id, label, odds, market}]
 
-// Set default date to today
+/* ── Init ────────────────────────────────────────────────────────────────── */
 const picker = document.getElementById('date-picker');
 picker.value = new Date().toISOString().slice(0, 10);
 
 document.addEventListener('DOMContentLoaded', () => {
   loadGames();
+  loadApiStatus();
+
+  // Tab nav
+  document.querySelectorAll('.gb-nav-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.gb-nav-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.gb-tab-pane').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+      if (tab.dataset.tab === 'tier-picker') renderTierPicker();
+      if (tab.dataset.tab === 'accumulator') renderAccumulatorGameList();
+    });
+  });
 
   picker.addEventListener('change', loadGames);
   document.getElementById('f-search').addEventListener('input', renderTable);
   document.getElementById('f-status').addEventListener('change', renderTable);
   document.getElementById('f-league').addEventListener('change', renderTable);
-  document.getElementById('sync-btn').addEventListener('click', syncFixtures);
-  document.getElementById('run-intel-btn').addEventListener('click', runIntelligence);
-  document.getElementById('bulk-pub-btn').addEventListener('click', bulkPublish);
+  document.getElementById('f-tier').addEventListener('change', renderTable);
+  document.getElementById('conf-slider').addEventListener('input', function() {
+    document.getElementById('conf-val').textContent = this.value;
+    renderTable();
+  });
+  document.getElementById('longshot-toggle').addEventListener('click', function() {
+    this.classList.toggle('active');
+    renderTable();
+  });
   document.getElementById('chk-all').addEventListener('change', function() {
-    const filtered = filteredGames();
-    filtered.forEach(g => this.checked ? selectedIds.add(g.id) : selectedIds.delete(g.id));
+    filteredGames().forEach(g => this.checked ? selectedIds.add(g.id) : selectedIds.delete(g.id));
     updateBulkBar();
     renderTable();
   });
+
+  document.getElementById('sync-btn').addEventListener('click', syncFixtures);
+  document.getElementById('auto-predict-btn').addEventListener('click', generatePredictions);
+  document.getElementById('run-intel-btn').addEventListener('click', runIntelligence);
+  document.getElementById('api-status-btn').addEventListener('click', loadApiStatus);
+  document.getElementById('bulk-pub-btn').addEventListener('click', bulkPublish);
+  document.getElementById('bulk-assign-tier-btn').addEventListener('click', bulkAssignTier);
+  document.getElementById('bulk-clear-btn').addEventListener('click', () => { selectedIds.clear(); updateBulkBar(); renderTable(); });
+  document.getElementById('accum-clear-btn')?.addEventListener('click', clearAccumulator);
+  document.getElementById('accum-publish-btn')?.addEventListener('click', publishAccumulator);
 });
 
+/* ── Sync helpers ────────────────────────────────────────────────────────── */
+function setSyncStatus(state, text) {
+  const dot = document.getElementById('sync-dot');
+  const txt = document.getElementById('sync-status-text');
+  dot.className = 'sync-dot ' + state;
+  txt.textContent = text;
+}
+
+async function syncFixtures() {
+  const btn = document.getElementById('sync-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-icons-round spin" style="animation:spin 1s linear infinite">sync</span> Syncing…';
+  setSyncStatus('running', 'Syncing fixtures…');
+
+  const date = picker.value;
+  const d = await api('/sync/fixtures/by-date', { method: 'POST', body: JSON.stringify({ date }) });
+
+  btn.disabled = false;
+  btn.innerHTML = '<span class="material-icons-round">sync</span> Sync Fixtures';
+
+  if (d.success) {
+    lastApiSynced = d.data?.synced || 0;
+    setSyncStatus('ok', `Synced ${lastApiSynced} fixtures for ${date}`);
+    showToast(`Synced ${lastApiSynced} fixtures`, 'success');
+    await loadGames();
+  } else {
+    setSyncStatus('error', d.message || 'Sync failed');
+    showToast(d.message || 'Sync failed', 'error');
+  }
+}
+
+async function generatePredictions() {
+  const btn = document.getElementById('auto-predict-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-icons-round">auto_awesome</span> Generating…';
+  setSyncStatus('running', 'Running prediction engine…');
+
+  const date = picker.value;
+  const d = await api('/sync/auto-predict/run', {
+    method: 'POST',
+    body: JSON.stringify({ targetDate: date, limit: 'all', minConfidence: 70, autoPublish: false }),
+  });
+
+  btn.disabled = false;
+  btn.innerHTML = '<span class="material-icons-round">auto_awesome</span> Generate Predictions';
+
+  if (d.success) {
+    setSyncStatus('ok', `${d.data?.generated || 0} predictions generated`);
+    showToast(`${d.data?.generated || 0} predictions generated (${d.data?.autoPublished || 0} auto-published)`, 'success');
+    await loadGames();
+  } else {
+    setSyncStatus('error', d.message || 'Failed');
+    showToast(d.message || 'Generation failed', 'error');
+  }
+}
+
+async function runIntelligence() {
+  const btn = document.getElementById('run-intel-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-icons-round">psychology</span> Running…';
+  setSyncStatus('running', 'Running intelligence engine…');
+
+  const d = await api('/admin/intelligence/run', { method: 'POST' });
+
+  btn.disabled = false;
+  btn.innerHTML = '<span class="material-icons-round">psychology</span> Run Intelligence';
+
+  if (d.success) {
+    setSyncStatus('ok', 'Intelligence run complete');
+    showToast(`${d.data?.generated || 0} generated, ${d.data?.autoPublished || 0} published`, 'success');
+    await loadGames();
+  } else {
+    setSyncStatus('error', d.message || 'Failed');
+    showToast(d.message || 'Intelligence run failed', 'error');
+  }
+}
+
+async function loadApiStatus() {
+  const pill = document.getElementById('api-status-pill');
+  pill.style.display = 'inline-flex';
+  pill.textContent = '…';
+  const d = await api('/sync/api-status');
+  if (!d.success) { pill.textContent = 'API: error'; pill.className = 'api-status-pill error'; return; }
+  const local = d.data?.local || {};
+  const remote = d.data?.requests || {};
+  const used = remote.current || local.calls_today || 0;
+  const limit = remote.limit_day || local.daily_limit || 2500;
+  const pct = limit ? Math.round(used / limit * 100) : 0;
+  pill.textContent = `${used}/${limit} calls (${pct}%)`;
+  pill.className = 'api-status-pill' + (pct > 80 ? ' warn' : pct > 95 ? ' error' : '');
+}
+
+/* ── Game loading ────────────────────────────────────────────────────────── */
 async function loadGames() {
   selectedIds.clear();
   updateBulkBar();
-  document.getElementById('games-body').innerHTML = '<tr><td colspan="11" class="empty-cell"><div class="skeleton" style="height:40px;border-radius:6px"></div></td></tr>';
+  document.getElementById('games-body').innerHTML =
+    '<tr><td colspan="11" style="padding:24px;text-align:center"><div class="skeleton" style="height:40px;border-radius:6px;max-width:400px;margin:0 auto"></div></td></tr>';
 
   const date = picker.value;
-  const d = await api(`/predictions?date=${date}&limit=200&admin_view=1`);
+  const d = await api(`/predictions?date=${date}&limit=300&admin_view=1`);
   allGames = d.data?.predictions || [];
 
   // Populate league filter
   const leagues = [...new Map(allGames.map(g => [g.league_id, g.league_name])).entries()];
   const lf = document.getElementById('f-league');
+  const curVal = lf.value;
   lf.innerHTML = '<option value="">All Leagues</option>' +
-    leagues.filter(([,n])=>n).map(([id,name]) => `<option value="${id}">${escHtml(name)}</option>`).join('');
+    leagues.filter(([,n]) => n).map(([id, name]) => `<option value="${id}"${String(id)===curVal?' selected':''}>${escHtml(name)}</option>`).join('');
 
+  updateConsistencyBar();
   renderTable();
 }
 
+function updateConsistencyBar() {
+  const bar = document.getElementById('consistency-bar');
+  const dbCount = allGames.length;
+  bar.style.display = dbCount > 0 || lastApiSynced > 0 ? 'flex' : 'none';
+  document.getElementById('cb-db').textContent = dbCount;
+  document.getElementById('cb-api').textContent = lastApiSynced || '—';
+
+  const aboveThreshold = allGames.filter(g => (g.confidence_score||0) >= 70).length;
+  document.getElementById('cb-confidence-summary').textContent =
+    dbCount ? `${aboveThreshold} games ≥70% confidence (${Math.round(aboveThreshold/dbCount*100)}%)` : '';
+
+  const checkWrap = document.getElementById('cb-check-wrap');
+  const checkIcon = document.getElementById('cb-check-icon');
+  const checkText = document.getElementById('cb-check-text');
+  if (lastApiSynced && dbCount) {
+    if (dbCount >= lastApiSynced * 0.8) {
+      checkIcon.textContent = 'check_circle';
+      checkIcon.style.color = 'var(--primary)';
+      checkText.textContent = 'DB consistent with API';
+      checkText.className = 'citem-ok';
+    } else {
+      checkIcon.textContent = 'warning';
+      checkIcon.style.color = '#ffc107';
+      checkText.textContent = `${lastApiSynced - dbCount} fixtures missing predictions`;
+      checkText.className = 'citem-warn';
+    }
+  } else {
+    checkWrap.style.display = 'none';
+  }
+}
+
+/* ── Filtering ───────────────────────────────────────────────────────────── */
 function filteredGames() {
   const search = document.getElementById('f-search').value.toLowerCase();
   const status = document.getElementById('f-status').value;
   const league = document.getElementById('f-league').value;
+  const tier = document.getElementById('f-tier').value;
+  const minConf = parseInt(document.getElementById('conf-slider').value) || 0;
+  const longShot = document.getElementById('longshot-toggle').classList.contains('active');
+
   return allGames.filter(g => {
     if (search && !`${g.home_team} ${g.away_team}`.toLowerCase().includes(search)) return false;
     if (status === 'published' && !g.published_at) return false;
     if (status === 'draft' && g.published_at) return false;
     if (league && String(g.league_id) !== league) return false;
+    if (tier && (g.category || '').toLowerCase() !== tier) return false;
+    const conf = g.confidence_score || 0;
+    if (conf < minConf) return false;
+    if (longShot && conf >= 75) return false; // long shots = lower confidence
     return true;
   });
 }
 
+/* ── Table rendering ─────────────────────────────────────────────────────── */
 function renderTable() {
   const games = filteredGames();
   document.getElementById('result-count').textContent = `${games.length} game${games.length !== 1 ? 's' : ''}`;
 
   if (!games.length) {
-    document.getElementById('games-body').innerHTML = '<tr><td colspan="11" class="empty-cell">No games found — try syncing fixtures first</td></tr>';
+    const msg = allGames.length === 0
+      ? 'No games yet — sync fixtures then generate predictions'
+      : 'No games match the current filters';
+    document.getElementById('games-body').innerHTML =
+      `<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--text-soft);font-size:13px">${msg}</td></tr>`;
     return;
   }
 
@@ -152,79 +702,317 @@ function renderTable() {
     const lh = g.home_goals_avg ? parseFloat(g.home_goals_avg).toFixed(2) : '—';
     const la = g.away_goals_avg ? parseFloat(g.away_goals_avg).toFixed(2) : '—';
     const conf = g.confidence_score || 0;
-    const confColor = conf >= 70 ? 'var(--primary)' : conf >= 60 ? 'var(--warning)' : 'var(--text-soft)';
+    const confColor = conf >= 80 ? 'var(--primary)' : conf >= 70 ? '#8ecf8e' : conf >= 60 ? '#ffc107' : 'var(--danger)';
     const tip = g.tip && g.tip !== 'TBD' ? g.tip : '<span class="text-soft">TBD</span>';
-    const checked = selectedIds.has(g.id) ? 'checked' : '';
+    const chk = selectedIds.has(g.id) ? 'checked' : '';
+    const cat = (g.category || '').toLowerCase();
+    const tierBadge = cat ? `<span class="tier-badge tier-${cat}">${cat}</span>` : '<span class="text-soft" style="font-size:11px">—</span>';
 
-    return `<tr data-id="${g.id}">
-      <td><input type="checkbox" class="row-chk" data-id="${g.id}" ${checked}></td>
+    return `<tr data-id="${g.id}" class="${selectedIds.has(g.id)?'selected-row':''}">
+      <td><input type="checkbox" class="row-chk" data-id="${g.id}" ${chk}></td>
       <td>
-        <strong style="font-size:13px">${escHtml(g.home_team)} <span class="text-soft">vs</span> ${escHtml(g.away_team)}</strong>
-        ${g.result !== 'pending' ? `<span class="badge badge-${g.result}" style="margin-left:6px;font-size:10px">${g.result.toUpperCase()}</span>` : ''}
+        <div style="display:flex;align-items:center;gap:6px">
+          <button class="btn btn-sm btn-ghost" style="padding:2px 4px;min-width:0" onclick="toggleAnalysis(${g.id})" title="Show analysis">
+            <span class="material-icons-round" style="font-size:14px">expand_more</span>
+          </button>
+          <strong style="font-size:12px">${escHtml(g.home_team)} <span style="color:var(--text-soft);font-weight:400">vs</span> ${escHtml(g.away_team)}</strong>
+        </div>
       </td>
-      <td style="font-size:12px;color:var(--text-soft)">${escHtml(g.league_name || '—')}</td>
-      <td style="font-size:12px;white-space:nowrap">${g.match_date ? new Date(g.match_date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '—'}</td>
-      <td><div class="form-dots">${formDots(g.home_form)}</div>${g.home_form ? `<div style="font-size:10px;color:var(--text-soft);margin-top:2px">${escHtml(g.home_form)}</div>` : '<span class="text-soft" style="font-size:11px">—</span>'}</td>
-      <td><div class="form-dots">${formDots(g.away_form)}</div>${g.away_form ? `<div style="font-size:10px;color:var(--text-soft);margin-top:2px">${escHtml(g.away_form)}</div>` : '<span class="text-soft" style="font-size:11px">—</span>'}</td>
-      <td style="font-size:12px;white-space:nowrap">
-        ${lh !== '—' ? `<span class="stat-pill">${lh}</span> / <span class="stat-pill">${la}</span>` : '<span class="text-soft">No data</span>'}
-      </td>
-      <td style="font-size:13px;font-weight:700">${tip}</td>
+      <td style="font-size:11px;color:var(--text-soft);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(g.league_name || '—')}</td>
+      <td style="font-size:11px;white-space:nowrap">${g.match_date ? new Date(g.match_date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '—'}</td>
       <td>
-        ${conf ? `<div style="display:flex;align-items:center;gap:6px">
-          <span style="font-size:13px;font-weight:700;color:${confColor}">${conf}</span>
+        <div class="form-dots">${formDots(g.home_form)}</div>
+        <div class="form-dots" style="margin-top:2px;opacity:.7">${formDots(g.away_form)}</div>
+      </td>
+      <td style="font-size:11px;white-space:nowrap">
+        ${lh !== '—' ? `<span style="color:var(--primary);font-weight:700">${lh}</span> / <span style="color:#64b5f6;font-weight:700">${la}</span>` : '<span class="text-soft">—</span>'}
+      </td>
+      <td style="font-size:13px;font-weight:700;color:var(--primary)">${tip}</td>
+      <td>
+        ${conf ? `<div class="conf-bar-wrap">
+          <span style="font-size:12px;font-weight:700;color:${confColor};min-width:24px">${conf}</span>
           <div class="conf-bar"><div class="conf-bar-fill" style="width:${conf}%;background:${confColor}"></div></div>
         </div>` : '<span class="text-soft" style="font-size:11px">—</span>'}
       </td>
+      <td>${tierBadge}</td>
       <td>
         ${isPublished
-          ? '<span class="badge badge-win">Live</span>'
-          : '<span class="badge badge-pending">Draft</span>'}
+          ? '<span class="badge badge-win" style="font-size:10px">Live</span>'
+          : '<span class="badge badge-pending" style="font-size:10px">Draft</span>'}
       </td>
       <td>
         <div class="flex gap-1" style="flex-wrap:nowrap">
-          <button class="btn btn-sm ${isPublished?'btn-ghost':'btn-primary'}" onclick="togglePublish(${g.id},${isPublished})" title="${isPublished?'Unpublish':'Publish'}">
-            <span class="material-icons-round" style="font-size:14px">${isPublished?'visibility_off':'publish'}</span>
+          <button class="btn btn-sm ${isPublished?'btn-ghost':'btn-primary'}" data-toggle-id="${g.id}" data-toggle-pub="${isPublished?1:0}" title="${isPublished?'Unpublish':'Publish'}" style="padding:4px 7px">
+            <span class="material-icons-round" style="font-size:13px">${isPublished?'visibility_off':'publish'}</span>
           </button>
-          <a href="/prediction/${escHtml(g.slug)}" target="_blank" class="btn btn-sm btn-ghost" title="View on site">
-            <span class="material-icons-round" style="font-size:14px">open_in_new</span>
-          </a>
+          <select class="form-control" style="font-size:10px;padding:3px 4px;max-width:80px;border-radius:5px" data-tier-id="${g.id}" onchange="setTier(${g.id},this.value)">
+            <option value="" ${!cat?'selected':''}>Tier…</option>
+            <option value="basic" ${cat==='basic'?'selected':''}>Basic</option>
+            <option value="standard" ${cat==='standard'?'selected':''}>Standard</option>
+            <option value="diamond" ${cat==='diamond'?'selected':''}>Diamond</option>
+            <option value="vip" ${cat==='vip'?'selected':''}>VIP</option>
+          </select>
         </div>
       </td>
+    </tr>
+    <tr id="analysis-row-${g.id}" class="analysis-row" style="display:none">
+      <td colspan="11" id="analysis-cell-${g.id}"></td>
     </tr>`;
   }).join('');
 
-  // Row checkbox listeners
+  // Bind row checkbox listeners
   document.querySelectorAll('.row-chk').forEach(chk => {
     chk.addEventListener('change', function() {
       const id = parseInt(this.dataset.id);
       this.checked ? selectedIds.add(id) : selectedIds.delete(id);
       updateBulkBar();
+      this.closest('tr').classList.toggle('selected-row', this.checked);
     });
+  });
+
+  // Bind publish toggle buttons
+  document.querySelectorAll('[data-toggle-id]').forEach(btn => {
+    btn.addEventListener('click', () => togglePublish(parseInt(btn.dataset.toggleId), parseInt(btn.dataset.togglePub)));
   });
 }
 
 function formDots(form) {
-  if (!form) return '';
-  return form.split('').map(r => {
-    const bg = r==='W'?'#00f5a1':r==='L'?'#ff4757':'#f1fec3';
-    const fg = r==='L'?'#fff':'#171717';
-    return `<span style="background:${bg};color:${fg}">${r}</span>`;
+  if (!form) return '<span style="color:var(--text-soft);font-size:10px">—</span>';
+  return form.split('').slice(0, 5).map(r => {
+    const bg = r === 'W' ? '#00f5a1' : r === 'L' ? '#ff4757' : '#8888aa';
+    const fg = r === 'L' ? '#fff' : '#111';
+    return `<span class="form-dot" style="background:${bg};color:${fg}">${r}</span>`;
   }).join('');
 }
 
-function updateBulkBar() {
-  const btn = document.getElementById('bulk-pub-btn');
-  document.getElementById('sel-count').textContent = selectedIds.size;
-  btn.style.display = selectedIds.size > 0 ? 'inline-flex' : 'none';
+/* ── Analysis panel ──────────────────────────────────────────────────────── */
+const analysisCache = {};
+
+async function toggleAnalysis(id) {
+  const row = document.getElementById('analysis-row-' + id);
+  const cell = document.getElementById('analysis-cell-' + id);
+
+  if (row.style.display !== 'none') {
+    row.style.display = 'none';
+    return;
+  }
+
+  row.style.display = '';
+  if (analysisCache[id]) { renderAnalysisPanel(cell, analysisCache[id], id); return; }
+
+  cell.innerHTML = '<div style="padding:14px;text-align:center"><div class="skeleton" style="height:60px;border-radius:6px"></div></div>';
+
+  const g = allGames.find(x => x.id === id);
+  const analysisRes = await api(`/predictions/admin/${id}/analysis`).catch(() => ({ success: false }));
+
+  const ad = analysisRes.success ? (analysisRes.data || {}) : {};
+  // Flatten the nested response shape into one object for the panel
+  const merged = {
+    ...g,
+    ...(ad.prediction || {}),
+    ...(ad.engine || {}),
+    h2h: ad.h2h || [],
+    homeRecent: ad.homeRecent || [],
+    awayRecent: ad.awayRecent || [],
+    homeStats: ad.homeStats || null,
+    awayStats: ad.awayStats || null,
+    // engine shortcuts
+    bookies_available: ad.engine?.bookies ?? g.bookies_available,
+    home_form: ad.engine?.form?.home ?? g.home_form,
+    away_form: ad.engine?.form?.away ?? g.away_form,
+    home_goals_avg: ad.engine?.goals?.homeScored ?? g.home_goals_avg,
+    away_goals_avg: ad.engine?.goals?.awayScored ?? g.away_goals_avg,
+    analysis: ad.engine?.analysis ?? g.analysis,
+    h2h_summary: ad.engine?.h2hSummary ?? g.h2h_summary,
+    confidence_score: ad.engine?.confidence ?? g.confidence_score,
+  };
+  analysisCache[id] = merged;
+  renderAnalysisPanel(cell, merged, id);
 }
 
+function renderAnalysisPanel(cell, data, id) {
+  const g = data;
+
+  // Parse odds from bookies_available
+  let oddsHtml = '';
+  try {
+    const bookies = typeof g.bookies_available === 'string'
+      ? JSON.parse(g.bookies_available) : (g.bookies_available || []);
+    const markets = {};
+    (bookies || []).forEach(bk => {
+      (bk.markets || bk.bets || []).forEach(mkt => {
+        const name = mkt.name || mkt.market || '';
+        if (!markets[name]) markets[name] = [];
+        (mkt.values || mkt.odds || []).forEach(v => {
+          if (v.odd || v.value) markets[name].push({ label: v.value || v.name, odd: parseFloat(v.odd || v.value) });
+        });
+      });
+    });
+    // Show only Match Winner (1x2)
+    const mw = markets['Match Winner'] || markets['1X2'] || markets['Home/Draw/Away'] || [];
+    if (mw.length) {
+      oddsHtml = '<div class="analysis-block"><h4>Odds (Match Winner)</h4><div>' +
+        mw.map(o => {
+          const isSelected = accumSelections.some(s => s.id === id && s.label === o.label);
+          return `<span class="odds-pill${isSelected?' selected':''}" onclick="addToAccum(${id},'${escHtml(o.label)}',${o.odd},'Match Winner')">${escHtml(o.label)}: <strong>${o.odd.toFixed(2)}</strong></span>`;
+        }).join('') + '</div></div>';
+    }
+  } catch (e) { /* no odds */ }
+
+  // Parse analysis text/factors
+  let analysisText = '';
+  let factorEntries = [];
+  try {
+    const raw = typeof g.analysis === 'string' ? JSON.parse(g.analysis) : (g.analysis || {});
+    if (typeof raw === 'string') { analysisText = raw; }
+    else {
+      const factors = raw.factors || raw.confidence_factors || {};
+      factorEntries = Object.entries(factors).filter(([k]) => k !== 'total');
+      analysisText = raw.summary || raw.text || raw.reasoning || '';
+    }
+  } catch(e) { if (typeof g.analysis === 'string') analysisText = g.analysis; }
+
+  // H2H history rows
+  const h2hRows = (g.h2h || []).slice(0, 5);
+  const homeRecentRows = (g.homeRecent || []).slice(0, 5);
+  const awayRecentRows = (g.awayRecent || []).slice(0, 5);
+
+  const h2hHtml = h2hRows.length ? `<div class="analysis-block" style="grid-column:span 2">
+    <h4>H2H History (last ${h2hRows.length})</h4>
+    ${h2hRows.map(m => {
+      const hs = m.home_score != null ? m.home_score : '?';
+      const as_ = m.away_score != null ? m.away_score : '?';
+      const res = m.home_score != null && m.away_score != null
+        ? (m.home_score > m.away_score ? 'H' : m.home_score < m.away_score ? 'A' : 'D') : '—';
+      const col = res === 'H' ? 'var(--primary)' : res === 'A' ? '#64b5f6' : '#ffc107';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:11px">
+        <span style="color:var(--text-soft);min-width:70px">${m.match_date ? new Date(m.match_date).toLocaleDateString('en-GB') : ''}</span>
+        <span>${escHtml(m.home_team)} <strong>${hs}</strong> – <strong>${as_}</strong> ${escHtml(m.away_team)}</span>
+        <span style="font-weight:700;color:${col};min-width:14px;text-align:right">${res}</span>
+      </div>`;
+    }).join('')}
+  </div>` : '';
+
+  // Recent form blocks
+  const recentFormHtml = (homeRecentRows.length || awayRecentRows.length) ? `
+    ${homeRecentRows.length ? `<div class="analysis-block">
+      <h4>${escHtml(g.home_team||'Home')} Recent</h4>
+      ${homeRecentRows.map(m => {
+        const col = m.result === 'W' ? 'var(--primary)' : m.result === 'L' ? '#ff4757' : '#8888aa';
+        return `<div style="font-size:11px;padding:2px 0;display:flex;justify-content:space-between">
+          <span style="color:var(--text-soft)">${m.home_team} vs ${m.away_team}</span>
+          <span style="font-weight:700;color:${col}">${m.home_score != null ? m.home_score+'-'+m.away_score : '—'} ${m.result||''}</span>
+        </div>`;
+      }).join('')}
+    </div>` : ''}
+    ${awayRecentRows.length ? `<div class="analysis-block">
+      <h4>${escHtml(g.away_team||'Away')} Recent</h4>
+      ${awayRecentRows.map(m => {
+        const col = m.result === 'W' ? 'var(--primary)' : m.result === 'L' ? '#ff4757' : '#8888aa';
+        return `<div style="font-size:11px;padding:2px 0;display:flex;justify-content:space-between">
+          <span style="color:var(--text-soft)">${m.home_team} vs ${m.away_team}</span>
+          <span style="font-weight:700;color:${col}">${m.home_score != null ? m.home_score+'-'+m.away_score : '—'} ${m.result||''}</span>
+        </div>`;
+      }).join('')}
+    </div>` : ''}
+  ` : '';
+
+  // Team stats
+  const statsHtml = (g.homeStats || g.awayStats) ? `<div class="analysis-block" style="grid-column:span 2">
+    <h4>Season Statistics</h4>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:11px">
+      ${g.homeStats ? `<div>
+        <strong>${escHtml(g.home_team)}</strong><br>
+        <span style="color:var(--text-soft)">Played: ${g.homeStats.matches_played||'—'} · W${g.homeStats.wins||0} D${g.homeStats.draws||0} L${g.homeStats.losses||0}</span><br>
+        <span style="color:var(--primary)">Goals: ${g.homeStats.goals_scored||0}F / ${g.homeStats.goals_conceded||0}A</span>
+      </div>` : ''}
+      ${g.awayStats ? `<div>
+        <strong>${escHtml(g.away_team)}</strong><br>
+        <span style="color:var(--text-soft)">Played: ${g.awayStats.matches_played||'—'} · W${g.awayStats.wins||0} D${g.awayStats.draws||0} L${g.awayStats.losses||0}</span><br>
+        <span style="color:#64b5f6">Goals: ${g.awayStats.goals_scored||0}F / ${g.awayStats.goals_conceded||0}A</span>
+      </div>` : ''}
+    </div>
+  </div>` : '';
+
+  cell.innerHTML = `<div class="analysis-panel">
+    <div class="analysis-grid">
+      <div class="analysis-block">
+        <h4>Prediction Basis</h4>
+        <p>
+          <span style="font-size:20px;font-weight:700;color:var(--primary);font-family:var(--font-head,'Bai Jamjuree',sans-serif)">${g.tip && g.tip !== 'TBD' ? escHtml(g.tip) : '—'}</span><br>
+          <span style="color:var(--text-soft);font-size:11px">Confidence: </span><span style="font-weight:700">${g.confidence_score || '—'}${g.confidence_score ? '%' : ''}</span><br>
+          <span style="color:var(--text-soft);font-size:11px">Market: </span>${escHtml(g.market||g.tip_prefix||'1X2')}<br>
+          ${g.is_vip || (g.category||'') === 'vip' ? '<span class="tier-badge tier-vip" style="font-size:10px;margin-top:4px;display:inline-block">VIP</span>' : ''}
+        </p>
+      </div>
+
+      <div class="analysis-block">
+        <h4>Form &amp; Expected Goals</h4>
+        <p>
+          <strong>${escHtml(g.home_team||'Home')}</strong>&nbsp;
+          ${formDots(g.home_form)}&nbsp;
+          <span style="color:var(--primary);font-weight:700">λ${g.home_goals_avg ? parseFloat(g.home_goals_avg).toFixed(2) : '—'}</span>
+        </p>
+        <p style="margin-top:6px">
+          <strong>${escHtml(g.away_team||'Away')}</strong>&nbsp;
+          ${formDots(g.away_form)}&nbsp;
+          <span style="color:#64b5f6;font-weight:700">λ${g.away_goals_avg ? parseFloat(g.away_goals_avg).toFixed(2) : '—'}</span>
+        </p>
+        ${g.h2h_summary ? `<p style="margin-top:8px;font-size:11px;color:var(--text-soft)">${escHtml(g.h2h_summary)}</p>` : ''}
+      </div>
+
+      ${factorEntries.length ? `<div class="analysis-block">
+        <h4>Confidence Factors</h4>
+        <ul class="factor-list">
+          ${factorEntries.map(([k,v]) => {
+            const num = parseFloat(v);
+            const val = !isNaN(num) ? (num > 0 ? '+' : '') + num.toFixed(1) : String(v);
+            const cls = !isNaN(num) ? (num > 0 ? 'fv' : num < 0 ? 'fv neg' : 'fv mid') : 'fv mid';
+            return `<li><span class="fl">${escHtml(k.replace(/_/g,' '))}</span><span class="${cls}">${val}</span></li>`;
+          }).join('')}
+        </ul>
+      </div>` : ''}
+
+      ${analysisText ? `<div class="analysis-block" style="grid-column:1/-1">
+        <h4>Analysis</h4>
+        <p style="line-height:1.7;color:var(--text)">${escHtml(String(analysisText))}</p>
+      </div>` : ''}
+
+      ${oddsHtml}
+      ${h2hHtml}
+      ${recentFormHtml}
+      ${statsHtml}
+    </div>
+  </div>`;
+}
+
+/* ── Publish / Tier ──────────────────────────────────────────────────────── */
 async function togglePublish(id, isPublished) {
   const d = await api(`/predictions/admin/${id}/publish`, { method: 'PUT' });
   if (d.success) {
     showToast(isPublished ? 'Unpublished' : 'Published', 'success');
-    loadGames();
+    await loadGames();
+    if (document.getElementById('tab-tier-picker').classList.contains('active')) renderTierPicker();
   } else showToast(d.message, 'error');
+}
+
+async function setTier(id, category) {
+  if (!category) return;
+  const d = await api(`/predictions/admin/${id}/category`, { method: 'PUT', body: JSON.stringify({ category }) });
+  if (d.success) {
+    const game = allGames.find(g => g.id === id);
+    if (game) game.category = category;
+    showToast(`Tier set to ${category}`, 'success');
+    if (document.getElementById('tab-tier-picker').classList.contains('active')) renderTierPicker();
+  } else showToast(d.message, 'error');
+}
+
+/* ── Bulk actions ────────────────────────────────────────────────────────── */
+function updateBulkBar() {
+  const bar = document.getElementById('bulk-bar');
+  const count = selectedIds.size;
+  bar.classList.toggle('visible', count > 0);
+  document.getElementById('sel-count-text').textContent = `${count} game${count !== 1 ? 's' : ''} selected`;
 }
 
 async function bulkPublish() {
@@ -235,28 +1023,235 @@ async function bulkPublish() {
     const d = await api(`/predictions/admin/${id}/publish`, { method: 'PUT' });
     if (d.success) ok++;
   }
-  showToast(`Published ${ok} of ${ids.length} predictions`, 'success');
+  showToast(`Published ${ok} of ${ids.length}`, 'success');
   selectedIds.clear();
-  loadGames();
+  await loadGames();
 }
 
-async function syncFixtures() {
-  const btn = document.getElementById('sync-btn');
-  btn.disabled = true; btn.innerHTML = '<span class="material-icons-round">sync</span> Syncing…';
-  const d = await api('/sync/fixtures', { method: 'POST' });
-  btn.disabled = false; btn.innerHTML = '<span class="material-icons-round">sync</span> Sync Fixtures';
-  if (d.success) { showToast(`Synced ${d.data?.synced || 0} fixtures`, 'success'); loadGames(); }
-  else showToast(d.message || 'Sync failed', 'error');
+async function bulkAssignTier() {
+  const category = document.getElementById('bulk-tier').value;
+  if (!category) { showToast('Select a tier first', 'error'); return; }
+  const ids = [...selectedIds];
+  if (!ids.length) return;
+  let ok = 0;
+  for (const id of ids) {
+    const d = await api(`/predictions/admin/${id}/category`, { method: 'PUT', body: JSON.stringify({ category }) });
+    if (d.success) { ok++; const g = allGames.find(x => x.id === id); if (g) g.category = category; }
+  }
+  showToast(`Tier assigned to ${ok} of ${ids.length}`, 'success');
+  selectedIds.clear();
+  updateBulkBar();
+  renderTable();
+  if (document.getElementById('tab-tier-picker').classList.contains('active')) renderTierPicker();
 }
 
-async function runIntelligence() {
-  const btn = document.getElementById('run-intel-btn');
-  btn.disabled = true; btn.innerHTML = '<span class="material-icons-round">psychology</span> Running…';
-  const d = await api('/admin/intelligence/run', { method: 'POST' });
-  btn.disabled = false; btn.innerHTML = '<span class="material-icons-round">psychology</span> Run Intelligence';
-  if (d.success) { showToast(`${d.data?.generated || 0} generated, ${d.data?.autoPublished || 0} auto-published`, 'success'); loadGames(); }
-  else showToast(d.message || 'Failed', 'error');
+/* ── Tier Picker tab ─────────────────────────────────────────────────────── */
+function renderTierPicker() {
+  const tiers = ['basic', 'standard', 'diamond', 'vip', ''];
+  const tierMap = { basic: [], standard: [], diamond: [], vip: [], '': [] };
+  allGames.forEach(g => {
+    const cat = (g.category || '').toLowerCase();
+    if (tierMap[cat] !== undefined) tierMap[cat].push(g);
+    else tierMap[''].push(g);
+  });
+
+  tiers.forEach((t, idx) => {
+    const listId = t ? `tier-${t}-list` : 'tier-unassigned-list';
+    const countId = t ? `${t}-count` : 'unassigned-count';
+    const games = tierMap[t] || [];
+    const el = document.getElementById(listId);
+    const cnt = document.getElementById(countId);
+    if (cnt) cnt.textContent = `(${games.length})`;
+    if (!el) return;
+    if (!games.length) {
+      el.innerHTML = `<div class="text-soft" style="padding:16px;font-size:12px;text-align:center">No games${t?' in '+t:' unassigned'}</div>`;
+      return;
+    }
+    el.innerHTML = games.map(g => {
+      const conf = g.confidence_score || 0;
+      const confColor = conf >= 80 ? 'var(--primary)' : conf >= 70 ? '#8ecf8e' : '#ffc107';
+      const tiers2 = ['basic','standard','diamond','vip'].filter(x => x !== t);
+      return `<div class="tier-game-card">
+        <div class="tg-teams">${escHtml(g.home_team)} vs ${escHtml(g.away_team)}</div>
+        <div class="tg-meta">
+          <span>${g.tip && g.tip !== 'TBD' ? escHtml(g.tip) : 'TBD'}</span>
+          <span style="color:${confColor}">${conf}%</span>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap">
+          ${tiers2.map(nt => `<button class="btn btn-sm btn-ghost" style="font-size:10px;padding:2px 8px" onclick="setTier(${g.id},'${nt}')">→ ${nt}</button>`).join('')}
+          <button class="btn btn-sm ${g.published_at?'btn-ghost':'btn-primary'}" style="font-size:10px;padding:2px 8px;margin-left:auto" onclick="togglePublish(${g.id},${g.published_at?1:0})">
+            ${g.published_at ? 'Unpublish' : 'Publish'}
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+  });
 }
+
+async function bulkPublishTier(category) {
+  const games = allGames.filter(g => (g.category||'').toLowerCase() === category && !g.published_at);
+  if (!games.length) { showToast(`No unpublished ${category} games`, 'info'); return; }
+  if (!await adminConfirm(`Publish ${category} tier`, `Publish ${games.length} ${category} prediction(s) to subscribers?`, 'Publish All', 'primary')) return;
+  let ok = 0;
+  for (const g of games) {
+    const d = await api(`/predictions/admin/${g.id}/publish`, { method: 'PUT' });
+    if (d.success) ok++;
+  }
+  showToast(`Published ${ok} ${category} predictions`, 'success');
+  await loadGames();
+  renderTierPicker();
+}
+
+/* ── Accumulator ─────────────────────────────────────────────────────────── */
+function renderAccumulatorGameList() {
+  const container = document.getElementById('accum-game-list');
+  const eligible = allGames.filter(g => g.tip && g.tip !== 'TBD' && (g.confidence_score || 0) >= 70);
+
+  if (!eligible.length) {
+    container.innerHTML = '<p style="color:var(--text-soft);font-size:12px;text-align:center;padding:20px">No eligible games with confidence ≥70 and a tip. Sync and generate predictions first.</p>';
+    return;
+  }
+
+  container.innerHTML = eligible.map(g => {
+    let oddsHtml = '';
+    try {
+      const bookies = typeof g.bookies_available === 'string'
+        ? JSON.parse(g.bookies_available) : (g.bookies_available || []);
+      const mwOdds = [];
+      (bookies || []).forEach(bk => {
+        (bk.markets || bk.bets || []).forEach(mkt => {
+          const name = mkt.name || mkt.market || '';
+          if (/match winner|1x2|home.draw.away/i.test(name)) {
+            (mkt.values || mkt.odds || []).forEach(v => {
+              mwOdds.push({ label: v.value || v.name, odd: parseFloat(v.odd || v.value) });
+            });
+          }
+        });
+      });
+      if (mwOdds.length) {
+        oddsHtml = mwOdds.map(o => {
+          const isSel = accumSelections.some(s => s.id === g.id && s.label === o.label);
+          return `<span class="odds-pill${isSel?' selected':''}" onclick="addToAccum(${g.id},'${escHtml(o.label)}',${o.odd},'Match Winner')">${escHtml(o.label)}: <strong>${o.odd.toFixed(2)}</strong></span>`;
+        }).join('');
+      }
+    } catch(e) {}
+
+    if (!oddsHtml) {
+      // Use tip as a pseudo-selection with unknown odds (manual entry)
+      const isSel = accumSelections.some(s => s.id === g.id);
+      oddsHtml = `<span class="odds-pill${isSel?' selected':''}" onclick="addToAccumManual(${g.id})">${escHtml(g.tip)} <span style="opacity:.6">(no odds — click to add manually)</span></span>`;
+    }
+
+    const conf = g.confidence_score || 0;
+    return `<div class="tier-game-card" style="margin-bottom:8px">
+      <div class="tg-teams">${escHtml(g.home_team)} vs ${escHtml(g.away_team)}
+        <span style="color:var(--text-soft);font-size:10px;font-weight:400;margin-left:6px">${escHtml(g.league_name||'')}</span>
+      </div>
+      <div class="tg-meta" style="margin-bottom:6px">
+        <span><strong style="color:var(--primary)">${escHtml(g.tip)}</strong></span>
+        <span style="color:${conf>=80?'var(--primary)':conf>=70?'#8ecf8e':'#ffc107'}">${conf}% confidence</span>
+      </div>
+      <div>${oddsHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+function addToAccum(id, label, odd, market) {
+  const game = allGames.find(g => g.id === id);
+  if (!game) return;
+  // Remove if already selected with same pick, or replace if different pick for same game
+  const existing = accumSelections.findIndex(s => s.id === id);
+  if (existing !== -1) {
+    if (accumSelections[existing].label === label) {
+      accumSelections.splice(existing, 1); // deselect
+    } else {
+      accumSelections[existing] = { id, label, odd, market, name: `${game.home_team} vs ${game.away_team}` };
+    }
+  } else {
+    if (accumSelections.length >= 12) { showToast('Max 12 selections', 'error'); return; }
+    accumSelections.push({ id, label, odd, market, name: `${game.home_team} vs ${game.away_team}` });
+  }
+  updateAccumulatorPanel();
+  renderAccumulatorGameList();
+}
+
+function addToAccumManual(id) {
+  const game = allGames.find(g => g.id === id);
+  if (!game) return;
+  const existing = accumSelections.findIndex(s => s.id === id);
+  if (existing !== -1) { accumSelections.splice(existing, 1); updateAccumulatorPanel(); renderAccumulatorGameList(); return; }
+  const odds = parseFloat(prompt(`Enter odds for ${game.tip} (${game.home_team} vs ${game.away_team}):`) || '0');
+  if (!odds || odds <= 1) { showToast('Enter valid odds > 1.00', 'error'); return; }
+  accumSelections.push({ id, label: game.tip, odd: odds, market: 'Manual', name: `${game.home_team} vs ${game.away_team}` });
+  updateAccumulatorPanel();
+  renderAccumulatorGameList();
+}
+
+function updateAccumulatorPanel() {
+  const total = accumSelections.reduce((acc, s) => acc * (s.odd || 1), 1);
+  document.getElementById('accum-total').innerHTML = `${total.toFixed(2)}<span>Combined Odds</span>`;
+
+  // Fill bar: 0→1.00 = 0%, 1.00→2.00 = 0→100%, 2.00→3.00 = 100→150% (capped)
+  const fillPct = Math.min((total / 2) * 100, 150);
+  const fill = document.getElementById('accum-fill');
+  fill.style.width = Math.min(fillPct, 100) + '%';
+  fill.style.background = total < 1.5 ? '#ff4757' : total < 1.8 ? '#ffc107' : total <= 2.5 ? 'var(--primary)' : '#b388ff';
+
+  const list = document.getElementById('accum-list');
+  if (!accumSelections.length) {
+    list.innerHTML = '<div class="accum-empty">No selections yet.<br>Click an odds pill to add.</div>';
+    document.getElementById('accum-actions').style.display = 'none';
+    return;
+  }
+  document.getElementById('accum-actions').style.display = 'block';
+  list.innerHTML = accumSelections.map((s, i) =>
+    `<div class="accum-item">
+      <div class="accum-item-name">
+        <div style="font-weight:600;font-size:11px">${escHtml(s.name)}</div>
+        <div style="color:var(--text-soft);font-size:10px">${escHtml(s.label)} · ${s.market}</div>
+      </div>
+      <span class="accum-item-odds">${s.odd.toFixed(2)}</span>
+      <button class="accum-remove" onclick="removeFromAccum(${i})">×</button>
+    </div>`
+  ).join('');
+}
+
+function removeFromAccum(index) {
+  accumSelections.splice(index, 1);
+  updateAccumulatorPanel();
+  renderAccumulatorGameList();
+}
+
+function clearAccumulator() {
+  accumSelections = [];
+  updateAccumulatorPanel();
+  renderAccumulatorGameList();
+}
+
+async function publishAccumulator() {
+  if (!accumSelections.length) return;
+  const total = accumSelections.reduce((acc, s) => acc * s.odd, 1);
+  const names = accumSelections.map(s => `${s.name} (${s.label} @ ${s.odd.toFixed(2)})`).join('\n');
+  if (!await adminConfirm('Publish VIP Accumulator',
+    `Publish ${accumSelections.length}-fold accumulator at combined odds ${total.toFixed(2)}?`,
+    'Publish', 'primary')) return;
+
+  // Publish all selected games as VIP
+  let ok = 0;
+  for (const s of accumSelections) {
+    const tierD = await api(`/predictions/admin/${s.id}/category`, { method: 'PUT', body: JSON.stringify({ category: 'vip' }) });
+    const pubD = await api(`/predictions/admin/${s.id}/publish`, { method: 'PUT' });
+    if (pubD.success) ok++;
+  }
+  showToast(`Accumulator published: ${ok} VIP predictions live`, 'success');
+  clearAccumulator();
+  await loadGames();
+}
+
+/* ── CSS for spin ────────────────────────────────────────────────────────── */
+const spinStyle = document.createElement('style');
+spinStyle.textContent = '@keyframes spin{to{transform:rotate(360deg)}} .spin{display:inline-block;animation:spin 1s linear infinite}';
+document.head.appendChild(spinStyle);
 </script>
 </body>
 </html>

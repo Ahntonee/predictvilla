@@ -67,3 +67,8 @@ exports.remove = asyncHandler(async (req, res) => {
   await pool.query('DELETE FROM leagues WHERE id=?', [req.params.id]);
   return successResponse(res, null, 'League deleted');
 });
+
+exports.bulkMarkPopular = asyncHandler(async (req, res) => {
+  await pool.query('UPDATE leagues SET is_popular=1');
+  return successResponse(res, null, 'All leagues marked popular');
+});
